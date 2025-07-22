@@ -1,0 +1,144 @@
+// Database Types
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'user' | 'admin';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Registration {
+  id: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  organization?: string;
+  jobTitle?: string;
+  
+  // Event Options
+  dinnerTicket: boolean;
+  accommodationNeeded: boolean;
+  accommodationType?: 'standard' | 'premium' | 'luxury';
+  
+  // Additional Services
+  brochurePurchase: boolean;
+  goodwillMessage: boolean;
+  goodwillText?: string;
+  goodwillAmount?: number;
+  goodwillApproved?: boolean;
+  
+  // Donations
+  donation: boolean;
+  donationAmount?: number;
+  donationAnonymous: boolean;
+  
+  // Payment
+  totalAmount: number;
+  paymentStatus: 'pending' | 'completed' | 'failed';
+  paymentId?: string;
+  paymentProvider?: 'paystack' | 'flutterwave';
+  
+  // QR Code
+  qrCode: string;
+  qrCodeGenerated: boolean;
+  
+  // Check-in
+  checkedIn: boolean;
+  checkInTime?: Date;
+  checkInBy?: string;
+  
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CheckInLog {
+  id: string;
+  registrationId: string;
+  qrCode: string;
+  checkedInBy: string;
+  timestamp: Date;
+  successful: boolean;
+  reason?: string;
+}
+
+export interface GoodwillMessage {
+  id: string;
+  registrationId: string;
+  message: string;
+  amount: number;
+  approved: boolean;
+  approvedBy?: string;
+  approvedAt?: Date;
+  createdAt: Date;
+}
+
+export interface Donation {
+  id: string;
+  registrationId?: string;
+  amount: number;
+  anonymous: boolean;
+  donorName?: string;
+  donorEmail?: string;
+  createdAt: Date;
+}
+
+// Form Types
+export interface RegistrationFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  organization?: string;
+  jobTitle?: string;
+  dinnerTicket: boolean;
+  accommodationNeeded: boolean;
+  accommodationType?: string;
+  brochurePurchase: boolean;
+  goodwillMessage: boolean;
+  goodwillText?: string;
+  goodwillAmount?: number;
+  donation: boolean;
+  donationAmount?: number;
+  donationAnonymous: boolean;
+  agreeToTerms: boolean;
+}
+
+// API Response Types
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message: string;
+  error?: string;
+}
+
+export interface CheckInResult {
+  success: boolean;
+  attendee?: {
+    id: string;
+    name: string;
+    email: string;
+    ticketType: string;
+    registrationDate: string;
+  };
+  message: string;
+  timestamp?: string;
+  alreadyCheckedIn?: boolean;
+}
+
+// Payment Types
+export interface PaymentInitiation {
+  amount: number;
+  email: string;
+  registrationId: string;
+  callback_url: string;
+}
+
+export interface PaymentVerification {
+  reference: string;
+  status: 'success' | 'failed';
+  amount: number;
+  transaction_date: string;
+}
