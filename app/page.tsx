@@ -3,6 +3,7 @@ import { Features } from '@/components/sections/features';
 import { EventDetails } from '@/components/sections/event-details';
 import { Navigation } from '@/components/layout/navigation';
 import { Footer } from '@/components/layout/footer';
+import { GallerySection } from '@/components/sections/gallery';
 
 export default function Home() {
   return (
@@ -10,6 +11,7 @@ export default function Home() {
       <Navigation />
       <Hero />
       <Features />
+      <GallerySection/>
       <EventDetails />
       <Footer />
     </div>
