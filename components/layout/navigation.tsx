@@ -411,12 +411,13 @@ export function Navigation() {
 
   // Public navigation items (always visible)
   const publicNavItems: NavItem[] = [
-    { name: 'Home', href: '/', icon: Home, public: true },
-    { name: 'Agenda', href: '/agenda', icon: Calendar, public: true },
-  ];
+    
+    ];
 
   // Protected navigation items (require authentication)
   const protectedNavItems: NavItem[] = [
+    { name: 'Home', href: '/', icon: Home, public: true },
+    { name: 'Agenda', href: '/agenda', icon: Calendar, public: true },
     { name: 'Check-in', href: '/checkin', icon: QrCode, requiresAuth: true },
     { name: 'My Profile', href: '/profile', icon: User, requiresAuth: true },
   ];
@@ -593,7 +594,7 @@ export function Navigation() {
             {/* Sign In Button for Guests */}
             {!isAuthenticated && status !== 'loading' && (
               <div className="ml-4">
-                <Link href="/auth/signin">
+                <Link href="/signin">
                   <Button 
                     size="sm" 
                     className="bg-gradient-to-r from-primary-600 to-secondary-500 hover:from-primary-700 hover:to-secondary-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
@@ -709,7 +710,7 @@ export function Navigation() {
                 </Button>
               ) : status === 'unauthenticated' ? (
                 <Link
-                  href="/auth/signin"
+                  href="/signin"
                   onClick={closeMobileMenu}
                 >
                   <Button 

@@ -98,7 +98,7 @@ import Link from "next/link";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-20 sm:py-32">
+    <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-10 sm:py-32">
       {/* Subtle alumni-themed background pattern */}
       <div className="absolute inset-0 bg-[url('/images/convention-pattern.svg')] opacity-10"></div>
 
