@@ -15,7 +15,7 @@ const mockDatabase = {
 export async function createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
   const user: User = {
     ...userData,
-    id: Math.random().toString(36).substr(2, 9),
+    id: Math.random().toString(36).substring(2, 11),
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -25,7 +25,8 @@ export async function createUser(userData: Omit<User, 'id' | 'createdAt' | 'upda
 }
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-  for (const user of mockDatabase.users.values()) {
+  const users = Array.from(mockDatabase.users.values());
+  for (const user of users) {
     if (user.email === email) {
       return user;
     }
@@ -43,8 +44,8 @@ export async function createRegistration(
 ): Promise<Registration> {
   const registration: Registration = {
     ...registrationData,
-    id: Math.random().toString(36).substr(2, 9),
-    qrCode: `QR_${Math.random().toString(36).toUpperCase().substr(2, 12)}`,
+    id: Math.random().toString(36).substring(2, 11),
+    qrCode: `QR_${Math.random().toString(36).toUpperCase().substring(2, 14)}`,
     qrCodeGenerated: true,
     checkedIn: false,
     createdAt: new Date(),
@@ -60,7 +61,8 @@ export async function getRegistrationById(id: string): Promise<Registration | nu
 }
 
 export async function getRegistrationByQRCode(qrCode: string): Promise<Registration | null> {
-  for (const registration of mockDatabase.registrations.values()) {
+  const registrations = Array.from(mockDatabase.registrations.values());
+  for (const registration of registrations) {
     if (registration.qrCode === qrCode) {
       return registration;
     }
@@ -72,7 +74,7 @@ export async function updateRegistration(id: string, updates: Partial<Registrati
   const registration = mockDatabase.registrations.get(id);
   if (!registration) return null;
   
-  const updated = {
+  const updated: Registration = {
     ...registration,
     ...updates,
     updatedAt: new Date(),
@@ -88,13 +90,13 @@ export async function getAllRegistrations(): Promise<Registration[]> {
 
 export async function getRegistrationsByStatus(paymentStatus: Registration['paymentStatus']): Promise<Registration[]> {
   return Array.from(mockDatabase.registrations.values()).filter(
-    reg => reg.paymentStatus === paymentStatus
+    (reg) => reg.paymentStatus === paymentStatus
   );
 }
 
 export async function getCheckedInRegistrations(): Promise<Registration[]> {
   return Array.from(mockDatabase.registrations.values()).filter(
-    reg => reg.checkedIn === true
+    (reg) => reg.checkedIn === true
   );
 }
 
@@ -102,7 +104,7 @@ export async function getCheckedInRegistrations(): Promise<Registration[]> {
 export async function createCheckInLog(logData: Omit<CheckInLog, 'id'>): Promise<CheckInLog> {
   const log: CheckInLog = {
     ...logData,
-    id: Math.random().toString(36).substr(2, 9),
+    id: Math.random().toString(36).substring(2, 11),
   };
   
   mockDatabase.checkInLogs.set(log.id, log);
@@ -182,7 +184,7 @@ export async function createGoodwillMessage(
 ): Promise<GoodwillMessage> {
   const message: GoodwillMessage = {
     ...messageData,
-    id: Math.random().toString(36).substr(2, 9),
+    id: Math.random().toString(36).substring(2, 11),
     approved: false,
     createdAt: new Date(),
   };
@@ -199,7 +201,7 @@ export async function approveGoodwillMessage(id: string, approvedBy: string): Pr
   const message = mockDatabase.goodwillMessages.get(id);
   if (!message) return null;
   
-  const updated = {
+  const updated: GoodwillMessage = {
     ...message,
     approved: true,
     approvedBy,
@@ -214,7 +216,7 @@ export async function approveGoodwillMessage(id: string, approvedBy: string): Pr
 export async function createDonation(donationData: Omit<Donation, 'id' | 'createdAt'>): Promise<Donation> {
   const donation: Donation = {
     ...donationData,
-    id: Math.random().toString(36).substr(2, 9),
+    id: Math.random().toString(36).substring(2, 11),
     createdAt: new Date(),
   };
   
@@ -244,11 +246,11 @@ export async function getRegistrationStats(): Promise<{
   
   return {
     total: registrations.length,
-    paid: registrations.filter(r => r.paymentStatus === 'completed').length,
-    pending: registrations.filter(r => r.paymentStatus === 'pending').length,
-    checkedIn: registrations.filter(r => r.checkedIn).length,
-    dinnerTickets: registrations.filter(r => r.dinnerTicket).length,
-    accommodation: registrations.filter(r => r.accommodationNeeded).length,
+    paid: registrations.filter((r) => r.paymentStatus === 'completed').length,
+    pending: registrations.filter((r) => r.paymentStatus === 'pending').length,
+    checkedIn: registrations.filter((r) => r.checkedIn).length,
+    dinnerTickets: registrations.filter((r) => r.dinnerTicket).length,
+    accommodation: registrations.filter((r) => r.accommodationNeeded).length,
   };
 }
 
@@ -264,26 +266,26 @@ export async function getRevenueStats(): Promise<{
   const donations = await getDonations();
   
   const totalRevenue = registrations
-    .filter(r => r.paymentStatus === 'completed')
+    .filter((r) => r.paymentStatus === 'completed')
     .reduce((total, r) => total + r.totalAmount, 0);
   
   const registrationRevenue = registrations
-    .filter(r => r.paymentStatus === 'completed')
+    .filter((r) => r.paymentStatus === 'completed')
     .reduce((total, r) => total + 50, 0); // Base registration fee
   
   const dinnerRevenue = registrations
-    .filter(r => r.paymentStatus === 'completed' && r.dinnerTicket)
+    .filter((r) => r.paymentStatus === 'completed' && r.dinnerTicket)
     .reduce((total, r) => total + 75, 0);
   
   const accommodationRevenue = registrations
-    .filter(r => r.paymentStatus === 'completed' && r.accommodationNeeded)
+    .filter((r) => r.paymentStatus === 'completed' && r.accommodationNeeded)
     .reduce((total, r) => {
       const rates = { standard: 100, premium: 200, luxury: 350 };
       return total + (rates[r.accommodationType as keyof typeof rates] || 0);
     }, 0);
   
   const goodwillRevenue = registrations
-    .filter(r => r.paymentStatus === 'completed' && r.goodwillAmount)
+    .filter((r) => r.paymentStatus === 'completed' && r.goodwillAmount)
     .reduce((total, r) => total + (r.goodwillAmount || 0), 0);
   
   const donationRevenue = donations.reduce((total, d) => total + d.amount, 0);
