@@ -10,8 +10,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export async function generateQrCode(data = []) {
-  data?.forEach(async (item: { paymentReference: string }) => {
+  console.log(data);
+
+  for (const item of data) {
     QRCode.toBuffer(
+      // @ts-ignore
       `${process.env.GOSA_PUBLIC_URL}?ref=${item?.paymentReference}`,
       {
         type: "png",
@@ -30,9 +33,11 @@ export async function generateQrCode(data = []) {
           buffer,
           data,
           phoneNumber: normalizePhoneNumber(
+            // @ts-ignore
             item?.paymentReference?.split("_")[1],
           ),
         });
+        // @ts-ignore
         const blob = await put(`${item?.paymentReference}.png`, buffer, {
           access: "public",
           addRandomSuffix: true,
@@ -40,6 +45,7 @@ export async function generateQrCode(data = []) {
 
         const res = await Wasender.httpSenderMessage({
           to: convertToInternationalFormat(
+            // @ts-ignore
             `${normalizePhoneNumber(item?.paymentReference?.split("_")[1] || "+2347033680280")}`,
           ),
           text: `Hi there, here is your ticket.\nThis is your access to the convention.\nThank you.\nGOSA convention 2025 committee.`,
@@ -47,7 +53,45 @@ export async function generateQrCode(data = []) {
         });
       },
     );
-  });
+  }
+  // data?.forEach(async (item: { paymentReference: string }) => {
+  //   QRCode.toBuffer(
+  //     `${process.env.GOSA_PUBLIC_URL}?ref=${item?.paymentReference}`,
+  //     {
+  //       type: "png",
+  //       // @ts-ignore
+  //       quality: 0.92,
+  //       margin: 1,
+  //       color: {
+  //         dark: "#000000",
+  //         light: "#FFFFFF",
+  //       },
+  //       width: 512,
+  //     },
+  //     async (error: Error | null | undefined, buffer: Buffer) => {
+  //       console.log({
+  //         error,
+  //         buffer,
+  //         data,
+  //         phoneNumber: normalizePhoneNumber(
+  //           item?.paymentReference?.split("_")[1],
+  //         ),
+  //       });
+  //       const blob = await put(`${item?.paymentReference}.png`, buffer, {
+  //         access: "public",
+  //         addRandomSuffix: true,
+  //       });
+
+  //       const res = await Wasender.httpSenderMessage({
+  //         to: convertToInternationalFormat(
+  //           `${normalizePhoneNumber(item?.paymentReference?.split("_")[1] || "+2347033680280")}`,
+  //         ),
+  //         text: `Hi there, here is your ticket.\nThis is your access to the convention.\nThank you.\nGOSA convention 2025 committee.`,
+  //         imageUrl: blob?.url,
+  //       });
+  //     },
+  //   );
+  // });
 }
 
 function convertToInternationalFormat(phoneNumber: string) {
