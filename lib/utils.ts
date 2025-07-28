@@ -51,6 +51,7 @@ export async function generateQrCode(data = []) {
 }
 
 function convertToInternationalFormat(phoneNumber: string) {
+  console.log("Convert To International Format: ", phoneNumber);
   // Remove any spaces, dashes, or other non-digit characters
   const cleanNumber = phoneNumber.replace(/\D/g, "");
 

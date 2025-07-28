@@ -10,6 +10,7 @@ const WasenderAxiosInstance = axios.create({
 
 class Sender {
   httpSenderMessage = async (data: any) => {
+    console.log("Whatsapp send: ", { data });
     try {
       const response = await WasenderAxiosInstance.post(`/send-message`, data);
       return response.data;
