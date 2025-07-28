@@ -10,7 +10,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export async function generateQrCode(data = []) {
-  console.log(data);
+  console.log({ data, url: process.env.GOSA_PUBLIC_URL });
 
   for (const item of data) {
     QRCode.toBuffer(
@@ -43,6 +43,8 @@ export async function generateQrCode(data = []) {
           addRandomSuffix: true,
         });
 
+        console.log({ blob });
+
         const res = await Wasender.httpSenderMessage({
           to: convertToInternationalFormat(
             // @ts-ignore
@@ -51,6 +53,8 @@ export async function generateQrCode(data = []) {
           text: `Hi there, here is your ticket.\nThis is your access to the convention.\nThank you.\nGOSA convention 2025 committee.`,
           imageUrl: blob?.url,
         });
+
+        console.log({ res });
       },
     );
   }
