@@ -7,6 +7,7 @@ export interface IConventionRegistration extends Document {
   quantity: number;
   confirm: boolean;
   collected: boolean;
+  checkIn: boolean;
   createdAt: Date;
   updatedAt: Date;
   persons: [];
@@ -40,6 +41,10 @@ const ConventionRegistrationSchema = new Schema<IConventionRegistration>(
       default: false,
     },
     collected: {
+      type: Boolean,
+      default: false,
+    },
+    checkIn: {
       type: Boolean,
       default: false,
     },
