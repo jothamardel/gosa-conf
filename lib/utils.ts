@@ -9,16 +9,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export async function generateQrCode(
-  data = [],
-  //   data: {
-  //   reference: string;
-  //   fullName: string;
-  //   phoneNumber: string;
-  //   quantity: number;
-  //   persons?: [];
-  // }
-) {
+export async function generateQrCode(data = []) {
   data?.forEach(async (item: { paymentReference: string }) => {
     QRCode.toBuffer(
       `${process.env.GOSA_PUBLIC_URL}?ref=${item?.paymentReference}`,
@@ -49,7 +40,7 @@ export async function generateQrCode(
 
         const res = await Wasender.httpSenderMessage({
           to: convertToInternationalFormat(
-            `${normalizePhoneNumber(item?.paymentReference?.split("_")[1]) || "+2347033680280"}`,
+            `${normalizePhoneNumber(item?.paymentReference?.split("_")[1] || "+2347033680280")}`,
           ),
           text: `Hi there, here is your ticket.\nThis is your access to the convention.\nThank you.\nGOSA convention 2025 committee.`,
           imageUrl: blob?.url,

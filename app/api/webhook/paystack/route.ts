@@ -19,22 +19,9 @@ export async function POST(req: NextRequest) {
   await generateQrCode(
     // @ts-ignore
     response,
-    //   {
-    //   fullName: response?.userId?.fullName,
-    //   phoneNumber: response?.userId?.phoneNumber,
-    //   reference: response?.paymentReference || (body?.data?.reference as string),
-    //   quantity: response?.quantity,
-    //   persons: response?.persons,
-    // }
   );
   console.log(response);
 
-  // receive webhook
-  // get reference
-  // check the reference in DB
-  // confirm payment
-  // generate QRCODE
-  // send to whatsapp number
   return NextResponse.json({
     message: "Successful",
     success: true,
