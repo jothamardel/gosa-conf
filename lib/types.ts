@@ -1,9 +1,10 @@
+import { Types } from "mongoose";
 // Database Types
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'user' | 'admin';
+  role: "user" | "admin";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,39 +18,39 @@ export interface Registration {
   phone: string;
   organization?: string;
   jobTitle?: string;
-  
+
   // Event Options
   dinnerTicket: boolean;
   accommodationNeeded: boolean;
-  accommodationType?: 'standard' | 'premium' | 'luxury';
-  
+  accommodationType?: "standard" | "premium" | "luxury";
+
   // Additional Services
   brochurePurchase: boolean;
   goodwillMessage: boolean;
   goodwillText?: string;
   goodwillAmount?: number;
   goodwillApproved?: boolean;
-  
+
   // Donations
   donation: boolean;
   donationAmount?: number;
   donationAnonymous: boolean;
-  
+
   // Payment
   totalAmount: number;
-  paymentStatus: 'pending' | 'completed' | 'failed';
+  paymentStatus: "pending" | "completed" | "failed";
   paymentId?: string;
-  paymentProvider?: 'paystack' | 'flutterwave';
-  
+  paymentProvider?: "paystack" | "flutterwave";
+
   // QR Code
   qrCode: string;
   qrCodeGenerated: boolean;
-  
+
   // Check-in
   checkedIn: boolean;
   checkInTime?: Date;
   checkInBy?: string;
-  
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -138,7 +139,27 @@ export interface PaymentInitiation {
 
 export interface PaymentVerification {
   reference: string;
-  status: 'success' | 'failed';
+  status: "success" | "failed";
   amount: number;
   transaction_date: string;
+}
+
+export interface RegistrationType {
+  email: string;
+  fullName: string;
+  phoneNumber: string;
+  amount: number;
+  quantity: number;
+  persons: [];
+}
+
+// Generic interface for all payment-based collections
+export interface PaymentRecord {
+  userId: Types.ObjectId;
+  paymentReference: string;
+  amount: number;
+  quantity: number;
+  confirm: boolean;
+  collected: boolean;
+  persons: [];
 }
