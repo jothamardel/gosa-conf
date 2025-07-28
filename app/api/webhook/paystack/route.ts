@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate QR codes and send messages - now properly awaited
+    // @ts-ignore
     const qrResults = await generateQrCode(response);
 
     console.log("QR code generation results:", qrResults);
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
       processed: qrResults.length,
       details: qrResults,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Route handler error:", error);
     return NextResponse.json(
       {

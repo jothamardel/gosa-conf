@@ -10,6 +10,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 export async function generateQrCode(data = []) {
   console.log({ data, url: process.env.GOSA_PUBLIC_URL });
+  if (!data) return [];
 
   // Process all items in parallel
   const promises = data.map(async (item: { paymentReference: string }) => {
