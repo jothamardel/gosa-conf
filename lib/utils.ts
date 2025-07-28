@@ -8,94 +8,88 @@ import QRCode from "qrcode";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
 export async function generateQrCode(data = []) {
   console.log({ data, url: process.env.GOSA_PUBLIC_URL });
 
-  for (const item of data) {
-    QRCode.toBuffer(
-      // @ts-ignore
-      `${process.env.GOSA_PUBLIC_URL}?ref=${item?.paymentReference}`,
-      {
-        type: "png",
-        // @ts-ignore
-        quality: 0.92,
-        margin: 1,
-        color: {
-          dark: "#000000",
-          light: "#FFFFFF",
-        },
-        width: 512,
-      },
-      async (error: Error | null | undefined, buffer: Buffer) => {
-        console.log({
-          error,
-          buffer,
-          data,
-          phoneNumber: normalizePhoneNumber(
+  // Process all items in parallel
+  const promises = data.map(async (item: { paymentReference: string }) => {
+    try {
+      // Promisify QRCode.toBuffer
+      const buffer = await new Promise<Buffer>((resolve, reject) => {
+        QRCode.toBuffer(
+          `${process.env.GOSA_PUBLIC_URL}?ref=${item?.paymentReference}`,
+          {
+            type: "png",
             // @ts-ignore
-            item?.paymentReference?.split("_")[1],
-          ),
-        });
-        // @ts-ignore
-        const blob = await put(`${item?.paymentReference}.png`, buffer, {
-          access: "public",
-          addRandomSuffix: true,
-        });
+            quality: 0.92,
+            margin: 1,
+            color: {
+              dark: "#000000",
+              light: "#FFFFFF",
+            },
+            width: 512,
+          },
+          (error: Error | null | undefined, buffer: Buffer) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(buffer);
+            }
+          },
+        );
+      });
 
-        console.log({ blob });
+      console.log({
+        buffer,
+        data,
+        phoneNumber: normalizePhoneNumber(
+          item?.paymentReference?.split("_")[1],
+        ),
+      });
 
-        const res = await Wasender.httpSenderMessage({
-          to: convertToInternationalFormat(
-            // @ts-ignore
-            `${normalizePhoneNumber(item?.paymentReference?.split("_")[1] || "+2347033680280")}`,
-          ),
-          text: `Hi there, here is your ticket.\nThis is your access to the convention.\nThank you.\nGOSA convention 2025 committee.`,
-          imageUrl: blob?.url,
-        });
+      // Upload the QR code image
+      const blob = await put(`${item?.paymentReference}.png`, buffer, {
+        access: "public",
+        addRandomSuffix: true,
+      });
 
-        console.log({ res });
-      },
-    );
-  }
-  // data?.forEach(async (item: { paymentReference: string }) => {
-  //   QRCode.toBuffer(
-  //     `${process.env.GOSA_PUBLIC_URL}?ref=${item?.paymentReference}`,
-  //     {
-  //       type: "png",
-  //       // @ts-ignore
-  //       quality: 0.92,
-  //       margin: 1,
-  //       color: {
-  //         dark: "#000000",
-  //         light: "#FFFFFF",
-  //       },
-  //       width: 512,
-  //     },
-  //     async (error: Error | null | undefined, buffer: Buffer) => {
-  //       console.log({
-  //         error,
-  //         buffer,
-  //         data,
-  //         phoneNumber: normalizePhoneNumber(
-  //           item?.paymentReference?.split("_")[1],
-  //         ),
-  //       });
-  //       const blob = await put(`${item?.paymentReference}.png`, buffer, {
-  //         access: "public",
-  //         addRandomSuffix: true,
-  //       });
+      console.log({ blob });
 
-  //       const res = await Wasender.httpSenderMessage({
-  //         to: convertToInternationalFormat(
-  //           `${normalizePhoneNumber(item?.paymentReference?.split("_")[1] || "+2347033680280")}`,
-  //         ),
-  //         text: `Hi there, here is your ticket.\nThis is your access to the convention.\nThank you.\nGOSA convention 2025 committee.`,
-  //         imageUrl: blob?.url,
-  //       });
-  //     },
-  //   );
-  // });
+      // Send the WhatsApp message
+      const res = await Wasender.httpSenderMessage({
+        to: convertToInternationalFormat(
+          `${normalizePhoneNumber(item?.paymentReference?.split("_")[1] || "+2347033680280")}`,
+        ),
+        text: `Hi there, here is your ticket.\nThis is your access to the convention.\nThank you.\nGOSA convention 2025 committee.`,
+        imageUrl: blob?.url,
+      });
+
+      console.log({ res });
+
+      return { success: true, item: item.paymentReference, result: res };
+    } catch (error: any) {
+      console.error(`Error processing item ${item?.paymentReference}:`, error);
+      return {
+        success: false,
+        item: item.paymentReference,
+        error: error.message,
+      };
+    }
+  });
+
+  // Wait for all operations to complete
+  const results = await Promise.allSettled(promises);
+
+  // Log results
+  results.forEach((result, index) => {
+    if (result.status === "fulfilled") {
+      console.log(`Item ${index + 1} processed successfully:`, result.value);
+    } else {
+      console.error(`Item ${index + 1} failed:`, result.reason);
+    }
+  });
+
+  return results;
 }
 
 function convertToInternationalFormat(phoneNumber: string) {
