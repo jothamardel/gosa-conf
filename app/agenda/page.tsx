@@ -1,6 +1,6 @@
-import { EventAgenda } from '@/components/agenda/event-agenda';
-import { Navigation } from '@/components/layout/navigation';
-import { Footer } from '@/components/layout/footer';
+import { EventAgenda } from "@/components/agenda/event-agenda";
+import { Navigation } from "@/components/layout/navigation";
+import { Footer } from "@/components/layout/footer";
 
 export default function AgendaPage() {
   return (
@@ -14,10 +14,11 @@ export default function AgendaPage() {
               <span className="gradient-text"> Agenda</span>
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Discover our comprehensive three-day program featuring industry experts, networking sessions, and engaging workshops.
+              Discover our comprehensive five-day program featuring industry
+              experts, networking sessions, and engaging workshops.
             </p>
           </div>
-          
+
           <EventAgenda />
         </div>
       </div>

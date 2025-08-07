@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     }
     console.log(body);
     const newUser = await UserUtils.findOrCreateUser(body);
+    console.log();
     const paymentUrl = await Payment.httpInitializePayment(body);
     const newConventionRecord = await ConventionUtils.createRegistration({
       amount: body?.amount,

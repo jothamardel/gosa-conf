@@ -32,12 +32,12 @@
 //               </div>
 //               <span className="text-2xl font-bold">Convention 2024</span>
 //             </div>
-            
+
 //             <p className="text-gray-300 mb-6 leading-relaxed max-w-md">
-//               Join us for an unforgettable experience at the premier annual convention. 
+//               Join us for an unforgettable experience at the premier annual convention.
 //               Connect, learn, and grow with industry leaders and peers.
 //             </p>
-            
+
 //             <div className="flex space-x-4">
 //               {socialLinks.map((social) => (
 //                 <a
@@ -51,7 +51,7 @@
 //               ))}
 //             </div>
 //           </div>
-          
+
 //           {/* Quick Links */}
 //           <div>
 //             <h3 className="text-lg font-semibold mb-6">Quick Links</h3>
@@ -68,7 +68,7 @@
 //               ))}
 //             </ul>
 //           </div>
-          
+
 //           {/* Contact Info */}
 //           <div>
 //             <h3 className="text-lg font-semibold mb-6">Contact Info</h3>
@@ -88,7 +88,7 @@
 //             </div>
 //           </div>
 //         </div>
-        
+
 //         <div className="border-t border-gray-800 mt-12 pt-8">
 //           <div className="flex flex-col md:flex-row justify-between items-center">
 //             <p className="text-gray-400 text-sm">
@@ -109,27 +109,35 @@
 //   );
 // }
 
+"use client";
 
-'use client';
-
-import Link from 'next/link';
-import { Calendar, Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
+import Link from "next/link";
+import {
+  Calendar,
+  Mail,
+  Phone,
+  MapPin,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Instagram,
+} from "lucide-react";
 
 export function Footer() {
   const socialLinks = [
-    { icon: Facebook, href: '#', label: 'Facebook' },
-    { icon: Twitter, href: '#', label: 'Twitter' },
-    { icon: Linkedin, href: '#', label: 'LinkedIn' },
-    { icon: Instagram, href: '#', label: 'Instagram' },
+    { icon: Facebook, href: "#", label: "Facebook" },
+    { icon: Twitter, href: "#", label: "Twitter" },
+    { icon: Linkedin, href: "#", label: "LinkedIn" },
+    { icon: Instagram, href: "#", label: "Instagram" },
   ];
 
   const quickLinks = [
-    { name: 'Home', href: '/' },
-    { name: 'Register', href: '/register' },
-    { name: 'Agenda', href: '/agenda' },
-    { name: 'Check-in', href: '/checkin' },
-    { name: 'Accommodation', href: '/accommodation' },
-    { name: 'Donations', href: '/donations' },
+    { name: "Home", href: "/" },
+    { name: "Register", href: "/register" },
+    { name: "Agenda", href: "/agenda" },
+    { name: "Check-in", href: "/checkin" },
+    { name: "Accommodation", href: "/accommodation" },
+    { name: "Donations", href: "/donations" },
   ];
 
   return (
@@ -142,14 +150,13 @@ export function Footer() {
               <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-secondary-500 rounded-lg flex items-center justify-center">
                 <Calendar className="w-5 h-5 text-white" />
               </div>
-              <span className="text-2xl font-bold">AlumniCon 2024</span>
+              <span className="text-2xl font-bold">GOSA Convention 2025</span>
             </div>
-            
+
             <p className="text-gray-300 mb-6 leading-relaxed max-w-md">
-              Reconnect with your alma mater at the premier alumni convention. 
-              Celebrate memories while building new professional connections.
+              For light and truth.
             </p>
-            
+
             <div className="flex space-x-4">
               {socialLinks.map((social) => (
                 <a
@@ -163,10 +170,12 @@ export function Footer() {
               ))}
             </div>
           </div>
-          
+
           {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-semibold mb-6 text-primary-100">Quick Links</h3>
+            <h3 className="text-lg font-semibold mb-6 text-primary-100">
+              Quick Links
+            </h3>
             <ul className="space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.name}>
@@ -181,10 +190,12 @@ export function Footer() {
               ))}
             </ul>
           </div>
-          
+
           {/* Contact Info */}
           <div>
-            <h3 className="text-lg font-semibold mb-6 text-primary-100">Contact Us</h3>
+            <h3 className="text-lg font-semibold mb-6 text-primary-100">
+              Contact Us
+            </h3>
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
                 <Mail className="w-5 h-5 text-primary-400 mt-0.5 flex-shrink-0" />
@@ -197,27 +208,37 @@ export function Footer() {
               <div className="flex items-start space-x-3">
                 <MapPin className="w-5 h-5 text-primary-400 mt-0.5 flex-shrink-0" />
                 <span className="text-gray-300">
-                  University Convention Center<br />
+                  University Convention Center
+                  <br />
                   123 Alumni Way, Campus City
                 </span>
               </div>
             </div>
           </div>
         </div>
-        
+
         <div className="border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
               © 2024 Your University Alumni Association. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <Link href="/privacy" className="text-gray-400 hover:text-primary-400 text-sm transition-colors duration-300">
+              <Link
+                href="/privacy"
+                className="text-gray-400 hover:text-primary-400 text-sm transition-colors duration-300"
+              >
                 Privacy Policy
               </Link>
-              <Link href="/terms" className="text-gray-400 hover:text-primary-400 text-sm transition-colors duration-300">
+              <Link
+                href="/terms"
+                className="text-gray-400 hover:text-primary-400 text-sm transition-colors duration-300"
+              >
                 Terms of Service
               </Link>
-              <Link href="/contact" className="text-gray-400 hover:text-primary-400 text-sm transition-colors duration-300">
+              <Link
+                href="/contact"
+                className="text-gray-400 hover:text-primary-400 text-sm transition-colors duration-300"
+              >
                 Contact
               </Link>
             </div>

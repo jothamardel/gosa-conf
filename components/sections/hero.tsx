@@ -87,13 +87,18 @@
 //   );
 // }
 
-
-
-
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Sparkles, Handshake, GraduationCap, BookOpen } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  Users,
+  Sparkles,
+  Handshake,
+  GraduationCap,
+  BookOpen,
+} from "lucide-react";
 import Link from "next/link";
 
 export function Hero() {
@@ -106,17 +111,20 @@ export function Hero() {
         <div className="text-center">
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-primary-100 to-secondary-100 text-primary-800 text-sm font-medium mb-8 animate-fade-in">
             <Sparkles className="w-4 h-4 mr-2" />
-            Alumni Convention & Reunion 2024 • Register Today
+            Alumni Convention & Reunion 2025 • Register Today
           </div>
 
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 animate-fade-in">
-            <span className="block">Where Legacy Meets</span>
-            <span className="gradient-text">Future Connections</span>
+            <span className="block">Nuturing Excellence</span>
+            <span className="gradient-text">
+              Strengthen bonds for a brighter future.
+            </span>
           </h1>
 
           <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed animate-fade-in">
-            Professional development meets cherished memories at our premier alumni convention. 
-            Featuring keynote speakers, career networking, and special reunion events.
+            Professional development meets cherished memories at our premier
+            alumni convention. Featuring keynote speakers, career networking,
+            and special reunion events.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-fade-in">
@@ -125,11 +133,11 @@ export function Hero() {
                 size="lg"
                 className="bg-gradient-to-r from-primary-600 to-secondary-500 hover:from-primary-700 hover:to-secondary-600 text-white px-8 py-4 text-lg font-semibold shadow-lg hover-lift"
               >
-                Secure Your Spot
+                Register
                 <GraduationCap className="ml-2 w-5 h-5" />
               </Button>
             </Link>
-            <Link href="/program">
+            <Link href="/agenda">
               <Button
                 variant="outline"
                 size="lg"
@@ -145,10 +153,10 @@ export function Hero() {
             <div className="glass-card p-6 rounded-2xl hover-lift animate-fade-in">
               <Calendar className="w-12 h-12 text-primary-600 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Nov 15-17, 2024
+                October 29th - 2nd November, 2025
               </h3>
               <p className="text-gray-600">
-                3 days of professional sessions + reunion activities
+                5 days sessions + reunion activities
               </p>
             </div>
 
@@ -167,9 +175,7 @@ export function Hero() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Dual Focus
               </h3>
-              <p className="text-gray-600">
-                Career networking + class reunions
-              </p>
+              <p className="text-gray-600">networking + class reunions</p>
             </div>
           </div>
         </div>

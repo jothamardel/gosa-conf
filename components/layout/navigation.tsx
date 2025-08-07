@@ -42,7 +42,7 @@
 // //                 <span>{item.name}</span>
 // //               </Link>
 // //             ))}
-            
+
 // //             {session ? (
 // //               <div className="flex items-center space-x-4">
 // //                 {session.user?.role === 'admin' && (
@@ -52,8 +52,8 @@
 // //                     </Button>
 // //                   </Link>
 // //                 )}
-// //                 <Button 
-// //                   variant="outline" 
+// //                 <Button
+// //                   variant="outline"
 // //                   size="sm"
 // //                   onClick={() => signOut()}
 // //                 >
@@ -103,7 +103,7 @@
 // //                 <span>{item.name}</span>
 // //               </Link>
 // //             ))}
-            
+
 // //             <div className="pt-4 border-t border-gray-200">
 // //               {session ? (
 // //                 <div className="space-y-2">
@@ -119,9 +119,9 @@
 // //                     </Link>
 // //                   )}
 // //                   <div className="px-3 py-2">
-// //                     <Button 
-// //                       variant="outline" 
-// //                       size="sm" 
+// //                     <Button
+// //                       variant="outline"
+// //                       size="sm"
 // //                       className="w-full"
 // //                       onClick={() => {
 // //                         signOut();
@@ -226,7 +226,7 @@
 //                 </Link>
 //               );
 //             })}
-            
+
 //             {session ? (
 //               <div className="flex items-center space-x-4">
 //                 {session.user?.role === 'admin' && (
@@ -236,8 +236,8 @@
 //                     </Button>
 //                   </Link>
 //                 )}
-//                 <Button 
-//                   variant="outline" 
+//                 <Button
+//                   variant="outline"
 //                   size="sm"
 //                   onClick={handleSignOut}
 //                 >
@@ -291,7 +291,7 @@
 //                 </Link>
 //               );
 //             })}
-            
+
 //             <div className="pt-4 border-t border-gray-200">
 //               {session ? (
 //                 <div className="space-y-2">
@@ -307,9 +307,9 @@
 //                     </Link>
 //                   )}
 //                   <div className="px-3 py-2">
-//                     <Button 
-//                       variant="outline" 
-//                       size="sm" 
+//                     <Button
+//                       variant="outline"
+//                       size="sm"
 //                       className="w-full"
 //                       onClick={handleMobileSignOut}
 //                     >
@@ -347,29 +347,27 @@
 //   );
 // }
 
+"use client";
 
-
-
-'use client';
-
-import Link from 'next/link';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { 
-  Menu, 
-  X, 
-  Calendar, 
-  Users, 
-  QrCode, 
-  Home, 
-  LogIn, 
-  User, 
+import Link from "next/link";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Menu,
+  X,
+  Calendar,
+  Users,
+  QrCode,
+  Home,
+  LogIn,
+  User,
   Shield,
   Lock,
   ChevronDown,
-  LucideIcon
-} from 'lucide-react';
-import { useSession, signOut } from 'next-auth/react';
+  LucideIcon,
+  Wallet,
+} from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
 
 // Type definitions
 interface NavItem {
@@ -388,7 +386,7 @@ interface ProtectedLinkProps {
 }
 
 // Extend the session user type to include role
-declare module 'next-auth' {
+declare module "next-auth" {
   interface User {
     role?: string;
   }
@@ -405,45 +403,43 @@ export function Navigation() {
   const { data: session, status } = useSession();
 
   // Safe role checking with fallback
-  const userRole = session?.user?.role || 'guest';
-  const isAuthenticated = status === 'authenticated';
-  const isAdmin = isAuthenticated && userRole === 'admin';
+  const userRole = session?.user?.role || "guest";
+  const isAuthenticated = status === "authenticated";
+  const isAdmin = isAuthenticated && userRole === "admin";
 
   // Public navigation items (always visible)
-  const publicNavItems: NavItem[] = [
-    
-    ];
+  const publicNavItems: NavItem[] = [];
 
   // Protected navigation items (require authentication)
   const protectedNavItems: NavItem[] = [
-    { name: 'Home', href: '/', icon: Home, public: true },
-    { name: 'Agenda', href: '/agenda', icon: Calendar, public: true },
-    { name: 'Check-in', href: '/checkin', icon: QrCode, requiresAuth: true },
-    { name: 'My Profile', href: '/profile', icon: User, requiresAuth: true },
+    { name: "Home", href: "/", icon: Home, public: true },
+    { name: "Agenda", href: "/agenda", icon: Calendar, public: true },
+    { name: "Check-in", href: "/checkin", icon: QrCode, requiresAuth: true },
+    { name: "My Profile", href: "/profile", icon: User, requiresAuth: true },
   ];
 
   // Guest-only navigation items
   const guestNavItems: NavItem[] = [
-    { name: 'Register', href: '/register', icon: Users, guestOnly: true },
+    { name: "Register", href: "/register", icon: Users, guestOnly: true },
   ];
 
   // Get navigation items based on authentication status
   const getNavItems = (): NavItem[] => {
     const items: NavItem[] = [...publicNavItems];
-    
+
     if (isAuthenticated) {
       items.push(...protectedNavItems);
     } else {
       items.push(...guestNavItems);
     }
-    
+
     return items;
   };
 
   const navItems = getNavItems();
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/' });
+    await signOut({ callbackUrl: "/" });
     setShowUserMenu(false);
   };
 
@@ -456,13 +452,19 @@ export function Navigation() {
   const toggleUserMenu = () => setShowUserMenu(!showUserMenu);
 
   // Protected Link Component with Lock Icon
-  const ProtectedLink: React.FC<ProtectedLinkProps> = ({ item, onClick, className }) => {
+  const ProtectedLink: React.FC<ProtectedLinkProps> = ({
+    item,
+    onClick,
+    className,
+  }) => {
     const IconComponent = item.icon;
     const isProtected = item.requiresAuth && !isAuthenticated;
-    
+
     if (isProtected) {
       return (
-        <div className={`${className} opacity-60 cursor-not-allowed relative group`}>
+        <div
+          className={`${className} opacity-60 cursor-not-allowed relative group`}
+        >
           <div className="flex items-center space-x-2">
             <Lock className="w-4 h-4 text-gray-400" />
             <IconComponent className="w-4 h-4" />
@@ -476,11 +478,7 @@ export function Navigation() {
     }
 
     return (
-      <Link
-        href={item.href}
-        className={className}
-        onClick={onClick}
-      >
+      <Link href={item.href} className={className} onClick={onClick}>
         <IconComponent className="w-4 h-4" />
         <span>{item.name}</span>
       </Link>
@@ -498,8 +496,12 @@ export function Navigation() {
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-bold gradient-text">Convention 2024</span>
-                <span className="text-xs text-gray-500 -mt-1">Digital Experience</span>
+                <span className="text-xl font-bold gradient-text">
+                  GOSA Convention 2025
+                </span>
+                <span className="text-xs text-gray-500 -mt-1">
+                  For light and truth
+                </span>
               </div>
             </Link>
           </div>
@@ -513,7 +515,7 @@ export function Navigation() {
                 className="text-gray-600 hover:text-primary-600 hover:bg-primary-50 px-4 py-2 text-sm font-medium transition-all duration-200 flex items-center space-x-2 rounded-lg"
               />
             ))}
-            
+
             {/* User Menu for Authenticated Users */}
             {isAuthenticated && (
               <div className="relative ml-4">
@@ -525,10 +527,12 @@ export function Navigation() {
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <span className="max-w-32 truncate">
-                    {session?.user?.name || session?.user?.email || 'User'}
+                    {session?.user?.name || session?.user?.email || "User"}
                   </span>
                   {isAdmin && <Shield className="w-4 h-4 text-amber-500" />}
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-200 ${showUserMenu ? "rotate-180" : ""}`}
+                  />
                 </button>
 
                 {/* User Dropdown Menu */}
@@ -536,17 +540,19 @@ export function Navigation() {
                   <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
                     <div className="px-4 py-3 border-b border-gray-100">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        {session?.user?.name || 'User'}
+                        {session?.user?.name || "User"}
                       </p>
                       <p className="text-xs text-gray-500 truncate">
                         {session?.user?.email}
                       </p>
                       <div className="flex items-center space-x-2 mt-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          isAdmin 
-                            ? 'bg-amber-100 text-amber-800' 
-                            : 'bg-green-100 text-green-800'
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            isAdmin
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
                           {isAdmin ? (
                             <>
                               <Shield className="w-3 h-3 mr-1" />
@@ -561,11 +567,11 @@ export function Navigation() {
                         </span>
                       </div>
                     </div>
-                    
+
                     {/* Admin Dashboard Link */}
                     {isAdmin && (
-                      <Link 
-                        href="/admin" 
+                      <Link
+                        href="/admin"
                         className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 transition-colors duration-200"
                         onClick={() => setShowUserMenu(false)}
                       >
@@ -576,7 +582,7 @@ export function Navigation() {
                         </span>
                       </Link>
                     )}
-                    
+
                     <div className="border-t border-gray-100 mt-2">
                       <button
                         onClick={handleSignOut}
@@ -592,22 +598,22 @@ export function Navigation() {
             )}
 
             {/* Sign In Button for Guests */}
-            {!isAuthenticated && status !== 'loading' && (
+            {!isAuthenticated && status !== "loading" && (
               <div className="ml-4">
                 <Link href="/signin">
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     className="bg-gradient-to-r from-primary-600 to-secondary-500 hover:from-primary-700 hover:to-secondary-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
                   >
-                    <LogIn className="w-4 h-4 mr-2" />
-                    Sign In
+                    <Wallet className="w-4 h-4 mr-2" />
+                    Donate
                   </Button>
                 </Link>
               </div>
             )}
 
             {/* Loading State */}
-            {status === 'loading' && (
+            {status === "loading" && (
               <div className="ml-4 flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full" />
                 <div className="w-20 h-4 bg-gray-200 animate-pulse rounded" />
@@ -622,7 +628,11 @@ export function Navigation() {
               className="text-gray-600 hover:text-primary-600 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
               aria-label="Toggle mobile menu"
             >
-              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {isOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
             </button>
           </div>
         </div>
@@ -641,16 +651,18 @@ export function Navigation() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">
-                      {session?.user?.name || 'User'}
+                      {session?.user?.name || "User"}
                     </p>
                     <p className="text-xs text-gray-600 truncate">
                       {session?.user?.email}
                     </p>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
-                      isAdmin 
-                        ? 'bg-amber-100 text-amber-800' 
-                        : 'bg-green-100 text-green-800'
-                    }`}>
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                        isAdmin
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-green-100 text-green-800"
+                      }`}
+                    >
                       {isAdmin ? (
                         <>
                           <Shield className="w-3 h-3 mr-1" />
@@ -677,7 +689,7 @@ export function Navigation() {
                 className="text-gray-600 hover:text-primary-600 hover:bg-primary-50 block px-4 py-3 text-base font-medium transition-all duration-200 flex items-center space-x-3 rounded-lg"
               />
             ))}
-            
+
             {/* Admin Dashboard for Mobile */}
             {isAdmin && (
               <Link
@@ -696,9 +708,9 @@ export function Navigation() {
             {/* Auth Section for Mobile */}
             <div className="pt-4 border-t border-gray-200 space-y-2">
               {isAuthenticated ? (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
                   onClick={() => {
                     handleSignOut();
@@ -708,13 +720,10 @@ export function Navigation() {
                   <LogIn className="w-4 h-4 mr-2 rotate-180" />
                   Sign Out
                 </Button>
-              ) : status === 'unauthenticated' ? (
-                <Link
-                  href="/signin"
-                  onClick={closeMobileMenu}
-                >
-                  <Button 
-                    size="sm" 
+              ) : status === "unauthenticated" ? (
+                <Link href="/signin" onClick={closeMobileMenu}>
+                  <Button
+                    size="sm"
                     className="w-full bg-gradient-to-r from-primary-600 to-secondary-500 hover:from-primary-700 hover:to-secondary-600 text-white shadow-md"
                   >
                     <LogIn className="w-4 h-4 mr-2" />
@@ -731,8 +740,8 @@ export function Navigation() {
 
       {/* Overlay for mobile menu */}
       {(isOpen || showUserMenu) && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-25 z-40 md:hidden" 
+        <div
+          className="fixed inset-0 bg-black bg-opacity-25 z-40 md:hidden"
           onClick={closeMobileMenu}
         />
       )}
