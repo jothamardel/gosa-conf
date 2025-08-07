@@ -117,7 +117,7 @@ export function Hero() {
             Alumni Convention & Reunion 2025 • Register Today
           </div>
 
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 animate-fade-in">
+          <h1 className="text-4xl sm:text-6xl lg:text-5xl font-bold text-gray-900 mb-6 animate-fade-in">
             <span className="block">Nuturing Excellence</span>
             <span className="gradient-text">
               Strengthen bonds for a brighter future.
@@ -181,7 +181,7 @@ export function Hero() {
               <p className="text-gray-600">networking + class reunions</p>
             </div>
           </div>
-        </div>>
+        </div>
       </div>
     </section>
   );
