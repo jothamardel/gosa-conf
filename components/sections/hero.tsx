@@ -103,11 +103,14 @@ import Link from "next/link";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-10 sm:py-32">
+    <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-10 sm:py-20">
       {/* Subtle alumni-themed background pattern */}
       <div className="absolute inset-0 bg-[url('/images/convention-pattern.svg')] opacity-10"></div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className=" w-full flex justify-center ">
+          <img src="/images/gosa.png" className="w-52" />
+        </div>
         <div className="text-center">
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-primary-100 to-secondary-100 text-primary-800 text-sm font-medium mb-8 animate-fade-in">
             <Sparkles className="w-4 h-4 mr-2" />
@@ -178,7 +181,7 @@ export function Hero() {
               <p className="text-gray-600">networking + class reunions</p>
             </div>
           </div>
-        </div>
+        </div>>
       </div>
     </section>
   );
