@@ -31,8 +31,7 @@ export async function POST(req: NextRequest) {
     if (!messageValidation.valid) {
       return NextResponse.json({
         success: false,
-        message: "Message validation failed",
-        errors: messageValidation.errors,
+        message: messageValidation.message || "Message validation failed",
       }, { status: 400 });
     }
 
@@ -41,13 +40,12 @@ export async function POST(req: NextRequest) {
     if (!amountValidation.valid) {
       return NextResponse.json({
         success: false,
-        message: "Donation amount validation failed",
-        errors: amountValidation.errors,
+        message: amountValidation.message || "Donation amount validation failed",
       }, { status: 400 });
     }
 
     // Find or create user
-    const user = await UserUtils.findOrCreateUser({
+    const user: any = await UserUtils.findOrCreateUser({
       fullName: body.fullName,
       email: body.email,
       phoneNumber: body.phoneNumber,
@@ -60,7 +58,7 @@ export async function POST(req: NextRequest) {
       callback_url: `${process.env.NEXTAUTH_URL}/api/webhook/paystack`,
       metadata: {
         type: 'goodwill',
-        userId: user._id.toString(),
+        userId: (user as any)._id.toString(),
         anonymous: body.anonymous,
         messageLength: body.message.length,
       },
@@ -80,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     // Create goodwill message record
     const message = await GoodwillUtils.createMessage({
-      userId: user._id,
+      userId: (user as any)._id,
       paymentReference,
       message: body.message,
       donationAmount: body.donationAmount,
@@ -125,7 +123,7 @@ export async function GET(req: NextRequest) {
 
     if (pending === "true") {
       // Get pending messages for admin approval
-      result = await GoodwillUtils.getPendingMessages({ page, limit });
+      result = await GoodwillUtils.getPendingMessages();
     } else if (approved === "true") {
       // Get approved messages for public display
       const options: any = { page, limit };
@@ -151,8 +149,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Goodwill messages fetched successfully",
-      data: result.messages,
-      pagination: result.pagination,
+      data: Array.isArray(result) ? result : result.messages,
+      pagination: Array.isArray(result) ? undefined : result.pagination,
     });
 
   } catch (error: any) {
