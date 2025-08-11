@@ -51,3 +51,4 @@ async function connectDB(): Promise<mongoose.Connection> {
 }
 
 export default connectDB;
+export { connectDB as connectToDatabase };

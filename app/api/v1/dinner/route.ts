@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const totalAmount = DinnerUtils.calculateTotalAmount(body.numberOfGuests);
 
     // Find or create user
-    const user = await UserUtils.findOrCreateUser({
+    const user: any = await UserUtils.findOrCreateUser({
       fullName: body.fullName,
       email: body.email,
       phoneNumber: body.phoneNumber,

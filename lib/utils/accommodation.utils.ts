@@ -353,6 +353,61 @@ export class AccommodationUtils {
   }
 
   /**
+   * Validate guest details
+   */
+  static validateGuestDetails(guestDetails: IAccommodationGuest[]): {
+    valid: boolean;
+    errors?: string[];
+  } {
+    const errors: string[] = [];
+
+    if (!Array.isArray(guestDetails)) {
+      return {
+        valid: false,
+        errors: ["Guest details must be an array"]
+      };
+    }
+
+    if (guestDetails.length === 0) {
+      return {
+        valid: false,
+        errors: ["At least one guest detail is required"]
+      };
+    }
+
+    guestDetails.forEach((guest, index) => {
+      if (!guest.name || guest.name.trim().length === 0) {
+        errors.push(`Guest ${index + 1}: Name is required`);
+      }
+
+      if (guest.name && guest.name.trim().length > 100) {
+        errors.push(`Guest ${index + 1}: Name must be less than 100 characters`);
+      }
+
+      // Validate email format if provided
+      if (guest.email && guest.email.trim().length > 0) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(guest.email)) {
+          errors.push(`Guest ${index + 1}: Invalid email format`);
+        }
+      }
+
+      // Validate phone format if provided
+      if (guest.phone && guest.phone.trim().length > 0) {
+        const phoneRegex = /^(\+?234[789]\d{8}|0[789]\d{8}|\+?[1-9]\d{7,14})$/;
+        if (!phoneRegex.test(guest.phone.replace(/[\s\-\(\)]/g, ''))) {
+          errors.push(`Guest ${index + 1}: Invalid phone format`);
+        }
+      }
+    });
+
+    return {
+      valid: errors.length === 0,
+      errors: errors.length > 0 ? errors : undefined
+    };
+  }
+
+  /**
    * Get bookings by accommodation type
    */
   static async getBookingsByType(accommodationType: 'standard' | 'premium' | 'luxury'): Promise<IAccommodation[]> {
