@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const totalAmount = BrochureUtils.calculateTotalAmount(body.quantity, body.brochureType);
 
     // Find or create user
-    const user = await UserUtils.findOrCreateUser({
+    const user: any = await UserUtils.findOrCreateUser({
       fullName: body.fullName,
       email: body.email,
       phoneNumber: body.phoneNumber,
