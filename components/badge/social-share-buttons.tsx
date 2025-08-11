@@ -1,12 +1,12 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { 
-  Facebook, 
-  Twitter, 
-  Linkedin, 
-  Instagram, 
-  Share2, 
+import {
+  Facebook,
+  Twitter,
+  Linkedin,
+  Instagram,
+  Share2,
   Copy,
   ExternalLink
 } from 'lucide-react';
@@ -18,12 +18,12 @@ interface SocialShareButtonsProps {
   shareText?: string;
 }
 
-export function SocialShareButtons({ 
-  badgeImageUrl, 
-  attendeeName, 
-  shareText = "Check out my GOSA Convention badge!" 
+export function SocialShareButtons({
+  badgeImageUrl,
+  attendeeName,
+  shareText = "Check out my GOSA Convention badge!"
 }: SocialShareButtonsProps) {
-  
+
   const shareUrl = typeof window !== 'undefined' ? window.location.origin + '/badge-gallery' : '';
   const fullShareText = `${shareText} #GOSAConvention #ConventionBadge`;
 
@@ -78,7 +78,7 @@ export function SocialShareButtons({
   return (
     <div className="space-y-4">
       <h4 className="text-sm font-medium">Share your badge</h4>
-      
+
       <div className="grid grid-cols-2 gap-2">
         <Button
           onClick={handleFacebookShare}
@@ -89,7 +89,7 @@ export function SocialShareButtons({
           <Facebook className="h-4 w-4 text-blue-600" />
           Facebook
         </Button>
-        
+
         <Button
           onClick={handleTwitterShare}
           variant="outline"
@@ -99,7 +99,7 @@ export function SocialShareButtons({
           <Twitter className="h-4 w-4 text-blue-400" />
           Twitter
         </Button>
-        
+
         <Button
           onClick={handleLinkedInShare}
           variant="outline"
@@ -109,7 +109,7 @@ export function SocialShareButtons({
           <Linkedin className="h-4 w-4 text-blue-700" />
           LinkedIn
         </Button>
-        
+
         <Button
           onClick={handleInstagramShare}
           variant="outline"
@@ -131,8 +131,8 @@ export function SocialShareButtons({
           <Copy className="h-4 w-4" />
           Copy Link
         </Button>
-        
-        {typeof navigator !== 'undefined' && navigator.share && (
+
+        {typeof navigator !== 'undefined' && 'share' in navigator && (
           <Button
             onClick={handleNativeShare}
             variant="outline"

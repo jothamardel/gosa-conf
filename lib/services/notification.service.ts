@@ -95,8 +95,8 @@ export class NotificationService {
 
   // Private template creation methods
   private static createDinnerTemplate(reservation: IDinnerReservation): NotificationTemplate {
-    const qrCodes = reservation.qrCodes?.map(qr => qr.qrCode) || [];
-    
+    const qrCodes = reservation.qrCodes?.map(qr => qr.qrCode).filter((code): code is string => !!code) || [];
+
     return {
       message: `🍽️ *Dinner Reservation Confirmed!*
 
@@ -143,7 +143,7 @@ Please present your confirmation code at hotel check-in. Have a comfortable stay
 
   private static createBrochureTemplate(order: IConventionBrochure): NotificationTemplate {
     const qrCodes = order.qrCode ? [order.qrCode] : [];
-    
+
     return {
       message: `📚 *Brochure Order Confirmed!*
 
@@ -154,10 +154,10 @@ Thank you for your brochure order payment of $${order.totalAmount}.
 • Quantity: ${order.quantity}
 • Total amount: $${order.totalAmount}
 
-${order.brochureType === 'digital' 
-  ? '*Digital Access:* Your brochure download link will be sent to your email shortly.'
-  : `*Pickup Instructions:* Please present the QR code below at the convention registration desk to collect your brochure(s).`
-}
+${order.brochureType === 'digital'
+          ? '*Digital Access:* Your brochure download link will be sent to your email shortly.'
+          : `*Pickup Instructions:* Please present the QR code below at the convention registration desk to collect your brochure(s).`
+        }
 
 ${order.brochureType === 'physical' ? 'Your pickup QR code is attached to this message.' : ''}
 
@@ -236,10 +236,10 @@ Your message is now live and spreading positivity in our community. Thank you fo
 
       // Mock API call - replace with actual WASender integration
       console.log('Sending WhatsApp notification:', payload);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
     } catch (error) {
       console.error('WhatsApp API error:', error);
       throw error;
@@ -255,7 +255,7 @@ Your message is now live and spreading positivity in our community. Thank you fo
   }>): Promise<void> {
     try {
       await Promise.all(
-        notifications.map(({ userId, template }) => 
+        notifications.map(({ userId, template }) =>
           this.sendWhatsAppMessage(userId, template)
         )
       );
