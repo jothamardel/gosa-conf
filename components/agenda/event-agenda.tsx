@@ -165,120 +165,149 @@ export function EventAgenda() {
   const [selectedDay, setSelectedDay] = useState("day-1");
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <Tabs value={selectedDay} onValueChange={setSelectedDay}>
-        <TabsList className="grid w-full grid-cols-5 mb-8 border h-fit">
-          <TabsTrigger value="day-1" className="text-center">
-            <div>
-              <div className="font-semibold">Day 1 (Wednesday)</div>
-              <div className="text-xs text-gray-600">29th Oct. 2025</div>
+        {/* Mobile-Optimized Day Navigation */}
+        <div className="mb-6 sm:mb-8">
+          {/* Mobile: Horizontal Scrollable Tabs */}
+          <div className="block sm:hidden">
+            <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
+              {Object.entries(agendaData).map(([dayKey, dayData]: any, index) => (
+                <button
+                  key={dayKey}
+                  onClick={() => setSelectedDay(dayKey)}
+                  className={`flex-shrink-0 px-4 py-3 rounded-lg border-2 transition-all duration-200 touch-target ${selectedDay === dayKey
+                    ? 'bg-primary-600 text-white border-primary-600 shadow-lg'
+                    : 'bg-white text-gray-700 border-gray-200 hover:border-primary-300 hover:bg-primary-50'
+                    }`}
+                >
+                  <div className="text-center">
+                    <div className="text-sm font-semibold">Day {index + 1}</div>
+                    <div className="text-xs opacity-90">
+                      {dayKey === 'day-1' && 'Oct 29'}
+                      {dayKey === 'day-2' && 'Oct 30'}
+                      {dayKey === 'day-3' && 'Oct 31'}
+                      {dayKey === 'day-4' && 'Nov 1'}
+                      {dayKey === 'day-5' && 'Nov 2'}
+                    </div>
+                  </div>
+                </button>
+              ))}
             </div>
-          </TabsTrigger>
-          <TabsTrigger value="day-2" className="text-center">
-            <div>
-              <div className="font-semibold">Day 2 (Thursday)</div>
-              <div className="text-xs text-gray-600">30th Oct., 2025</div>
-            </div>
-          </TabsTrigger>
-          <TabsTrigger value="day-3" className="text-center">
-            <div>
-              <div className="font-semibold">Day 3 (Friday)</div>
-              <div className="text-xs text-gray-600">31st Oct., 2025</div>
-            </div>
-          </TabsTrigger>
-          <TabsTrigger value="day-4" className="text-center">
-            <div>
-              <div className="font-semibold">Day 4 (Saturday)</div>
-              <div className="text-xs text-gray-600">1st Nov., 2025</div>
-            </div>
-          </TabsTrigger>
-          <TabsTrigger value="day-5" className="text-center">
-            <div>
-              <div className="font-semibold">Day 5 (Sunday)</div>
-              <div className="text-xs text-gray-600">2nd Nov., 2025</div>
-            </div>
-          </TabsTrigger>
-        </TabsList>
+          </div>
+
+          {/* Desktop: Grid Layout */}
+          <TabsList className="hidden sm:grid w-full grid-cols-5 border h-fit">
+            <TabsTrigger value="day-1" className="text-center p-3">
+              <div>
+                <div className="font-semibold text-sm lg:text-base">Day 1 (Wed)</div>
+                <div className="text-xs text-gray-600">29th Oct. 2025</div>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="day-2" className="text-center p-3">
+              <div>
+                <div className="font-semibold text-sm lg:text-base">Day 2 (Thu)</div>
+                <div className="text-xs text-gray-600">30th Oct., 2025</div>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="day-3" className="text-center p-3">
+              <div>
+                <div className="font-semibold text-sm lg:text-base">Day 3 (Fri)</div>
+                <div className="text-xs text-gray-600">31st Oct., 2025</div>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="day-4" className="text-center p-3">
+              <div>
+                <div className="font-semibold text-sm lg:text-base">Day 4 (Sat)</div>
+                <div className="text-xs text-gray-600">1st Nov., 2025</div>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="day-5" className="text-center p-3">
+              <div>
+                <div className="font-semibold text-sm lg:text-base">Day 5 (Sun)</div>
+                <div className="text-xs text-gray-600">2nd Nov., 2025</div>
+              </div>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {Object.entries(agendaData).map(([dayKey, dayData]: any) => (
           <TabsContent key={dayKey} value={dayKey}>
-            <div className="mb-8 text-center">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            <div className="mb-6 sm:mb-8 text-center">
+              <h2 className="heading-responsive-md font-bold text-gray-900 mb-2">
                 {dayData.title}
               </h2>
-              <p className="text-lg text-gray-600">{dayData.date}</p>
+              <p className="text-base sm:text-lg text-gray-600">{dayData.date}</p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {dayData.events.map((event: any, index: number) => (
                 <Card
                   key={index}
-                  className={`glass-card transition-all duration-300 hover-lift ${
-                    event.featured
-                      ? "ring-2 ring-primary-500 ring-opacity-50"
-                      : ""
-                  }`}
+                  className={`glass-card transition-all duration-300 hover-lift card-mobile ${event.featured
+                    ? "ring-2 ring-primary-500 ring-opacity-50"
+                    : ""
+                    }`}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-                      <div className="flex-1">
-                        <div className="flex items-start space-x-4">
-                          <div
-                            className={`p-2 rounded-lg ${getEventTypeColor(event.type)} flex-shrink-0`}
-                          >
-                            <event.icon className="w-5 h-5" />
+                  <CardContent className="mobile-card-spacing">
+                    <div className="flex flex-col space-y-4">
+                      <div className="flex items-start space-x-3 sm:space-x-4">
+                        <div
+                          className={`p-2 sm:p-2.5 rounded-lg ${getEventTypeColor(event.type)} flex-shrink-0`}
+                        >
+                          <event.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-0">
+                              {event.title}
+                            </h3>
+                            {event.featured && (
+                              <Badge
+                                variant="secondary"
+                                className="bg-secondary-100 text-secondary-800 self-start sm:self-center"
+                              >
+                                <Star className="w-3 h-3 mr-1 fill-current" />
+                                Featured
+                              </Badge>
+                            )}
                           </div>
 
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <h3 className="text-lg font-semibold text-gray-900">
-                                {event.title}
-                              </h3>
-                              {event.featured && (
-                                <Badge
-                                  variant="secondary"
-                                  className="bg-secondary-100 text-secondary-800"
-                                >
-                                  <Star className="w-3 h-3 mr-1 fill-current" />
-                                  Featured
-                                </Badge>
-                              )}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-600 mb-3">
+                            <div className="flex items-center space-x-2">
+                              <Clock className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">{event.time}</span>
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-600 mb-3">
-                              <div className="flex items-center space-x-2">
-                                <Clock className="w-4 h-4" />
-                                <span>{event.time}</span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <MapPin className="w-4 h-4" />
-                                <span>{event.location}</span>
-                              </div>
-                              {event.speaker && (
-                                <div className="flex items-center space-x-2">
-                                  <User className="w-4 h-4" />
-                                  <span>{event.speaker}</span>
-                                </div>
-                              )}
+                            <div className="flex items-center space-x-2">
+                              <MapPin className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">{event.location}</span>
                             </div>
-
-                            <p className="text-gray-700">{event.description}</p>
+                            {event.speaker && (
+                              <div className="flex items-center space-x-2 sm:col-span-2 lg:col-span-1">
+                                <User className="w-4 h-4 flex-shrink-0" />
+                                <span className="truncate">{event.speaker}</span>
+                              </div>
+                            )}
                           </div>
+
+                          <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+                            {event.description}
+                          </p>
                         </div>
                       </div>
 
-                      {event.type !== "break" &&
-                        event.type !== "networking" && (
-                          <div className="lg:ml-6">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full lg:w-auto"
-                            >
-                              Add to Calendar
-                            </Button>
-                          </div>
-                        )}
+                      {event.type !== "break" && event.type !== "networking" && (
+                        <div className="flex justify-end pt-2 border-t border-gray-100">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full sm:w-auto touch-target"
+                          >
+                            Add to Calendar
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -288,18 +317,18 @@ export function EventAgenda() {
         ))}
       </Tabs>
 
-      {/* Download Schedule */}
-      <div className="text-center pt-8">
-        <Card className="glass-card max-w-md mx-auto">
-          <CardContent className="p-6">
-            <Calendar className="w-12 h-12 text-primary-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+      {/* Download Schedule - Mobile Optimized */}
+      <div className="text-center pt-6 sm:pt-8">
+        <Card className="glass-card card-mobile max-w-md mx-auto">
+          <CardContent className="mobile-card-spacing">
+            <Calendar className="w-10 h-10 sm:w-12 sm:h-12 text-primary-600 mx-auto mb-3 sm:mb-4" />
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
               Download Full Schedule
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-sm sm:text-base text-gray-600 mb-4">
               Get the complete agenda as a PDF for offline viewing
             </p>
-            <Button className="w-full bg-gradient-to-r from-primary-600 to-secondary-500">
+            <Button className="w-full bg-gradient-to-r from-primary-600 to-secondary-500 touch-target">
               Download PDF
             </Button>
           </CardContent>

@@ -93,6 +93,7 @@ import {
   Building,
   Heart,
   BookOpen,
+  ArrowRight,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -190,7 +191,7 @@ export function Features() {
               onClick={() =>
                 handleNavigation(feature.path, feature.requiresAuth)
               }
-              className="group relative bg-gradient-to-br from-gray-50 to-white mobile-card-spacing rounded-xl sm:rounded-2xl border border-gray-100 hover:border-primary-200 transition-all duration-300 hover-lift animate-fade-in cursor-pointer touch-target"
+              className="group relative bg-gradient-to-br from-gray-50 to-white mobile-card-spacing rounded-xl sm:rounded-2xl border border-gray-100 hover:border-primary-200 transition-all duration-300 hover-lift animate-fade-in cursor-pointer touch-target shadow-sm hover:shadow-lg"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div
@@ -203,11 +204,33 @@ export function Features() {
                 {feature.title}
               </h3>
 
-              <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-4">
                 {feature.description}
               </p>
 
+              {/* Interactive Indicator */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-primary-600 group-hover:text-primary-700 transition-colors duration-300">
+                  <span className="text-sm font-medium">Get Started</span>
+                  <div className="w-6 h-6 rounded-full bg-primary-100 group-hover:bg-primary-200 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+                    <ArrowRight className="w-3 h-3" />
+                  </div>
+                </div>
+
+                {/* Tap indicator for mobile */}
+                <div className="sm:hidden flex items-center space-x-1 text-gray-400 text-xs">
+                  <div className="w-2 h-2 rounded-full bg-gray-300 animate-pulse"></div>
+                  <span>Tap</span>
+                </div>
+              </div>
+
+              {/* Hover overlay */}
               <div className="absolute inset-0 bg-gradient-to-r from-primary-600/5 to-secondary-600/5 rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+              {/* Click ripple effect */}
+              <div className="absolute inset-0 rounded-xl sm:rounded-2xl overflow-hidden">
+                <div className="absolute inset-0 bg-primary-600/10 scale-0 group-active:scale-100 transition-transform duration-150 origin-center rounded-full"></div>
+              </div>
             </div>
           ))}
         </div>
