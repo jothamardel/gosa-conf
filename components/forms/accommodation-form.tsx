@@ -461,7 +461,6 @@ const Accommodation = () => {
                               onChange={(e) => updateGuestDetail(index, 'name', e.target.value)}
                               className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                               placeholder="Enter full name"
-                              disabled={index === 0}
                             />
                             {errors.guestDetails && errors.guestDetails[index] && (
                               <p className="text-red-600 text-xs mt-1">{errors.guestDetails[index]}</p>
@@ -477,7 +476,6 @@ const Accommodation = () => {
                               onChange={(e) => updateGuestDetail(index, 'email', e.target.value)}
                               className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                               placeholder="Enter email"
-                              disabled={index === 0}
                             />
                           </div>
                           <div>
@@ -490,7 +488,6 @@ const Accommodation = () => {
                               onChange={(e) => updateGuestDetail(index, 'phone', e.target.value)}
                               className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                               placeholder="Enter phone"
-                              disabled={index === 0}
                             />
                           </div>
                         </div>

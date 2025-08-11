@@ -497,7 +497,6 @@ const ConventionBrochure = () => {
                                   onChange={(e) => updateRecipientDetail(index, 'name', e.target.value)}
                                   className="w-full rounded-md border border-gray-300 bg-white py-1.5 px-2 text-sm text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                   placeholder="Full name"
-                                  disabled={index === 0}
                                 />
                                 <input
                                   type="email"
@@ -505,7 +504,6 @@ const ConventionBrochure = () => {
                                   onChange={(e) => updateRecipientDetail(index, 'email', e.target.value)}
                                   className="w-full rounded-md border border-gray-300 bg-white py-1.5 px-2 text-sm text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                   placeholder={formData.brochureType === 'digital' ? 'Email (required)' : 'Email (optional)'}
-                                  disabled={index === 0}
                                 />
                                 {formData.brochureType === 'physical' && (
                                   <input
@@ -520,7 +518,6 @@ const ConventionBrochure = () => {
                                     }}
                                     className="w-full rounded-md border border-gray-300 bg-white py-1.5 px-2 text-sm text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                     placeholder="Phone (optional) - e.g., 090xxxxxxxx"
-                                    disabled={index === 0}
                                   />
                                 )}
                                 {errors.recipientDetails && errors.recipientDetails[index] && (

@@ -292,7 +292,7 @@ const DinnerPayment = () => {
                               onChange={(e) => updateGuestDetail(index, 'name', e.target.value)}
                               className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                               placeholder="Enter full name"
-                              disabled={index === 0} // Primary guest name is pre-filled and disabled
+
                             />
                             {errors.guestDetails && errors.guestDetails[index] && (
                               <p className="text-red-600 text-xs mt-1">{errors.guestDetails[index]}</p>
@@ -308,7 +308,7 @@ const DinnerPayment = () => {
                               onChange={(e) => updateGuestDetail(index, 'email', e.target.value)}
                               className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                               placeholder="Enter email address"
-                              disabled={index === 0} // Primary guest email is pre-filled and disabled
+
                             />
                           </div>
                           <div>
@@ -321,7 +321,7 @@ const DinnerPayment = () => {
                               onChange={(e) => updateGuestDetail(index, 'phone', e.target.value)}
                               className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                               placeholder="Enter phone number"
-                              disabled={index === 0} // Primary guest phone is pre-filled and disabled
+
                             />
                           </div>
                           <div>
