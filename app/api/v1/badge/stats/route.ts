@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const stats = await BadgeUtils.getBadgeStatistics();
 
     // Format recent badges data
-    const formattedRecentBadges = stats.recentBadges.map(badge => ({
+    const formattedRecentBadges = stats.recentBadges.map((badge: any) => ({
       badgeId: badge._id,
       badgeImageUrl: badge.badgeImageUrl,
       attendeeName: badge.attendeeName,
@@ -40,9 +40,9 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Get badge statistics error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to retrieve badge statistics' 
+      {
+        success: false,
+        error: 'Failed to retrieve badge statistics'
       },
       { status: 500 }
     );
