@@ -191,7 +191,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const pricingInfo = BrochureUtils.getPricingInfo();
-    const pricePerUnit = pricingInfo[brochureType as string];
+    const pricePerUnit = pricingInfo[brochureType as 'digital' | 'physical'];
     const totalAmount = BrochureUtils.calculateTotalAmount(quantity, brochureType);
 
     return NextResponse.json({
