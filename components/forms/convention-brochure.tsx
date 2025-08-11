@@ -25,14 +25,6 @@ interface Errors {
   recipientDetails?: string[]
 }
 
-// Mock user data - in real app this would come from auth
-const MOCK_USER = {
-  id: '507f1f77bcf86cd799439011',
-  name: 'Mbiplang Ardel',
-  email: 'ardelmbiplang@duck.com',
-  phone: '07033680280' // Will be normalized to +2347033680280
-}
-
 const BROCHURE_PRICING = {
   digital: 10,
   physical: 25
@@ -43,7 +35,7 @@ const ConventionBrochure = () => {
     purchaseBrochure: false,
     brochureType: 'digital',
     quantity: 1,
-    recipientDetails: [{ name: MOCK_USER.name, email: MOCK_USER.email, phone: MOCK_USER.phone }],
+    recipientDetails: [{ name: '', email: '', phone: '' }],
     agreeToTerms: false,
   })
   const [errors, setErrors] = useState<Errors>({})
@@ -145,9 +137,9 @@ const ConventionBrochure = () => {
       }))
 
       const requestBody = {
-        email: MOCK_USER.email,
-        fullName: MOCK_USER.name,
-        phoneNumber: normalizePhoneNumber(MOCK_USER.phone),
+        email: formData.recipientDetails[0]?.email || '',
+        fullName: formData.recipientDetails[0]?.name || '',
+        phoneNumber: formData.recipientDetails[0]?.phone ? normalizePhoneNumber(formData.recipientDetails[0].phone) : '',
         quantity: formData.quantity,
         brochureType: formData.brochureType,
         recipientDetails: normalizedRecipientDetails

@@ -30,23 +30,15 @@ interface DonationOption {
   icon: React.ElementType
 }
 
-// Mock user data - in real app this would come from auth
-const MOCK_USER = {
-  id: '507f1f77bcf86cd799439011',
-  name: 'John Doe',
-  email: 'john.doe@example.com',
-  phone: '+1234567890'
-}
-
 const MIN_DONATION = 5
 
 const DonationForm = () => {
   const [formData, setFormData] = useState<FormData>({
     donationAmount: 25,
     customAmount: '',
-    donorName: MOCK_USER.name,
-    donorEmail: MOCK_USER.email,
-    donorPhone: MOCK_USER.phone,
+    donorName: '',
+    donorEmail: '',
+    donorPhone: '',
     anonymous: false,
     onBehalfOf: '',
     agreeToTerms: false,
@@ -132,9 +124,9 @@ const DonationForm = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: MOCK_USER.email,
-          fullName: MOCK_USER.name,
-          phoneNumber: MOCK_USER.phone,
+          email: formData.donorEmail,
+          fullName: formData.donorName,
+          phoneNumber: formData.donorPhone,
           amount: getDonationAmount(),
           donorName: formData.anonymous ? undefined : formData.donorName.trim(),
           donorEmail: formData.anonymous ? undefined : formData.donorEmail.trim(),

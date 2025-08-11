@@ -10,6 +10,9 @@ interface FormData {
   donationAmount: number
   customAmount: string
   attributionName: string
+  email: string
+  fullName: string
+  phoneNumber: string
   anonymous: boolean
   agreeToTerms: boolean
 }
@@ -19,15 +22,10 @@ interface Errors {
   donationAmount?: string
   customAmount?: string
   attributionName?: string
+  email?: string
+  fullName?: string
+  phoneNumber?: string
   agreeToTerms?: string
-}
-
-// Mock user data - in real app this would come from auth
-const MOCK_USER = {
-  id: '507f1f77bcf86cd799439011',
-  name: 'John Doe',
-  email: 'john.doe@example.com',
-  phone: '+1234567890'
 }
 
 const SUGGESTED_AMOUNTS = [10, 25, 50, 100, 250]
@@ -39,7 +37,10 @@ const GoodwillMessage = () => {
     message: '',
     donationAmount: 25,
     customAmount: '',
-    attributionName: MOCK_USER.name,
+    attributionName: '',
+    email: '',
+    fullName: '',
+    phoneNumber: '',
     anonymous: false,
     agreeToTerms: false,
   })
@@ -55,7 +56,22 @@ const GoodwillMessage = () => {
 
   const validateForm = (): boolean => {
     const newErrors: Errors = {}
-    
+
+    // Personal information validation
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = "Full name is required"
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required"
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address"
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required"
+    }
+
     if (formData.includeMessage && !formData.message.trim()) {
       newErrors.message = "Message is required when including a goodwill message"
     }
@@ -76,11 +92,11 @@ const GoodwillMessage = () => {
     if (!formData.anonymous && !formData.attributionName.trim()) {
       newErrors.attributionName = "Attribution name is required when not anonymous"
     }
-    
+
     if (!formData.agreeToTerms) {
       newErrors.agreeToTerms = "You must agree to the terms"
     }
-    
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -98,9 +114,9 @@ const GoodwillMessage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: MOCK_USER.email,
-          fullName: MOCK_USER.name,
-          phoneNumber: MOCK_USER.phone,
+          email: formData.email,
+          fullName: formData.fullName,
+          phoneNumber: formData.phoneNumber,
           message: formData.includeMessage ? formData.message.trim() : '',
           donationAmount: getDonationAmount(),
           attributionName: formData.anonymous ? undefined : formData.attributionName.trim(),
@@ -170,7 +186,7 @@ const GoodwillMessage = () => {
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Message Impact</h3>
                 <p className="text-gray-600 text-sm">Your words of encouragement brighten someone's day</p>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center space-x-3 p-3 bg-primary-50 rounded-xl">
                   <Users className="w-5 h-5 text-primary-600" />
@@ -220,14 +236,67 @@ const GoodwillMessage = () => {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
               <div className="p-6">
+                {/* Personal Information Section */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.fullName}
+                        onChange={(e) => updateFormData('fullName', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                        placeholder="Enter your full name"
+                      />
+                      {errors.fullName && (
+                        <p className="text-red-600 text-sm mt-1">{errors.fullName}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => updateFormData('email', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                        placeholder="Enter your email"
+                      />
+                      {errors.email && (
+                        <p className="text-red-600 text-sm mt-1">{errors.email}</p>
+                      )}
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        value={formData.phoneNumber}
+                        onChange={(e) => updateFormData('phoneNumber', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                        placeholder="Enter your phone number"
+                      />
+                      {errors.phoneNumber && (
+                        <p className="text-red-600 text-sm mt-1">{errors.phoneNumber}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Message Section */}
                 <div className="mb-6">
-                  <div 
-                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      formData.includeMessage
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
-                    }`}
+                  <div
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${formData.includeMessage
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                      }`}
                     onClick={() => updateFormData('includeMessage', !formData.includeMessage)}
                   >
                     <div className="flex items-center space-x-3 mb-3">
@@ -249,7 +318,7 @@ const GoodwillMessage = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Your Message of Goodwill *
                         </label>
-                        
+
                         {/* Message Prompts */}
                         <div className="mb-3">
                           <p className="text-xs text-gray-500 mb-1">Need inspiration? Try one of these:</p>
@@ -326,11 +395,10 @@ const GoodwillMessage = () => {
                               updateFormData('donationAmount', amount)
                               updateFormData('customAmount', '')
                             }}
-                            className={`p-3 rounded-lg border-2 text-center transition-all duration-200 ${
-                              formData.donationAmount === amount
-                                ? 'border-primary-500 bg-primary-50 text-primary-700'
-                                : 'border-gray-200 hover:border-primary-300 text-gray-700'
-                            }`}
+                            className={`p-3 rounded-lg border-2 text-center transition-all duration-200 ${formData.donationAmount === amount
+                              ? 'border-primary-500 bg-primary-50 text-primary-700'
+                              : 'border-gray-200 hover:border-primary-300 text-gray-700'
+                              }`}
                           >
                             <div className="font-semibold">₦{amount}</div>
                           </button>
@@ -338,11 +406,10 @@ const GoodwillMessage = () => {
                         <button
                           type="button"
                           onClick={() => updateFormData('donationAmount', 0)}
-                          className={`p-3 rounded-lg border-2 text-center transition-all duration-200 ${
-                            formData.donationAmount === 0
-                              ? 'border-primary-500 bg-primary-50 text-primary-700'
-                              : 'border-gray-200 hover:border-primary-300 text-gray-700'
-                          }`}
+                          className={`p-3 rounded-lg border-2 text-center transition-all duration-200 ${formData.donationAmount === 0
+                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                            : 'border-gray-200 hover:border-primary-300 text-gray-700'
+                            }`}
                         >
                           <div className="font-semibold text-sm">Custom</div>
                         </button>
@@ -403,12 +470,11 @@ const GoodwillMessage = () => {
 
                     {/* Anonymous Toggle */}
                     <div className="mb-4">
-                      <div 
-                        className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                          formData.anonymous
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200 hover:border-primary-300'
-                        }`}
+                      <div
+                        className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${formData.anonymous
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 hover:border-primary-300'
+                          }`}
                         onClick={() => updateFormData('anonymous', !formData.anonymous)}
                       >
                         <div className="flex items-center space-x-3">
@@ -489,8 +555,8 @@ const GoodwillMessage = () => {
                   ) : (
                     <>
                       <Heart className="w-5 h-5 mr-2" />
-                      {formData.includeMessage 
-                        ? `Send Message & Donate ₦${getDonationAmount()}` 
+                      {formData.includeMessage
+                        ? `Send Message & Donate ₦${getDonationAmount()}`
                         : `Donate ₦${getDonationAmount()}`}
                     </>
                   )}

@@ -38,14 +38,6 @@ interface RoomType {
   amenities: string[]
 }
 
-// Mock user data - in real app this would come from auth
-const MOCK_USER = {
-  id: '507f1f77bcf86cd799439011',
-  name: 'John Doe',
-  email: 'john.doe@example.com',
-  phone: '+1234567890'
-}
-
 const Accommodation = () => {
   const [formData, setFormData] = useState<FormData>({
     needsAccommodation: false,
@@ -53,7 +45,7 @@ const Accommodation = () => {
     checkInDate: '',
     checkOutDate: '',
     numberOfGuests: 1,
-    guestDetails: [{ name: MOCK_USER.name, email: MOCK_USER.email, phone: MOCK_USER.phone }],
+    guestDetails: [{ name: '', email: '', phone: '' }],
     specialRequests: '',
     agreeToTerms: false,
   })
@@ -86,18 +78,18 @@ const Accommodation = () => {
 
   const calculateNights = (): number => {
     if (!formData.checkInDate || !formData.checkOutDate) return 0
-    
+
     const checkIn = new Date(formData.checkInDate)
     const checkOut = new Date(formData.checkOutDate)
     const timeDiff = checkOut.getTime() - checkIn.getTime()
     const nights = Math.ceil(timeDiff / (1000 * 3600 * 24))
-    
+
     return nights > 0 ? nights : 0
   }
 
   const calculateTotal = (): number => {
     if (!formData.needsAccommodation || !formData.accommodationType) return 0
-    
+
     const selectedRoom = roomTypes.find(room => room.id === formData.accommodationType)
     const nights = calculateNights()
     return selectedRoom ? selectedRoom.rate * nights : 0
@@ -106,11 +98,11 @@ const Accommodation = () => {
   const validateForm = (): boolean => {
     const newErrors: Errors = {}
     const guestErrors: string[] = []
-    
+
     if (!formData.needsAccommodation) {
       newErrors.needsAccommodation = "Please select accommodation to proceed"
     }
-    
+
     if (formData.needsAccommodation && !formData.accommodationType) {
       newErrors.accommodationType = "Please select a room type"
     }
@@ -145,16 +137,16 @@ const Accommodation = () => {
           guestErrors[index] = "Guest name is required"
         }
       })
-      
+
       if (guestErrors.length > 0) {
         newErrors.guestDetails = guestErrors
       }
     }
-    
+
     if (formData.needsAccommodation && !formData.agreeToTerms) {
       newErrors.agreeToTerms = "You must agree to the terms"
     }
-    
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -172,9 +164,9 @@ const Accommodation = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: MOCK_USER.email,
-          fullName: MOCK_USER.name,
-          phoneNumber: MOCK_USER.phone,
+          email: formData.guestDetails[0]?.email || '',
+          fullName: formData.guestDetails[0]?.name || '',
+          phoneNumber: formData.guestDetails[0]?.phone || '',
           accommodationType: formData.accommodationType,
           checkInDate: formData.checkInDate,
           checkOutDate: formData.checkOutDate,
@@ -219,7 +211,7 @@ const Accommodation = () => {
 
   const updateNumberOfGuests = (newCount: number): void => {
     const currentGuests = [...formData.guestDetails]
-    
+
     if (newCount > currentGuests.length) {
       // Add new empty guest entries
       for (let i = currentGuests.length; i < newCount; i++) {
@@ -229,7 +221,7 @@ const Accommodation = () => {
       // Remove excess guest entries
       currentGuests.splice(newCount)
     }
-    
+
     setFormData(prev => ({
       ...prev,
       numberOfGuests: newCount,
@@ -243,7 +235,7 @@ const Accommodation = () => {
       ...updatedGuests[index],
       [field]: value
     }
-    
+
     setFormData(prev => ({
       ...prev,
       guestDetails: updatedGuests
@@ -268,7 +260,7 @@ const Accommodation = () => {
 
   const getMinCheckOutDate = (): string => {
     if (!formData.checkInDate) return getTomorrowDate()
-    
+
     const checkIn = new Date(formData.checkInDate)
     checkIn.setDate(checkIn.getDate() + 1)
     return checkIn.toISOString().split('T')[0]
@@ -292,7 +284,7 @@ const Accommodation = () => {
             {/* Accommodation Selection */}
             <div className="mb-8">
               <div className="flex items-center space-x-3 p-4 bg-primary-50 rounded-xl border-2 border-transparent hover:border-primary-200 transition-all duration-200 cursor-pointer"
-                   onClick={() => updateFormData('needsAccommodation', !formData.needsAccommodation)}>
+                onClick={() => updateFormData('needsAccommodation', !formData.needsAccommodation)}>
                 <input
                   type="checkbox"
                   checked={formData.needsAccommodation}
@@ -322,11 +314,10 @@ const Accommodation = () => {
                     {roomTypes.map((room) => (
                       <div
                         key={room.id}
-                        className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                          formData.accommodationType === room.id
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
-                        }`}
+                        className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${formData.accommodationType === room.id
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                          }`}
                         onClick={() => updateFormData('accommodationType', room.id)}
                       >
                         <div className="flex items-center mb-3">

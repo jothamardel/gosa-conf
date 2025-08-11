@@ -12,11 +12,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  QrCode, 
-  RefreshCw, 
-  History, 
-  ChevronLeft, 
+import {
+  QrCode,
+  RefreshCw,
+  History,
+  ChevronLeft,
   ChevronRight,
   AlertCircle,
   CheckCircle,
@@ -48,8 +48,8 @@ interface PaginationData {
   hasPrevPage: boolean;
 }
 
-// Mock admin ID - in real app this would come from auth
-const ADMIN_ID = '507f1f77bcf86cd799439012';
+// This would come from auth in a real app
+const ADMIN_ID = '';
 
 export function QRCodeManager() {
   const [history, setHistory] = useState<RegenerationHistory[]>([]);
@@ -59,7 +59,7 @@ export function QRCodeManager() {
   const [currentPage, setCurrentPage] = useState(1);
   const [regenerating, setRegenerating] = useState(false);
   const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
-  
+
   // Regeneration form state
   const [serviceType, setServiceType] = useState('');
   const [serviceId, setServiceId] = useState('');
@@ -125,13 +125,13 @@ export function QRCodeManager() {
       }
 
       toast.success('QR code regenerated successfully');
-      
+
       // Reset form
       setServiceType('');
       setServiceId('');
       setReason('');
       setShowRegenerateDialog(false);
-      
+
       // Refresh history
       fetchHistory();
 
@@ -292,7 +292,7 @@ export function QRCodeManager() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Important:</strong> Regenerating a QR code will invalidate the previous code. 
+              <strong>Important:</strong> Regenerating a QR code will invalidate the previous code.
               Make sure to notify the attendee about the new QR code.
             </AlertDescription>
           </Alert>

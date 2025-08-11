@@ -25,19 +25,11 @@ interface Errors {
   guestDetails?: string[]
 }
 
-// Mock user data - in real app this would come from auth
-const MOCK_USER = {
-  id: '507f1f77bcf86cd799439011',
-  name: 'Mbiplang Ardel',
-  email: 'ardelmbiplang@duck.com',
-  phone: '+2347033680280'
-}
-
 const DinnerPayment = () => {
   const [formData, setFormData] = useState<FormData>({
     dinnerTicket: false,
     numberOfGuests: 1,
-    guestDetails: [{ name: MOCK_USER.name, email: MOCK_USER.email, phone: MOCK_USER.phone }],
+    guestDetails: [{ name: '', email: '', phone: '' }],
     specialRequests: '',
     agreeToTerms: false,
   })
@@ -90,9 +82,9 @@ const DinnerPayment = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: MOCK_USER.email,
-          fullName: MOCK_USER.name,
-          phoneNumber: MOCK_USER.phone,
+          email: formData.guestDetails[0]?.email || '',
+          fullName: formData.guestDetails[0]?.name || '',
+          phoneNumber: formData.guestDetails[0]?.phone || '',
           numberOfGuests: formData.numberOfGuests,
           guestDetails: formData.guestDetails,
           specialRequests: formData.specialRequests

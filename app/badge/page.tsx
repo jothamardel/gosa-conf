@@ -9,8 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge, Image as ImageIcon, Images } from 'lucide-react';
 
-// Mock user ID for demo - in real app this would come from auth
-const DEMO_USER_ID = '507f1f77bcf86cd799439011';
+// This would come from auth in a real app
+const DEMO_USER_ID = '';
 
 export default function BadgePage() {
   const [existingBadge, setExistingBadge] = useState<any>(null);

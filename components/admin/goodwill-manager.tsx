@@ -9,11 +9,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  MessageCircle, 
-  Check, 
-  X, 
-  Clock, 
+import {
+  MessageCircle,
+  Check,
+  X,
+  Clock,
   Heart,
   ChevronLeft,
   ChevronRight,
@@ -44,8 +44,8 @@ interface PaginationData {
   hasPrevPage: boolean;
 }
 
-// Mock admin ID - in real app this would come from auth
-const ADMIN_ID = '507f1f77bcf86cd799439012';
+// This would come from auth in a real app
+const ADMIN_ID = '';
 
 export function GoodwillManager() {
   const [messages, setMessages] = useState<GoodwillMessage[]>([]);
@@ -114,10 +114,10 @@ export function GoodwillManager() {
       }
 
       toast.success(approved ? 'Message approved!' : 'Message rejected');
-      
+
       // Remove the message from the list
       setMessages(prev => prev.filter(msg => msg._id !== messageId));
-      
+
       // Clear selection if this message was selected
       setSelectedMessages(prev => prev.filter(id => id !== messageId));
 
@@ -163,14 +163,14 @@ export function GoodwillManager() {
       }
 
       toast.success(
-        approvalAction === 'approve' 
+        approvalAction === 'approve'
           ? `${result.data.processedCount} messages approved!`
           : `${result.data.processedCount} messages rejected`
       );
-      
+
       // Remove processed messages from the list
       setMessages(prev => prev.filter(msg => !selectedMessages.includes(msg._id)));
-      
+
       // Clear selections and close dialog
       setSelectedMessages([]);
       setShowApprovalDialog(false);
@@ -433,13 +433,13 @@ export function GoodwillManager() {
             </DialogTitle>
             <DialogDescription>
               You are about to {approvalAction} {selectedMessages.length} message(s).
-              {approvalAction === 'approve' 
+              {approvalAction === 'approve'
                 ? ' Approved messages will be displayed publicly.'
                 : ' This action cannot be undone.'
               }
             </DialogDescription>
           </DialogHeader>
-          
+
           {approvalAction === 'reject' && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Reason for rejection:</label>
