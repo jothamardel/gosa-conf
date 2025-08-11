@@ -33,8 +33,7 @@ export async function POST(req: NextRequest) {
     if (!amountValidation.valid) {
       return NextResponse.json({
         success: false,
-        message: "Donation amount validation failed",
-        errors: amountValidation.errors,
+        message: amountValidation.message || "Donation amount validation failed",
       }, { status: 400 });
     }
 
@@ -48,13 +47,12 @@ export async function POST(req: NextRequest) {
     if (!donorValidation.valid) {
       return NextResponse.json({
         success: false,
-        message: "Donor information validation failed",
-        errors: donorValidation.errors,
+        message: donorValidation.message || "Donor information validation failed",
       }, { status: 400 });
     }
 
     // Find or create user
-    const user = await UserUtils.findOrCreateUser({
+    const user: any = await UserUtils.findOrCreateUser({
       fullName: body.fullName,
       email: body.email,
       phoneNumber: body.phoneNumber,
