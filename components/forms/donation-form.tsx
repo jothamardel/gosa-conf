@@ -1,14 +1,25 @@
+"use client"
+
 import React, { useState } from 'react'
-import { Heart, Loader2, Users, Lightbulb, BookOpen, Shield } from 'lucide-react'
+import { Heart, Loader2, Users, Lightbulb, BookOpen, Shield, User, Mail, Phone, EyeOff, DollarSign } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface FormData {
   donationAmount: number
-  donationAnonymous: boolean
+  customAmount: string
+  donorName: string
+  donorEmail: string
+  donorPhone: string
+  anonymous: boolean
+  onBehalfOf: string
   agreeToTerms: boolean
 }
 
 interface Errors {
   donationAmount?: string
+  customAmount?: string
+  donorName?: string
+  donorEmail?: string
   agreeToTerms?: string
 }
 
@@ -19,73 +30,93 @@ interface DonationOption {
   icon: React.ElementType
 }
 
+// Mock user data - in real app this would come from auth
+const MOCK_USER = {
+  id: '507f1f77bcf86cd799439011',
+  name: 'John Doe',
+  email: 'john.doe@example.com',
+  phone: '+1234567890'
+}
+
+const MIN_DONATION = 5
+
 const DonationForm = () => {
   const [formData, setFormData] = useState<FormData>({
-    donationAmount: 0,
-    donationAnonymous: false,
+    donationAmount: 25,
+    customAmount: '',
+    donorName: MOCK_USER.name,
+    donorEmail: MOCK_USER.email,
+    donorPhone: MOCK_USER.phone,
+    anonymous: false,
+    onBehalfOf: '',
     agreeToTerms: false,
   })
   const [errors, setErrors] = useState<Errors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [customAmount, setCustomAmount] = useState('')
 
   const donationOptions: DonationOption[] = [
     {
       amount: 25,
-      label: '$25',
+      label: '₦25',
       description: 'Provides materials for one student',
       icon: BookOpen
     },
     {
       amount: 50,
-      label: '$50',
+      label: '₦50',
       description: 'Supports a workshop session',
       icon: Lightbulb
     },
     {
       amount: 100,
-      label: '$100',
+      label: '₦100',
       description: 'Sponsors a community program',
       icon: Users
     },
     {
       amount: 250,
-      label: '$250',
+      label: '₦250',
       description: 'Funds a complete course',
       icon: Shield
     }
   ]
 
+  const getDonationAmount = (): number => {
+    if (formData.donationAmount === 0) {
+      return parseFloat(formData.customAmount) || 0
+    }
+    return formData.donationAmount
+  }
+
   const validateForm = (): boolean => {
     const newErrors: Errors = {}
-    
-    if (formData.donationAmount < 1) {
-      newErrors.donationAmount = "Donation amount must be at least $1"
+
+    const donationAmount = getDonationAmount()
+    if (donationAmount < MIN_DONATION) {
+      if (formData.donationAmount === 0) {
+        newErrors.customAmount = `Minimum donation amount is ₦${MIN_DONATION}`
+      } else {
+        newErrors.donationAmount = `Minimum donation amount is ₦${MIN_DONATION}`
+      }
     }
-    
+
+    if (!formData.anonymous) {
+      if (!formData.donorName.trim()) {
+        newErrors.donorName = "Donor name is required"
+      }
+      if (!formData.donorEmail.trim()) {
+        newErrors.donorEmail = "Email address is required"
+      } else if (!/\S+@\S+\.\S+/.test(formData.donorEmail)) {
+        newErrors.donorEmail = "Please enter a valid email address"
+      }
+    }
+
     if (!formData.agreeToTerms) {
       newErrors.agreeToTerms = "You must agree to the terms"
     }
-    
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
-  }
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success'): void => {
-    const toast = document.createElement('div')
-    toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white z-50 shadow-lg transform transition-all duration-300 ${
-      type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    }`
-    toast.textContent = message
-    document.body.appendChild(toast)
-    setTimeout(() => {
-      toast.style.transform = 'translateX(100%)'
-      setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast)
-        }
-      }, 300)
-    }, 3000)
   }
 
   const handleSubmit = async (): Promise<void> => {
@@ -95,17 +126,39 @@ const DonationForm = () => {
 
     setIsSubmitting(true)
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      showToast(`Thank you for your $${formData.donationAmount} donation!`, 'success')
-      // Reset form after successful submission
-      setFormData({
-        donationAmount: 0,
-        donationAnonymous: false,
-        agreeToTerms: false,
+      const response = await fetch('/api/v1/donation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: MOCK_USER.email,
+          fullName: MOCK_USER.name,
+          phoneNumber: MOCK_USER.phone,
+          amount: getDonationAmount(),
+          donorName: formData.anonymous ? undefined : formData.donorName.trim(),
+          donorEmail: formData.anonymous ? undefined : formData.donorEmail.trim(),
+          donorPhone: formData.anonymous ? undefined : formData.donorPhone.trim(),
+          anonymous: formData.anonymous,
+          onBehalfOf: formData.onBehalfOf.trim() || undefined
+        }),
       })
-      setCustomAmount('')
-    } catch (error) {
-      showToast("Donation failed. Please try again.", 'error')
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to process donation')
+      }
+
+      // Redirect to Paystack payment page
+      if (result.data.paymentLink) {
+        window.location.href = result.data.paymentLink
+      } else {
+        toast.success("Donation initiated! Redirecting to payment...")
+      }
+    } catch (error: any) {
+      console.error('Donation error:', error)
+      toast.error(error.message || "Donation failed. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -126,13 +179,12 @@ const DonationForm = () => {
 
   const handlePresetAmount = (amount: number): void => {
     updateFormData('donationAmount', amount)
-    setCustomAmount('')
+    updateFormData('customAmount', '')
   }
 
   const handleCustomAmount = (value: string): void => {
-    setCustomAmount(value)
-    const numericValue = parseFloat(value) || 0
-    updateFormData('donationAmount', numericValue)
+    updateFormData('customAmount', value)
+    updateFormData('donationAmount', 0)
   }
 
   return (
@@ -153,7 +205,7 @@ const DonationForm = () => {
             {/* Donation Amount Selection */}
             <div className="mb-8">
               <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Choose Your Impact</h3>
-              
+
               {/* Preset Amounts */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 {donationOptions.map((option) => {
@@ -161,24 +213,21 @@ const DonationForm = () => {
                   return (
                     <div
                       key={option.amount}
-                      className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 hover:scale-105 ${
-                        formData.donationAmount === option.amount && !customAmount
-                          ? 'border-primary-600 bg-primary-50 shadow-lg'
-                          : 'border-gray-200 hover:border-primary-300 hover:bg-primary-25'
-                      }`}
+                      className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 hover:scale-105 ${formData.donationAmount === option.amount && !formData.customAmount
+                        ? 'border-primary-600 bg-primary-50 shadow-lg'
+                        : 'border-gray-200 hover:border-primary-300 hover:bg-primary-25'
+                        }`}
                       onClick={() => handlePresetAmount(option.amount)}
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <IconComponent className={`w-6 h-6 ${
-                          formData.donationAmount === option.amount && !customAmount
-                            ? 'text-primary-600'
-                            : 'text-gray-500'
-                        }`} />
-                        <span className={`text-2xl font-bold ${
-                          formData.donationAmount === option.amount && !customAmount
-                            ? 'text-primary-600'
-                            : 'text-gray-700'
-                        }`}>
+                        <IconComponent className={`w-6 h-6 ${formData.donationAmount === option.amount && !formData.customAmount
+                          ? 'text-primary-600'
+                          : 'text-gray-500'
+                          }`} />
+                        <span className={`text-2xl font-bold ${formData.donationAmount === option.amount && !formData.customAmount
+                          ? 'text-primary-600'
+                          : 'text-gray-700'
+                          }`}>
                           {option.label}
                         </span>
                       </div>
@@ -191,54 +240,144 @@ const DonationForm = () => {
               {/* Custom Amount */}
               <div className="bg-gray-50 rounded-2xl p-6">
                 <label className="block text-lg font-semibold text-gray-900 mb-3">
-                  Or enter a custom amount
+                  Or enter a custom amount (minimum ₦{MIN_DONATION})
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl font-semibold">$</span>
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl font-semibold">₦</span>
                   <input
                     type="number"
-                    value={customAmount}
+                    value={formData.customAmount}
                     onChange={(e) => handleCustomAmount(e.target.value)}
                     className="w-full pl-8 pr-4 py-4 text-xl font-semibold rounded-xl border border-gray-300 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 bg-white"
                     placeholder="0"
-                    min="1"
+                    min={MIN_DONATION}
                     step="1"
                   />
                 </div>
                 {errors.donationAmount && (
                   <p className="text-red-600 text-sm mt-2">{errors.donationAmount}</p>
                 )}
+                {errors.customAmount && (
+                  <p className="text-red-600 text-sm mt-2">{errors.customAmount}</p>
+                )}
               </div>
             </div>
 
             {/* Total Display */}
-            {formData.donationAmount > 0 && (
+            {getDonationAmount() >= MIN_DONATION && (
               <div className="bg-gradient-to-r from-primary-600 to-secondary-500 rounded-2xl p-6 mb-8 text-white animate-in slide-in-from-top-4 duration-500">
                 <div className="text-center">
                   <div className="text-lg font-medium mb-2">Your generous donation</div>
-                  <div className="text-4xl font-bold">${formData.donationAmount}</div>
+                  <div className="text-4xl font-bold">₦{getDonationAmount()}</div>
                   <div className="text-primary-100 mt-2">will make a real difference in our community</div>
                 </div>
               </div>
             )}
 
-            {/* Options */}
-            <div className="space-y-6 mb-8">
-              {/* Anonymous Donation */}
-              <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl">
-                <input
-                  type="checkbox"
-                  id="donationAnonymous"
-                  checked={formData.donationAnonymous}
-                  onChange={(e) => updateFormData('donationAnonymous', e.target.checked)}
-                  className="w-5 h-5 text-primary-600 border-2 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
-                />
-                <label htmlFor="donationAnonymous" className="text-gray-700 font-medium">
-                  Make this donation anonymous
-                </label>
-              </div>
+            {/* Donor Information */}
+            <div className="mb-8">
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                <div className="flex items-center space-x-3 mb-4">
+                  <User className="w-5 h-5 text-primary-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Donor Information</h3>
+                </div>
 
-              {/* Terms Agreement */}
+                {/* Anonymous Toggle */}
+                <div className="mb-4">
+                  <div
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${formData.anonymous
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-gray-200 hover:border-primary-300'
+                      }`}
+                    onClick={() => updateFormData('anonymous', !formData.anonymous)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        checked={formData.anonymous}
+                        onChange={(e) => updateFormData('anonymous', e.target.checked)}
+                        className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                      <EyeOff className="w-5 h-5 text-gray-600" />
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">Make this donation anonymous</div>
+                        <div className="text-sm text-gray-600">Your name will not be displayed publicly</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Donor Details */}
+                {!formData.anonymous && (
+                  <div className="space-y-4 animate-in slide-in-from-top-4 duration-300">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.donorName}
+                          onChange={(e) => updateFormData('donorName', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                          placeholder="Enter your full name"
+                        />
+                        {errors.donorName && (
+                          <p className="text-red-600 text-sm mt-1">{errors.donorName}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Email Address *
+                        </label>
+                        <input
+                          type="email"
+                          value={formData.donorEmail}
+                          onChange={(e) => updateFormData('donorEmail', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                          placeholder="Enter your email"
+                        />
+                        {errors.donorEmail && (
+                          <p className="text-red-600 text-sm mt-1">{errors.donorEmail}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone Number (Optional)
+                      </label>
+                      <input
+                        type="tel"
+                        value={formData.donorPhone}
+                        onChange={(e) => updateFormData('donorPhone', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                        placeholder="Enter your phone number"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* On Behalf Of */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Donating on behalf of someone? (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.onBehalfOf}
+                    onChange={(e) => updateFormData('onBehalfOf', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                    placeholder="e.g., In memory of John Smith, On behalf of ABC Company"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    This will be displayed with your donation if provided
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Terms Agreement */}
+            <div className="mb-8">
               <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-xl">
                 <input
                   type="checkbox"
@@ -256,7 +395,7 @@ const DonationForm = () => {
                 </label>
               </div>
               {errors.agreeToTerms && (
-                <p className="text-red-600 text-sm">{errors.agreeToTerms}</p>
+                <p className="text-red-600 text-sm mt-2">{errors.agreeToTerms}</p>
               )}
             </div>
 
@@ -264,7 +403,7 @@ const DonationForm = () => {
             <div className="pt-4">
               <button
                 onClick={handleSubmit}
-                disabled={isSubmitting || formData.donationAmount < 1 || !formData.agreeToTerms}
+                disabled={isSubmitting || getDonationAmount() < MIN_DONATION || !formData.agreeToTerms}
                 className="w-full bg-gradient-to-r from-primary-600 to-secondary-500 hover:from-primary-700 hover:to-secondary-600 text-white font-bold py-4 px-8 rounded-2xl shadow-lg transform transition-all duration-300 hover:scale-[1.02] hover:shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center text-lg"
               >
                 {isSubmitting ? (
@@ -275,7 +414,7 @@ const DonationForm = () => {
                 ) : (
                   <>
                     <Heart className="w-5 h-5 mr-2" />
-                    Donate ${formData.donationAmount || 0}
+                    Donate ₦{getDonationAmount() || MIN_DONATION}
                   </>
                 )}
               </button>

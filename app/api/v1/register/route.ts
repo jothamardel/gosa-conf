@@ -10,10 +10,10 @@ export async function POST(req: NextRequest) {
   try {
     const body: RegistrationType = await req.json();
 
-    if (!body?.email || !body?.amount || !body?.quantity) {
+    if (!body?.email || !body?.fullName || !body?.phoneNumber || !body?.amount || !body?.quantity) {
       return NextResponse.json({
         success: false,
-        message: "Please provide email, quantity and amount",
+        message: "Please provide email, fullName, phoneNumber, quantity and amount",
       });
     }
     console.log(body);

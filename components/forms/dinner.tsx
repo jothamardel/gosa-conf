@@ -1,12 +1,20 @@
 "use client"
 
 import React, { useState } from 'react'
-import { Utensils, Loader2, Users, Calendar, Clock, MapPin } from 'lucide-react'
+import { Utensils, Loader2, Users, Calendar, Clock, MapPin, Plus, Minus, User, Mail, Phone } from 'lucide-react'
+import { toast } from 'sonner'
+
+interface GuestDetails {
+  name: string
+  email?: string
+  phone?: string
+  dietaryRequirements?: string
+}
 
 interface FormData {
   dinnerTicket: boolean
   numberOfGuests: number
-  dietaryRequirements: string
+  guestDetails: GuestDetails[]
   specialRequests: string
   agreeToTerms: boolean
 }
@@ -14,13 +22,22 @@ interface FormData {
 interface Errors {
   dinnerTicket?: string
   agreeToTerms?: string
+  guestDetails?: string[]
+}
+
+// Mock user data - in real app this would come from auth
+const MOCK_USER = {
+  id: '507f1f77bcf86cd799439011',
+  name: 'Mbiplang Ardel',
+  email: 'ardelmbiplang@duck.com',
+  phone: '+2347033680280'
 }
 
 const DinnerPayment = () => {
   const [formData, setFormData] = useState<FormData>({
     dinnerTicket: false,
     numberOfGuests: 1,
-    dietaryRequirements: '',
+    guestDetails: [{ name: MOCK_USER.name, email: MOCK_USER.email, phone: MOCK_USER.phone }],
     specialRequests: '',
     agreeToTerms: false,
   })
@@ -33,34 +50,31 @@ const DinnerPayment = () => {
 
   const validateForm = (): boolean => {
     const newErrors: Errors = {}
-    
+    const guestErrors: string[] = []
+
     if (!formData.dinnerTicket) {
       newErrors.dinnerTicket = "Please select dinner ticket to proceed"
     }
-    
+
     if (formData.dinnerTicket && !formData.agreeToTerms) {
       newErrors.agreeToTerms = "You must agree to the terms"
     }
-    
+
+    // Validate guest details
+    if (formData.dinnerTicket) {
+      formData.guestDetails.forEach((guest, index) => {
+        if (!guest.name.trim()) {
+          guestErrors[index] = "Guest name is required"
+        }
+      })
+
+      if (guestErrors.length > 0) {
+        newErrors.guestDetails = guestErrors
+      }
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
-  }
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success'): void => {
-    const toast = document.createElement('div')
-    toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white z-50 shadow-lg transform transition-all duration-300 ${
-      type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    }`
-    toast.textContent = message
-    document.body.appendChild(toast)
-    setTimeout(() => {
-      toast.style.transform = 'translateX(100%)'
-      setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast)
-        }
-      }, 300)
-    }, 3000)
   }
 
   const handleSubmit = async (): Promise<void> => {
@@ -70,10 +84,36 @@ const DinnerPayment = () => {
 
     setIsSubmitting(true)
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      showToast("Dinner reservation confirmed! Check your email for details.", 'success')
-    } catch (error) {
-      showToast("Payment failed. Please try again.", 'error')
+      const response = await fetch('/api/v1/dinner', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: MOCK_USER.email,
+          fullName: MOCK_USER.name,
+          phoneNumber: MOCK_USER.phone,
+          numberOfGuests: formData.numberOfGuests,
+          guestDetails: formData.guestDetails,
+          specialRequests: formData.specialRequests
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to process dinner reservation')
+      }
+
+      // Redirect to Paystack payment page
+      if (result.data.paymentLink) {
+        window.location.href = result.data.paymentLink
+      } else {
+        toast.success("Dinner reservation initiated! Redirecting to payment...")
+      }
+    } catch (error: any) {
+      console.error('Dinner reservation error:', error)
+      toast.error(error.message || "Payment failed. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -88,6 +128,49 @@ const DinnerPayment = () => {
       setErrors(prev => ({
         ...prev,
         [field]: undefined
+      }))
+    }
+  }
+
+  const updateNumberOfGuests = (newCount: number): void => {
+    const currentGuests = [...formData.guestDetails]
+
+    if (newCount > currentGuests.length) {
+      // Add new empty guest entries
+      for (let i = currentGuests.length; i < newCount; i++) {
+        currentGuests.push({ name: '' })
+      }
+    } else if (newCount < currentGuests.length) {
+      // Remove excess guest entries
+      currentGuests.splice(newCount)
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      numberOfGuests: newCount,
+      guestDetails: currentGuests
+    }))
+  }
+
+  const updateGuestDetail = (index: number, field: keyof GuestDetails, value: string): void => {
+    const updatedGuests = [...formData.guestDetails]
+    updatedGuests[index] = {
+      ...updatedGuests[index],
+      [field]: value
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      guestDetails: updatedGuests
+    }))
+
+    // Clear guest-specific errors
+    if (errors.guestDetails && errors.guestDetails[index]) {
+      const newGuestErrors = [...(errors.guestDetails || [])]
+      newGuestErrors[index] = ''
+      setErrors(prev => ({
+        ...prev,
+        guestDetails: newGuestErrors
       }))
     }
   }
@@ -128,7 +211,7 @@ const DinnerPayment = () => {
             {/* Ticket Selection */}
             <div className="mb-8">
               <div className="flex items-center justify-between p-6 bg-gray-50 rounded-2xl border border-gray-200 hover:bg-gray-100 transition-all duration-300 cursor-pointer"
-                   onClick={() => updateFormData('dinnerTicket', !formData.dinnerTicket)}>
+                onClick={() => updateFormData('dinnerTicket', !formData.dinnerTicket)}>
                 <div className="flex items-center space-x-4">
                   <input
                     type="checkbox"
@@ -142,7 +225,7 @@ const DinnerPayment = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-primary-600">$75</div>
+                  <div className="text-2xl font-bold text-primary-600">₦75</div>
                   <div className="text-gray-600 text-sm">per person</div>
                 </div>
               </div>
@@ -155,44 +238,122 @@ const DinnerPayment = () => {
               <div className="space-y-8 animate-in slide-in-from-top-4 duration-500">
                 {/* Guest Count */}
                 <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <Users className="w-5 h-5 text-primary-600" />
-                    <label className="text-lg font-semibold text-gray-700">Number of Guests</label>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <Users className="w-5 h-5 text-primary-600" />
+                      <label className="text-lg font-semibold text-gray-700">Number of Guests</label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => updateNumberOfGuests(Math.max(1, formData.numberOfGuests - 1))}
+                        disabled={formData.numberOfGuests <= 1}
+                        className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center hover:bg-primary-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="text-xl font-bold text-primary-600 min-w-[3rem] text-center">
+                        {formData.numberOfGuests}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => updateNumberOfGuests(Math.min(10, formData.numberOfGuests + 1))}
+                        // disabled={formData.numberOfGuests >= 10}
+                        className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center hover:bg-primary-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={formData.numberOfGuests}
-                    onChange={(e) => updateFormData('numberOfGuests', parseInt(e.target.value))}
-                    className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb"
-                    style={{
-                      background: `linear-gradient(to right, #2563eb 0%, #2563eb ${(formData.numberOfGuests - 1) * 11.11}%, #e5e7eb ${(formData.numberOfGuests - 1) * 11.11}%, #e5e7eb 100%)`
-                    }}
-                  />
-                  <div className="flex justify-between text-sm text-gray-500 mt-2">
-                    <span>1 guest</span>
-                    <span className="text-xl font-bold text-primary-600">{formData.numberOfGuests} {formData.numberOfGuests === 1 ? 'guest' : 'guests'}</span>
-                    <span>10 guests</span>
+                  <div className="text-sm text-gray-500 text-center">
+                    {formData.numberOfGuests === 1 ? '1 guest' : `${formData.numberOfGuests} guests`} • Maximum 10 guests per reservation
                   </div>
                 </div>
 
-                {/* Dietary Requirements */}
+                {/* Guest Details */}
                 <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
-                  <label className="block text-lg font-semibold text-gray-800 mb-4">Dietary Preferences</label>
-                  <select
-                    value={formData.dietaryRequirements}
-                    onChange={(e) => updateFormData('dietaryRequirements', e.target.value)}
-                    className="w-full rounded-xl border border-gray-300 bg-white py-3 px-4 text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                  >
-                    <option value="">No special requirements</option>
-                    <option value="vegetarian">Vegetarian</option>
-                    <option value="vegan">Vegan</option>
-                    <option value="gluten-free">Gluten Free</option>
-                    <option value="kosher">Kosher</option>
-                    <option value="halal">Halal</option>
-                    <option value="other">Other (please specify below)</option>
-                  </select>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <User className="w-5 h-5 text-primary-600" />
+                    <label className="text-lg font-semibold text-gray-700">Guest Details</label>
+                  </div>
+                  <div className="space-y-6">
+                    {formData.guestDetails.map((guest, index) => (
+                      <div key={index} className="bg-white rounded-xl p-4 border border-gray-200">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-semibold text-gray-800">
+                            {index === 0 ? 'Primary Guest (You)' : `Guest ${index + 1}`}
+                          </h4>
+                          {index === 0 && (
+                            <span className="text-xs bg-primary-100 text-primary-600 px-2 py-1 rounded-full">
+                              Main Contact
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Full Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={guest.name}
+                              onChange={(e) => updateGuestDetail(index, 'name', e.target.value)}
+                              className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                              placeholder="Enter full name"
+                              disabled={index === 0} // Primary guest name is pre-filled and disabled
+                            />
+                            {errors.guestDetails && errors.guestDetails[index] && (
+                              <p className="text-red-600 text-xs mt-1">{errors.guestDetails[index]}</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Email {index === 0 ? '*' : '(Optional)'}
+                            </label>
+                            <input
+                              type="email"
+                              value={guest.email || ''}
+                              onChange={(e) => updateGuestDetail(index, 'email', e.target.value)}
+                              className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                              placeholder="Enter email address"
+                              disabled={index === 0} // Primary guest email is pre-filled and disabled
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Phone {index === 0 ? '*' : '(Optional)'}
+                            </label>
+                            <input
+                              type="tel"
+                              value={guest.phone || ''}
+                              onChange={(e) => updateGuestDetail(index, 'phone', e.target.value)}
+                              className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                              placeholder="Enter phone number"
+                              disabled={index === 0} // Primary guest phone is pre-filled and disabled
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Dietary Requirements
+                            </label>
+                            <select
+                              value={guest.dietaryRequirements || ''}
+                              onChange={(e) => updateGuestDetail(index, 'dietaryRequirements', e.target.value)}
+                              className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-gray-700 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                            >
+                              <option value="">No special requirements</option>
+                              <option value="vegetarian">Vegetarian</option>
+                              <option value="vegan">Vegan</option>
+                              <option value="gluten-free">Gluten Free</option>
+                              <option value="kosher">Kosher</option>
+                              <option value="halal">Halal</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Special Requests */}
@@ -212,9 +373,9 @@ const DinnerPayment = () => {
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="text-gray-700">Total Amount</div>
-                      <div className="text-sm text-gray-500">{formData.numberOfGuests} {formData.numberOfGuests === 1 ? 'guest' : 'guests'} × $75</div>
+                      <div className="text-sm text-gray-500">{formData.numberOfGuests} {formData.numberOfGuests === 1 ? 'guest' : 'guests'} × ₦75</div>
                     </div>
-                    <div className="text-4xl font-bold text-primary-600">${calculateTotal()}</div>
+                    <div className="text-4xl font-bold text-primary-600">₦{calculateTotal()}</div>
                   </div>
                 </div>
 
@@ -249,7 +410,7 @@ const DinnerPayment = () => {
                       </>
                     ) : (
                       <>
-                        Confirm Reservation - ${calculateTotal()}
+                        Confirm Reservation - ₦{calculateTotal()}
                       </>
                     )}
                   </button>

@@ -32,6 +32,46 @@ export class ConventionUtils {
     }
   }
 
+  /**
+   * Find convention registrations by reference pattern (for webhook processing)
+   */
+  static async findByReferencePattern(referencePattern: string): Promise<any[] | null> {
+    try {
+      await connectDB();
+
+      // Search for registrations where paymentReference starts with the pattern
+      const { ConventionRegistration } = await import('../schema/convention.schema');
+      const registrations = await ConventionRegistration.find({
+        paymentReference: { $regex: `^${referencePattern}` }
+      }).populate('userId');
+
+      return registrations.length > 0 ? registrations : null;
+    } catch (error) {
+      console.error(`Error finding convention registrations by pattern ${referencePattern}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Confirm convention registrations by reference pattern (for webhook processing)
+   */
+  static async confirmByReferencePattern(referencePattern: string) {
+    try {
+      await connectDB();
+
+      const { ConventionRegistration } = await import('../schema/convention.schema');
+      const result = await ConventionRegistration.updateMany(
+        { paymentReference: { $regex: `^${referencePattern}` } },
+        { $set: { confirm: true } }
+      );
+
+      return result;
+    } catch (error) {
+      console.error(`Error confirming convention registrations by pattern ${referencePattern}:`, error);
+      throw error;
+    }
+  }
+
   static async findAndConfirmMany(paymentReference: string) {
     try {
       await connectDB();

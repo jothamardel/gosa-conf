@@ -7,9 +7,9 @@ import { Toaster } from '@/components/ui/sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Convention 2024 - Registration & Management',
-  description: 'Annual Convention Registration with QR Code Check-in System',
-  keywords: ['convention', 'registration', 'events', 'QR code', 'check-in'],
+  title: 'GOSA Convention 2025 | For Light and Truth',
+  description: 'GOSA Gindiri Old Students Association | Annual Convention Registration',
+  keywords: ['convention', 'registration', 'events', 'GOSA', 'Gindiri Old Students Association'],
 };
 
 export default function RootLayout({

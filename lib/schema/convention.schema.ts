@@ -57,7 +57,8 @@ const ConventionRegistrationSchema = new Schema<IConventionRegistration>(
   },
 );
 
-ConventionRegistrationSchema.index({ userId: 1, paymentReference: 1 });
+ConventionRegistrationSchema.index({ userId: 1 });
+// paymentReference index is already created by unique: true in field definition
 
 export const ConventionRegistration =
   mongoose.models.ConventionRegistration ||

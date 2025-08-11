@@ -1,33 +1,80 @@
 "use client"
 
 import React, { useState } from 'react'
-import { MessageCircle, Loader2, Heart, Send, Users, Sparkles, Star } from 'lucide-react'
+import { MessageCircle, Loader2, Heart, Send, Users, Sparkles, Star, DollarSign, User, EyeOff } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface FormData {
   includeMessage: boolean
   message: string
+  donationAmount: number
+  customAmount: string
+  attributionName: string
+  anonymous: boolean
   agreeToTerms: boolean
 }
 
 interface Errors {
   message?: string
+  donationAmount?: string
+  customAmount?: string
+  attributionName?: string
   agreeToTerms?: string
 }
+
+// Mock user data - in real app this would come from auth
+const MOCK_USER = {
+  id: '507f1f77bcf86cd799439011',
+  name: 'John Doe',
+  email: 'john.doe@example.com',
+  phone: '+1234567890'
+}
+
+const SUGGESTED_AMOUNTS = [10, 25, 50, 100, 250]
+const MIN_DONATION = 10
 
 const GoodwillMessage = () => {
   const [formData, setFormData] = useState<FormData>({
     includeMessage: false,
     message: '',
+    donationAmount: 25,
+    customAmount: '',
+    attributionName: MOCK_USER.name,
+    anonymous: false,
     agreeToTerms: false,
   })
   const [errors, setErrors] = useState<Errors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const getDonationAmount = (): number => {
+    if (formData.donationAmount === 0) {
+      return parseFloat(formData.customAmount) || 0
+    }
+    return formData.donationAmount
+  }
 
   const validateForm = (): boolean => {
     const newErrors: Errors = {}
     
     if (formData.includeMessage && !formData.message.trim()) {
       newErrors.message = "Message is required when including a goodwill message"
+    }
+
+    if (formData.message.length > 500) {
+      newErrors.message = "Message must be 500 characters or less"
+    }
+
+    const donationAmount = getDonationAmount()
+    if (donationAmount < MIN_DONATION) {
+      if (formData.donationAmount === 0) {
+        newErrors.customAmount = `Minimum donation amount is ₦${MIN_DONATION}`
+      } else {
+        newErrors.donationAmount = `Minimum donation amount is ₦${MIN_DONATION}`
+      }
+    }
+
+    if (!formData.anonymous && !formData.attributionName.trim()) {
+      newErrors.attributionName = "Attribution name is required when not anonymous"
     }
     
     if (!formData.agreeToTerms) {
@@ -38,23 +85,6 @@ const GoodwillMessage = () => {
     return Object.keys(newErrors).length === 0
   }
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success'): void => {
-    const toast = document.createElement('div')
-    toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white z-50 shadow-lg transform transition-all duration-300 ${
-      type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    }`
-    toast.textContent = message
-    document.body.appendChild(toast)
-    setTimeout(() => {
-      toast.style.transform = 'translateX(100%)'
-      setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast)
-        }
-      }, 300)
-    }, 3000)
-  }
-
   const handleSubmit = async (): Promise<void> => {
     if (!validateForm()) {
       return
@@ -62,22 +92,37 @@ const GoodwillMessage = () => {
 
     setIsSubmitting(true)
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      const successMessage = formData.includeMessage 
-        ? "Thank you for your wonderful message!" 
-        : "Thank you for your support!"
-      
-      showToast(successMessage, 'success')
-      
-      // Reset form
-      setFormData({
-        includeMessage: false,
-        message: '',
-        agreeToTerms: false,
+      const response = await fetch('/api/v1/goodwill', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: MOCK_USER.email,
+          fullName: MOCK_USER.name,
+          phoneNumber: MOCK_USER.phone,
+          message: formData.includeMessage ? formData.message.trim() : '',
+          donationAmount: getDonationAmount(),
+          attributionName: formData.anonymous ? undefined : formData.attributionName.trim(),
+          anonymous: formData.anonymous
+        }),
       })
-    } catch (error) {
-      showToast("Submission failed. Please try again.", 'error')
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to process goodwill message')
+      }
+
+      // Redirect to Paystack payment page
+      if (result.data.paymentLink) {
+        window.location.href = result.data.paymentLink
+      } else {
+        toast.success("Goodwill message submitted! Redirecting to payment...")
+      }
+    } catch (error: any) {
+      console.error('Goodwill message error:', error)
+      toast.error(error.message || "Submission failed. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -251,10 +296,161 @@ const GoodwillMessage = () => {
                     </h3>
                     <div className="bg-white rounded-lg p-3 border border-primary-100">
                       <p className="text-gray-700 italic">"{formData.message}"</p>
-                      <div className="text-xs text-gray-500 mt-1">- Your Goodwill Message</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        - {formData.anonymous ? 'Anonymous Supporter' : formData.attributionName}
+                      </div>
                     </div>
                   </div>
                 )}
+
+                {/* Donation Amount Section */}
+                <div className="mb-6">
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <DollarSign className="w-5 h-5 text-primary-600" />
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Support with a Donation</h3>
+                        <p className="text-gray-600 text-sm">Your contribution helps support our mission</p>
+                      </div>
+                    </div>
+
+                    {/* Suggested Amounts */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">Select Amount</label>
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        {SUGGESTED_AMOUNTS.map((amount) => (
+                          <button
+                            key={amount}
+                            type="button"
+                            onClick={() => {
+                              updateFormData('donationAmount', amount)
+                              updateFormData('customAmount', '')
+                            }}
+                            className={`p-3 rounded-lg border-2 text-center transition-all duration-200 ${
+                              formData.donationAmount === amount
+                                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                                : 'border-gray-200 hover:border-primary-300 text-gray-700'
+                            }`}
+                          >
+                            <div className="font-semibold">₦{amount}</div>
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => updateFormData('donationAmount', 0)}
+                          className={`p-3 rounded-lg border-2 text-center transition-all duration-200 ${
+                            formData.donationAmount === 0
+                              ? 'border-primary-500 bg-primary-50 text-primary-700'
+                              : 'border-gray-200 hover:border-primary-300 text-gray-700'
+                          }`}
+                        >
+                          <div className="font-semibold text-sm">Custom</div>
+                        </button>
+                      </div>
+                      {errors.donationAmount && (
+                        <p className="text-red-600 text-sm">{errors.donationAmount}</p>
+                      )}
+                    </div>
+
+                    {/* Custom Amount Input */}
+                    {formData.donationAmount === 0 && (
+                      <div className="mb-4 animate-in slide-in-from-top-4 duration-300">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Custom Amount (minimum ₦{MIN_DONATION})
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <DollarSign className="h-4 w-4 text-gray-400" />
+                          </div>
+                          <input
+                            type="number"
+                            min={MIN_DONATION}
+                            step="1"
+                            value={formData.customAmount}
+                            onChange={(e) => updateFormData('customAmount', e.target.value)}
+                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                            placeholder={`${MIN_DONATION}`}
+                          />
+                        </div>
+                        {errors.customAmount && (
+                          <p className="text-red-600 text-sm mt-1">{errors.customAmount}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Total Display */}
+                    <div className="bg-primary-100 rounded-lg p-3 border border-primary-200">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700 font-medium">Donation Amount:</span>
+                        <span className="text-2xl font-bold text-primary-600">
+                          ₦{getDonationAmount() || MIN_DONATION}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Attribution Section */}
+                <div className="mb-6">
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <User className="w-5 h-5 text-primary-600" />
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Attribution</h3>
+                        <p className="text-gray-600 text-sm">How would you like to be recognized?</p>
+                      </div>
+                    </div>
+
+                    {/* Anonymous Toggle */}
+                    <div className="mb-4">
+                      <div 
+                        className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                          formData.anonymous
+                            ? 'border-primary-500 bg-primary-50'
+                            : 'border-gray-200 hover:border-primary-300'
+                        }`}
+                        onClick={() => updateFormData('anonymous', !formData.anonymous)}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={formData.anonymous}
+                            onChange={(e) => updateFormData('anonymous', e.target.checked)}
+                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                          />
+                          <EyeOff className="w-4 h-4 text-gray-600" />
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">Submit anonymously</div>
+                            <div className="text-sm text-gray-600">Your name will not be displayed</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Attribution Name */}
+                    {!formData.anonymous && (
+                      <div className="animate-in slide-in-from-top-4 duration-300">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Display Name
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.attributionName}
+                          onChange={(e) => updateFormData('attributionName', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                          placeholder="How should we credit you?"
+                          maxLength={100}
+                        />
+                        {errors.attributionName && (
+                          <p className="text-red-600 text-sm mt-1">{errors.attributionName}</p>
+                        )}
+                        <div className="text-xs text-gray-500 mt-1">
+                          This name will be displayed with your message (if included)
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Terms Agreement */}
                 <div className="mb-6">
@@ -282,18 +478,20 @@ const GoodwillMessage = () => {
                 {/* Submit Button */}
                 <button
                   onClick={handleSubmit}
-                  disabled={isSubmitting || !formData.agreeToTerms}
+                  disabled={isSubmitting || !formData.agreeToTerms || getDonationAmount() < MIN_DONATION}
                   className="w-full bg-gradient-to-r from-primary-600 to-secondary-500 hover:from-primary-700 hover:to-secondary-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Sending Message...
+                      Processing...
                     </>
                   ) : (
                     <>
-                      <Send className="w-5 h-5 mr-2" />
-                      {formData.includeMessage ? "Send Goodwill Message" : "Show Support"}
+                      <Heart className="w-5 h-5 mr-2" />
+                      {formData.includeMessage 
+                        ? `Send Message & Donate ₦${getDonationAmount()}` 
+                        : `Donate ₦${getDonationAmount()}`}
                     </>
                   )}
                 </button>

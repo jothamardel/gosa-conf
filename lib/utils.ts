@@ -1,7 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Wasender } from "./wasender-api";
-import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import QRCode from "qrcode";
 
@@ -192,7 +191,7 @@ export async function generateQrCode(data = []) {
       console.log(`QR code uploaded for ${item.paymentReference}:`, blob?.url);
 
       const phoneNumber = normalizePhoneNumber(
-        item?.paymentReference?.split("_")[1] || "+2347033680280",
+        item?.paymentReference?.split("_")[1],
       );
 
       // Send WhatsApp message with retry and longer delays
@@ -295,17 +294,20 @@ function convertToInternationalFormat(phoneNumber: string) {
 
   // Check if the number is already in international format
   if (cleanNumber.startsWith("234") && cleanNumber.length === 13) {
+    console.log("1: ", `+${cleanNumber}`)
     return "+" + cleanNumber;
   }
 
   // Check if it's a local Nigerian number starting with 0
   if (cleanNumber.startsWith("0") && cleanNumber.length === 11) {
     // Remove the leading 0 and add Nigeria country code
+    console.log("2: ", `+234${cleanNumber.substring(1)}`)
     return "+234" + cleanNumber.substring(1);
   }
 
   // Check if it's a Nigerian number without the leading 0
   if (cleanNumber.length === 10 && /^[789]/.test(cleanNumber)) {
+    console.log("3: ", `+234${cleanNumber}`)
     return "+234" + cleanNumber;
   }
 
@@ -314,21 +316,23 @@ function convertToInternationalFormat(phoneNumber: string) {
 }
 
 function normalizePhoneNumber(phoneNumber: string) {
-  // Remove any non-digit characters
   const cleanNumber = phoneNumber.replace(/\D/g, "");
 
-  // Check if it's a valid Nigerian number format (11 digits starting with 0)
-  if (cleanNumber.length === 11 && cleanNumber.startsWith("0")) {
-    // Replace the second digit with '7'
-    return cleanNumber.charAt(0) + "7" + cleanNumber.substring(2);
+  if (cleanNumber.startsWith("234") && cleanNumber.length === 13) {
+    return "+" + cleanNumber;
   }
 
-  // Check if it's a 10-digit number (without leading 0)
+  if (cleanNumber.startsWith("0") && cleanNumber.length === 11) {
+    return "+234" + cleanNumber.substring(1);
+  }
+
   if (cleanNumber.length === 10 && /^[789]/.test(cleanNumber)) {
-    // Add leading 0 and replace second digit with '7'
-    return "07" + cleanNumber.substring(1);
+    return "+234" + cleanNumber;
   }
 
-  // If it doesn't match expected formats, return as is or throw error
-  return cleanNumber;
+  throw new Error("Invalid Nigerian phone number format");
+
 }
+
+// Note: Only export client-safe utilities here
+// Server-side utilities should be imported directly from their specific files

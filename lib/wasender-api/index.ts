@@ -14,6 +14,10 @@ class Sender {
     try {
       const response = await WasenderAxiosInstance.post(`/send-message`, data);
       return response.data;
+      // return {
+      //   success: true,
+      //   data: { msgId: 1174060, jid: data, status: 'in_progress' }
+      // }
     } catch (err: any) {
       throw err?.response?.data;
     }
