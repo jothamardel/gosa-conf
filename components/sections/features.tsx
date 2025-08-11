@@ -191,7 +191,7 @@ export function Features() {
               onClick={() =>
                 handleNavigation(feature.path, feature.requiresAuth)
               }
-              className="group relative bg-gradient-to-br from-gray-50 to-white mobile-card-spacing rounded-xl sm:rounded-2xl border border-gray-100 hover:border-primary-200 transition-all duration-300 hover-lift animate-fade-in cursor-pointer touch-target shadow-sm hover:shadow-lg"
+              className="group relative bg-gradient-to-br from-gray-50 to-white mobile-card-spacing rounded-xl sm:rounded-2xl border border-gray-100 hover:border-primary-200 transition-all duration-300 hover-lift animate-fade-in cursor-pointer touch-target shadow-sm hover:shadow-lg interactive-card touch-feedback"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div
@@ -219,7 +219,7 @@ export function Features() {
 
                 {/* Tap indicator for mobile */}
                 <div className="sm:hidden flex items-center space-x-1 text-gray-400 text-xs">
-                  <div className="w-2 h-2 rounded-full bg-gray-300 animate-pulse"></div>
+                  <div className="w-2 h-2 rounded-full bg-gray-300 tap-indicator"></div>
                   <span>Tap</span>
                 </div>
               </div>

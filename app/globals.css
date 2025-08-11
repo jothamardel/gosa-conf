@@ -233,4 +233,48 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Interactive card enhancements */
+  .interactive-card {
+    @apply relative overflow-hidden;
+  }
+
+  .interactive-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.5s;
+  }
+
+  .interactive-card:hover::before {
+    left: 100%;
+  }
+
+  /* Pulse animation for tap indicators */
+  .tap-indicator {
+    animation: pulse-soft 2s infinite;
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% {
+      opacity: 0.4;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.1);
+    }
+  }
+
+  /* Mobile-specific touch feedback */
+  @media (max-width: 640px) {
+    .touch-feedback:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease-out;
+    }
+  }
 }
