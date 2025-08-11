@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
       callback_url: `${process.env.NEXTAUTH_URL}/api/webhook/paystack`,
       metadata: {
         type: 'accommodation',
-        userId: user._id.toString(),
+        userId: (user as any)._id.toString(),
         accommodationType: body.accommodationType,
         numberOfGuests: body.numberOfGuests,
         checkInDate: checkInDate.toISOString(),
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
 
     // Create accommodation booking record
     const booking = await AccommodationUtils.createBooking({
-      userId: user._id,
+      userId: (user as any)._id,
       paymentReference,
       accommodationType: body.accommodationType,
       checkInDate,

@@ -262,6 +262,99 @@ export class AccommodationUtils {
   }
 
   /**
+   * Check availability for accommodation type and dates
+   */
+  static async checkAvailability(
+    accommodationType: 'standard' | 'premium' | 'luxury',
+    checkInDate: Date,
+    checkOutDate: Date
+  ): Promise<{
+    available: boolean;
+    totalRooms: number;
+    bookedRooms: number;
+    availableRooms: number;
+  }> {
+    try {
+      await connectDB();
+
+      // Define room capacity for each accommodation type
+      const roomCapacity = {
+        standard: 50,
+        premium: 30,
+        luxury: 15
+      };
+
+      const totalRooms = roomCapacity[accommodationType];
+
+      // Find overlapping bookings for the same accommodation type
+      const overlappingBookings = await AccommodationModel.countDocuments({
+        accommodationType,
+        confirmed: true,
+        $or: [
+          {
+            // Booking starts during the requested period
+            checkInDate: { $gte: checkInDate, $lt: checkOutDate }
+          },
+          {
+            // Booking ends during the requested period
+            checkOutDate: { $gt: checkInDate, $lte: checkOutDate }
+          },
+          {
+            // Booking spans the entire requested period
+            checkInDate: { $lte: checkInDate },
+            checkOutDate: { $gte: checkOutDate }
+          }
+        ]
+      });
+
+      const bookedRooms = overlappingBookings;
+      const availableRooms = Math.max(0, totalRooms - bookedRooms);
+
+      return {
+        available: availableRooms > 0,
+        totalRooms,
+        bookedRooms,
+        availableRooms
+      };
+    } catch (error) {
+      throw new Error(`Failed to check availability: ${error}`);
+    }
+  }
+
+  /**
+   * Get accommodation type details
+   */
+  static getAccommodationTypeDetails(accommodationType: 'standard' | 'premium' | 'luxury'): {
+    name: string;
+    price: number;
+    description: string;
+    amenities: string[];
+  } {
+    const details = {
+      standard: {
+        name: 'Standard Room',
+        price: this.PRICING.standard,
+        description: 'Comfortable accommodation with essential amenities',
+        amenities: ['Free WiFi', 'Coffee Maker', 'Work Desk', 'Air Conditioning']
+      },
+      premium: {
+        name: 'Premium Room',
+        price: this.PRICING.premium,
+        description: 'Spacious room with upgraded amenities and city view',
+        amenities: ['Free WiFi', 'Coffee Maker', 'Work Desk', 'Air Conditioning', 'City View', 'Mini Bar', 'Room Service']
+      },
+      luxury: {
+        name: 'Luxury Suite',
+        price: this.PRICING.luxury,
+        description: 'Executive suite with premium amenities and concierge services',
+        amenities: ['Free WiFi', 'Coffee Maker', 'Work Desk', 'Air Conditioning', 'City View', 'Mini Bar', 'Room Service', 'Concierge', 'Balcony', 'Premium Bedding']
+      }
+    };
+
+    return details[accommodationType];
+  }
+
+  /**
    * Validate check-in and check-out dates
    */
   static validateDates(checkInDate: Date, checkOutDate: Date): {

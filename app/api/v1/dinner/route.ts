@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const totalAmount = DinnerUtils.calculateTotalAmount(body.numberOfGuests);
 
     // Find or create user
-    const user: any = await UserUtils.findOrCreateUser({
+    const user = await UserUtils.findOrCreateUser({
       fullName: body.fullName,
       email: body.email,
       phoneNumber: body.phoneNumber,
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       callback_url: `${process.env.NEXTAUTH_URL}/api/webhook/paystack`,
       metadata: {
         type: 'dinner',
-        userId: user._id.toString(),
+        userId: (user as any)._id.toString(),
         numberOfGuests: body.numberOfGuests,
       },
     };
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     // Create dinner reservation record
     const reservation = await DinnerUtils.createReservation({
-      userId: user._id,
+      userId: (user as any)._id,
       paymentReference,
       numberOfGuests: body.numberOfGuests,
       guestDetails: body.guestDetails,
