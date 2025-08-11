@@ -570,7 +570,7 @@ export class DonationUtils {
           $match: {
             confirmed: true,
             anonymous: false,
-            donorName: { $exists: true, $ne: null, $ne: "" }
+            donorName: { $exists: true, $nin: [null, ""] }
           }
         },
         {

@@ -127,7 +127,7 @@ export class AdminUtils {
         this.getPaymentTrends()
       ]);
 
-      const totalRevenue = 
+      const totalRevenue =
         conventionStats.revenue +
         dinnerStats.revenue +
         accommodationStats.revenue +
@@ -174,7 +174,7 @@ export class AdminUtils {
   static async getAllAttendees(): Promise<AttendeeData[]> {
     try {
       const users = await User.find().sort({ createdAt: -1 });
-      
+
       const attendeesData = await Promise.all(
         users.map(async (user) => {
           const [
@@ -195,7 +195,7 @@ export class AdminUtils {
             AttendeeBadge.findOne({ userId: user._id })
           ]);
 
-          const totalSpent = 
+          const totalSpent =
             (convention?.totalAmount || 0) +
             (dinner?.totalAmount || 0) +
             (accommodation?.totalAmount || 0) +
@@ -380,8 +380,8 @@ export class AdminUtils {
    * Regenerate QR code for a service
    */
   static async regenerateQRCode(
-    serviceType: string, 
-    serviceId: string, 
+    serviceType: string,
+    serviceId: string,
     adminId: string,
     reason?: string
   ): Promise<string> {
@@ -578,7 +578,7 @@ export class AdminUtils {
         ])
       ]);
 
-      const totalAmount = 
+      const totalAmount =
         (conventionRevenue[0]?.total || 0) +
         (dinnerRevenue[0]?.total || 0) +
         (accommodationRevenue[0]?.total || 0) +
@@ -586,7 +586,7 @@ export class AdminUtils {
         (goodwillRevenue[0]?.total || 0) +
         (donationRevenue[0]?.total || 0);
 
-      const totalCount = 
+      const totalCount =
         (conventionRevenue[0]?.count || 0) +
         (dinnerRevenue[0]?.count || 0) +
         (accommodationRevenue[0]?.count || 0) +
@@ -771,7 +771,12 @@ export class AdminUtils {
   }
 
   private static async getRecentActivity() {
-    const activities = [];
+    const activities: Array<{
+      type: string;
+      description: string;
+      timestamp: Date;
+      amount?: number;
+    }> = [];
 
     // Get recent registrations
     const recentUsers = await User.find().sort({ createdAt: -1 }).limit(5);
@@ -788,7 +793,7 @@ export class AdminUtils {
       .populate('userId', 'name')
       .sort({ updatedAt: -1 })
       .limit(5);
-    
+
     recentPayments.forEach((payment: any) => {
       activities.push({
         type: 'payment',
