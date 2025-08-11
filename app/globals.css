@@ -93,4 +93,134 @@
   .hover-lift {
     @apply transition-all duration-300 hover:scale-105 hover:shadow-2xl;
   }
+
+  /* Mobile-first responsive utilities */
+  .mobile-container {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  .mobile-text-responsive {
+    @apply text-sm sm:text-base;
+  }
+
+  .mobile-button-responsive {
+    @apply px-4 py-2 text-sm sm:px-6 sm:py-3 sm:text-base;
+  }
+
+  .mobile-card-spacing {
+    @apply p-4 sm:p-6 lg:p-8;
+  }
+
+  .mobile-grid-responsive {
+    @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  /* Touch-friendly interactive elements */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Improved mobile form styling */
+  .mobile-form-input {
+    @apply h-12 text-base px-4 rounded-lg border-2 focus:border-primary-500 focus:ring-2 focus:ring-primary-200;
+  }
+
+  .mobile-form-label {
+    @apply text-sm font-medium text-gray-700 mb-2 block;
+  }
+
+  /* Mobile navigation improvements */
+  .mobile-nav-item {
+    @apply flex items-center space-x-3 px-4 py-3 text-base font-medium rounded-lg transition-all duration-200;
+  }
+
+  /* Responsive typography scale */
+  .heading-responsive-xl {
+    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl;
+  }
+
+  .heading-responsive-lg {
+    @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl;
+  }
+
+  .heading-responsive-md {
+    @apply text-lg sm:text-xl md:text-2xl;
+  }
+
+  /* Mobile-optimized animations */
+  @media (prefers-reduced-motion: no-preference) {
+    .animate-fade-in {
+      animation: fadeIn 0.6s ease-out forwards;
+    }
+
+    .animate-slide-up {
+      animation: slideUp 0.5s ease-out forwards;
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Mobile-specific improvements */
+  @media (max-width: 640px) {
+    .mobile-full-width {
+      @apply w-full;
+    }
+
+    .mobile-text-center {
+      @apply text-center;
+    }
+
+    .mobile-stack {
+      @apply flex-col space-y-4 space-x-0;
+    }
+
+    /* Improve touch targets on mobile */
+    button, .btn, [role="button"] {
+      @apply min-h-[44px] touch-target;
+    }
+
+    /* Better mobile form spacing */
+    .form-group {
+      @apply mb-6;
+    }
+
+    /* Mobile-optimized cards */
+    .card-mobile {
+      @apply rounded-xl shadow-lg border-0 bg-white;
+    }
+  }
+
+  /* Tablet-specific adjustments */
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .tablet-grid-2 {
+      @apply grid-cols-2;
+    }
+  }
+
+  /* High DPI display optimizations */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .high-dpi-border {
+      @apply border-[0.5px];
+    }
+  }
 }

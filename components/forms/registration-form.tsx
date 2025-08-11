@@ -127,30 +127,30 @@ export function RegistrationForm() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Progress Indicator */}
-      <div className="mb-8">
-        <div className="flex items-center justify-center space-x-4">
+      {/* Mobile-Optimized Progress Indicator */}
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center justify-center space-x-2 sm:space-x-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${i <= step
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base ${i <= step
                   ? "bg-primary-600 text-white"
                   : "bg-gray-200 text-gray-600"
                   }`}
               >
-                {i < step ? <CheckCircle className="w-5 h-5" /> : i}
+                {i < step ? <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" /> : i}
               </div>
               {i < 3 && (
                 <div
-                  className={`w-16 h-1 mx-2 ${i < step ? "bg-primary-600" : "bg-gray-200"
+                  className={`w-8 sm:w-16 h-1 mx-1 sm:mx-2 ${i < step ? "bg-primary-600" : "bg-gray-200"
                     }`}
                 />
               )}
             </div>
           ))}
         </div>
-        <div className="flex justify-center mt-4">
-          <span className="text-sm text-gray-600">
+        <div className="flex justify-center mt-3 sm:mt-4">
+          <span className="text-xs sm:text-sm text-gray-600 text-center px-4">
             Step {step} of 3:{" "}
             {step === 1
               ? "Personal Information"
@@ -162,26 +162,26 @@ export function RegistrationForm() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)}>
-        {/* Step 1: Personal Information */}
+        {/* Step 1: Personal Information - Mobile Optimized */}
         {step === 1 && (
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+          <Card className="glass-card card-mobile">
+            <CardHeader className="mobile-card-spacing">
+              <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
                 <User className="w-5 h-5 text-primary-600" />
                 <span>Personal Information</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm sm:text-base">
                 Please provide your contact details for registration.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="firstName">First Name *</Label>
+            <CardContent className="mobile-card-spacing space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="form-group">
+                  <Label htmlFor="firstName" className="mobile-form-label">First Name *</Label>
                   <Input
                     id="firstName"
                     {...register("firstName")}
-                    className="mt-1"
+                    className="mobile-form-input"
                     placeholder="Enter your first name"
                   />
                   {errors.firstName && (
@@ -191,12 +191,12 @@ export function RegistrationForm() {
                   )}
                 </div>
 
-                <div>
-                  <Label htmlFor="lastName">Last Name *</Label>
+                <div className="form-group">
+                  <Label htmlFor="lastName" className="mobile-form-label">Last Name *</Label>
                   <Input
                     id="lastName"
                     {...register("lastName")}
-                    className="mt-1"
+                    className="mobile-form-input"
                     placeholder="Enter your last name"
                   />
                   {errors.lastName && (
@@ -206,12 +206,13 @@ export function RegistrationForm() {
                   )}
                 </div>
 
-                <div>
-                  <Label htmlFor="phone">Phone Number *</Label>
+                <div className="form-group sm:col-span-2">
+                  <Label htmlFor="phone" className="mobile-form-label">Phone Number *</Label>
                   <Input
                     id="phone"
+                    type="tel"
                     {...register("phone")}
-                    className="mt-1"
+                    className="mobile-form-input"
                     placeholder="Enter your phone number"
                   />
                   {errors.phone && (
@@ -221,13 +222,13 @@ export function RegistrationForm() {
                   )}
                 </div>
 
-                <div>
-                  <Label htmlFor="email">Email Address *</Label>
+                <div className="form-group sm:col-span-2">
+                  <Label htmlFor="email" className="mobile-form-label">Email Address *</Label>
                   <Input
                     id="email"
                     type="email"
                     {...register("email")}
-                    className="mt-1"
+                    className="mobile-form-input"
                     placeholder="Enter your email address"
                   />
                   {errors.email && (
@@ -236,14 +237,13 @@ export function RegistrationForm() {
                     </p>
                   )}
                 </div>
-
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-4">
                 <Button
                   type="button"
                   onClick={nextStep}
-                  className="bg-gradient-to-r from-primary-600 to-secondary-500"
+                  className="w-full sm:w-auto bg-gradient-to-r from-primary-600 to-secondary-500 mobile-button-responsive touch-target"
                 >
                   Continue to Event Options
                 </Button>
@@ -252,49 +252,49 @@ export function RegistrationForm() {
           </Card>
         )}
 
-        {/* Step 2: Event Options */}
+        {/* Step 2: Event Options - Mobile Optimized */}
         {step === 2 && (
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+          <Card className="glass-card card-mobile">
+            <CardHeader className="mobile-card-spacing">
+              <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
                 <User className="w-5 h-5 text-primary-600" />
                 <span>Registration Options</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm sm:text-base">
                 Specify registration details and additional attendees.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="organization">Organization</Label>
+            <CardContent className="mobile-card-spacing space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="form-group">
+                  <Label htmlFor="organization" className="mobile-form-label">Organization</Label>
                   <Input
                     id="organization"
                     {...register("organization")}
-                    className="mt-1"
+                    className="mobile-form-input"
                     placeholder="Enter your organization"
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="jobTitle">Job Title</Label>
+                <div className="form-group">
+                  <Label htmlFor="jobTitle" className="mobile-form-label">Job Title</Label>
                   <Input
                     id="jobTitle"
                     {...register("jobTitle")}
-                    className="mt-1"
+                    className="mobile-form-input"
                     placeholder="Enter your job title"
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="quantity">Number of Tickets</Label>
+                <div className="form-group sm:col-span-2">
+                  <Label htmlFor="quantity" className="mobile-form-label">Number of Tickets</Label>
                   <Input
                     id="quantity"
                     type="number"
                     min="1"
                     max="10"
                     {...register("quantity", { valueAsNumber: true })}
-                    className="mt-1"
+                    className="mobile-form-input"
                     placeholder="1"
                     onChange={(e) => {
                       const quantity = parseInt(e.target.value) || 1;
@@ -320,11 +320,11 @@ export function RegistrationForm() {
                 </div>
               </div>
 
-              {/* Additional Attendees */}
+              {/* Additional Attendees - Mobile Optimized */}
               {watchedValues.quantity > 1 && (
                 <div className="space-y-4">
                   <Separator />
-                  <h4 className="font-semibold text-gray-900">
+                  <h4 className="font-semibold text-gray-900 text-base sm:text-lg">
                     Additional Attendees ({watchedValues.quantity - 1})
                   </h4>
                   <p className="text-sm text-gray-600">
@@ -332,27 +332,28 @@ export function RegistrationForm() {
                   </p>
 
                   {Array.from({ length: (watchedValues.quantity || 1) - 1 }, (_, index) => (
-                    <Card key={index} className="p-4 bg-gray-50">
-                      <h5 className="font-medium text-gray-800 mb-3">
+                    <Card key={index} className="mobile-card-spacing bg-gray-50 border border-gray-200 rounded-lg">
+                      <h5 className="font-medium text-gray-800 mb-3 text-sm sm:text-base">
                         Attendee {index + 2}
                       </h5>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor={`person-${index}-phone`}>Phone Number *</Label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="form-group">
+                          <Label htmlFor={`person-${index}-phone`} className="mobile-form-label">Phone Number *</Label>
                           <Input
                             id={`person-${index}-phone`}
+                            type="tel"
                             {...register(`persons.${index}.phoneNumber`)}
-                            className="mt-1"
+                            className="mobile-form-input"
                             placeholder="Enter phone number"
                           />
                         </div>
-                        <div>
-                          <Label htmlFor={`person-${index}-email`}>Email (Optional)</Label>
+                        <div className="form-group">
+                          <Label htmlFor={`person-${index}-email`} className="mobile-form-label">Email (Optional)</Label>
                           <Input
                             id={`person-${index}-email`}
                             type="email"
                             {...register(`persons.${index}.email`)}
-                            className="mt-1"
+                            className="mobile-form-input"
                             placeholder="Enter email address (optional)"
                           />
                         </div>
@@ -362,14 +363,19 @@ export function RegistrationForm() {
                 </div>
               )}
 
-              <div className="flex justify-between">
-                <Button type="button" variant="outline" onClick={prevStep}>
+              <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={prevStep}
+                  className="w-full sm:w-auto touch-target"
+                >
                   Back
                 </Button>
                 <Button
                   type="button"
                   onClick={nextStep}
-                  className="bg-gradient-to-r from-primary-600 to-secondary-500"
+                  className="w-full sm:w-auto bg-gradient-to-r from-primary-600 to-secondary-500 touch-target"
                 >
                   Review & Pay
                 </Button>
@@ -378,26 +384,26 @@ export function RegistrationForm() {
           </Card>
         )}
 
-        {/* Step 3: Review & Payment */}
+        {/* Step 3: Review & Payment - Mobile Optimized */}
         {step === 3 && (
-          <div className="space-y-6">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+          <div className="space-y-4 sm:space-y-6">
+            <Card className="glass-card card-mobile">
+              <CardHeader className="mobile-card-spacing">
+                <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
                   <CreditCard className="w-5 h-5 text-primary-600" />
                   <span>Registration Summary</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">
+              <CardContent className="mobile-card-spacing space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-900 text-base sm:text-lg">
                       Registration Information
                     </h4>
-                    <div className="text-sm text-gray-600 space-y-3">
+                    <div className="text-sm sm:text-base text-gray-600 space-y-3 bg-gray-50 p-4 rounded-lg">
                       <div>
                         <p className="font-medium text-gray-800">Primary Attendee:</p>
-                        <p>{watchedValues.firstName} {watchedValues.lastName}</p>
+                        <p className="mt-1">{watchedValues.firstName} {watchedValues.lastName}</p>
                         <p>{watchedValues.email}</p>
                         <p>{watchedValues.phone}</p>
                         {watchedValues.organization && (
@@ -406,12 +412,12 @@ export function RegistrationForm() {
                       </div>
 
                       {watchedValues.persons && watchedValues.persons.length > 0 && (
-                        <div>
+                        <div className="pt-2 border-t border-gray-200">
                           <p className="font-medium text-gray-800">Additional Attendees:</p>
                           {watchedValues.persons.map((person, index) => (
-                            <div key={index} className="ml-2 mt-1">
-                              <p>Attendee {index + 2}: {person.phoneNumber}</p>
-                              {person.email && <p>Email: {person.email}</p>}
+                            <div key={index} className="ml-2 mt-2 p-2 bg-white rounded border">
+                              <p className="font-medium">Attendee {index + 2}: {person.phoneNumber}</p>
+                              {person.email && <p className="text-sm">Email: {person.email}</p>}
                             </div>
                           ))}
                         </div>
@@ -419,26 +425,26 @@ export function RegistrationForm() {
                     </div>
                   </div>
 
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-900 text-base sm:text-lg">
                       Cost Breakdown
                     </h4>
-                    <div className="text-sm space-y-2">
-                      <div className="flex justify-between">
+                    <div className="bg-primary-50 p-4 rounded-lg space-y-3">
+                      <div className="flex justify-between text-sm sm:text-base">
                         <span>Registration Fee</span>
                         <span>₦50.00 per person</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between text-sm sm:text-base">
                         <span>Number of Tickets</span>
                         <span>{watchedValues.quantity || 1}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between text-sm sm:text-base">
                         <span>Subtotal</span>
                         <span>₦{(50 * (watchedValues.quantity || 1)).toFixed(2)}</span>
                       </div>
 
                       <Separator />
-                      <div className="flex justify-between font-semibold text-lg">
+                      <div className="flex justify-between font-semibold text-lg sm:text-xl text-primary-700">
                         <span>Total</span>
                         <span>₦{calculatedTotal.toFixed(2)}</span>
                       </div>
@@ -448,36 +454,43 @@ export function RegistrationForm() {
 
                 <Separator />
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
                   <Checkbox
                     id="agreeToTerms"
                     checked={watchedValues.agreeToTerms}
                     onCheckedChange={(checked) => setValue("agreeToTerms", Boolean(checked))}
+                    className="mt-1 touch-target"
                   />
-                  <Label htmlFor="agreeToTerms" className="text-sm">
+                  <Label htmlFor="agreeToTerms" className="text-sm sm:text-base leading-relaxed">
                     I agree to the{" "}
-                    <a href="#" className="text-primary-600 hover:underline">
+                    <a href="#" className="text-primary-600 hover:underline font-medium">
                       Terms and Conditions
                     </a>{" "}
                     and{" "}
-                    <a href="#" className="text-primary-600 hover:underline">
+                    <a href="#" className="text-primary-600 hover:underline font-medium">
                       Privacy Policy
                     </a>
                   </Label>
-                </div> {errors.agreeToTerms && (
-                  <p className="text-sm text-red-600">
+                </div>
+                {errors.agreeToTerms && (
+                  <p className="text-sm text-red-600 mt-1">
                     {errors.agreeToTerms.message}
                   </p>
                 )}
 
-                <div className="flex justify-between">
-                  <Button type="button" variant="outline" onClick={prevStep}>
+                <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-4 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={prevStep}
+                    className="w-full sm:w-auto touch-target"
+                  >
                     Back
                   </Button>
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="bg-gradient-to-r from-primary-600 to-secondary-500 min-w-[140px]"
+                    className="w-full sm:w-auto bg-gradient-to-r from-primary-600 to-secondary-500 min-w-[140px] touch-target font-semibold"
                   >
                     {isSubmitting ? (
                       <>

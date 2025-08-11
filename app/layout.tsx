@@ -10,6 +10,16 @@ export const metadata: Metadata = {
   title: 'GOSA Convention 2025 | For Light and Truth',
   description: 'GOSA Gindiri Old Students Association | Annual Convention Registration',
   keywords: ['convention', 'registration', 'events', 'GOSA', 'Gindiri Old Students Association'],
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+  themeColor: '#16A34A',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'GOSA Convention 2025'
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({
@@ -19,10 +29,27 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="theme-color" content="#16A34A" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="GOSA Convention 2025" />
+        <meta name="format-detection" content="telephone=no" />
+      </head>
+      <body className={`${inter.className} antialiased`}>
         <Providers>
           {children}
-          <Toaster />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: 'white',
+                border: '1px solid #e5e7eb',
+                fontSize: '14px',
+              },
+            }}
+          />
         </Providers>
       </body>
     </html>

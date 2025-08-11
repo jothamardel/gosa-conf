@@ -170,44 +170,44 @@ export function Features() {
   };
 
   return (
-    <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+    <section className="py-12 sm:py-16 lg:py-20 bg-white">
+      <div className="max-w-7xl mx-auto mobile-container">
+        <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+          <h2 className="heading-responsive-lg font-bold text-gray-900 mb-3 sm:mb-4">
             Convention
-            <span className="gradient-text"> Packages</span>
+            <span className="gradient-text"> Services</span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             From registration to check-in, we've built comprehensive features to
             make your convention experience exceptional.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {features.map((feature, index) => (
             <div
               key={feature.title}
               onClick={() =>
                 handleNavigation(feature.path, feature.requiresAuth)
               }
-              className="group relative bg-gradient-to-br from-gray-50 to-white p-8 rounded-2xl border border-gray-100 hover:border-primary-200 transition-all duration-300 hover-lift animate-fade-in cursor-pointer"
+              className="group relative bg-gradient-to-br from-gray-50 to-white mobile-card-spacing rounded-xl sm:rounded-2xl border border-gray-100 hover:border-primary-200 transition-all duration-300 hover-lift animate-fade-in cursor-pointer touch-target"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div
-                className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${feature.gradient} mb-6 group-hover:scale-110 transition-transform duration-300`}
+                className={`inline-flex p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-r ${feature.gradient} mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300`}
               >
-                <feature.icon className="w-6 h-6 text-white" />
+                <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
 
-              <h3 className="text-xl font-semibold text-gray-900 mb-4 group-hover:text-primary-600 transition-colors duration-300">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-4 group-hover:text-primary-600 transition-colors duration-300">
                 {feature.title}
               </h3>
 
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                 {feature.description}
               </p>
 
-              <div className="absolute inset-0 bg-gradient-to-r from-primary-600/5 to-secondary-600/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-primary-600/5 to-secondary-600/5 rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
           ))}
         </div>
