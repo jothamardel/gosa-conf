@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     // Get all badges for gallery (only shared ones)
     const badges = await BadgeUtils.getAllBadges();
-    
+
     // Apply pagination
     const paginatedBadges = badges.slice(skip, skip + limit);
     const totalBadges = badges.length;
@@ -28,9 +28,9 @@ export async function GET(request: NextRequest) {
       organization: badge.organization,
       downloadCount: badge.downloadCount,
       createdAt: badge.createdAt,
-      user: badge.user ? {
-        name: (badge.user as any).name,
-        email: (badge.user as any).email
+      user: (badge as any).user ? {
+        name: ((badge as any).user as any).name,
+        email: ((badge as any).user as any).email
       } : null
     }));
 
@@ -51,9 +51,9 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Get badge gallery error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to retrieve badge gallery' 
+      {
+        success: false,
+        error: 'Failed to retrieve badge gallery'
       },
       { status: 500 }
     );
@@ -68,9 +68,9 @@ export async function POST(request: NextRequest) {
 
     if (!badgeId || !action) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'badgeId and action are required' 
+        {
+          success: false,
+          error: 'badgeId and action are required'
         },
         { status: 400 }
       );
@@ -94,9 +94,9 @@ export async function POST(request: NextRequest) {
 
       default:
         return NextResponse.json(
-          { 
-            success: false, 
-            error: 'Invalid action. Supported actions: download, share, unshare' 
+          {
+            success: false,
+            error: 'Invalid action. Supported actions: download, share, unshare'
           },
           { status: 400 }
         );
@@ -110,9 +110,9 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Badge action error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to perform badge action' 
+      {
+        success: false,
+        error: 'Failed to perform badge action'
       },
       { status: 500 }
     );
