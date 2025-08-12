@@ -26,7 +26,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated }: BadgeGeneratorProps
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedBadge, setGeneratedBadge] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (field: string, value: string) => {
@@ -105,7 +105,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated }: BadgeGeneratorProps
 
       setGeneratedBadge(result.data);
       toast.success('Badge generated successfully!');
-      
+
       if (onBadgeGenerated) {
         onBadgeGenerated(result.data);
       }
@@ -152,32 +152,75 @@ export function BadgeGenerator({ userId, onBadgeGenerated }: BadgeGeneratorProps
 
   if (generatedBadge) {
     return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="w-full max-w-2xl mx-auto bg-white/90 backdrop-blur-sm border border-primary-200 shadow-xl">
+        <CardHeader className="bg-gradient-to-r from-primary-50 to-secondary-50">
+          <CardTitle className="flex items-center gap-2 text-gray-900">
             <CheckCircle className="h-5 w-5 text-green-600" />
             Badge Generated Successfully!
           </CardTitle>
-          <CardDescription>
-            Your convention badge has been created. You can download it or share it on social media.
+          <CardDescription className="text-gray-600">
+            Your GOSA Convention badge has been created with official branding. Download it or share it on social media.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Enhanced Badge Preview */}
           <div className="flex justify-center">
-            <img
-              src={generatedBadge.badgeImageUrl}
-              alt="Generated Badge"
-              className="max-w-sm rounded-lg shadow-lg"
-            />
+            <div className="relative bg-gradient-to-br from-primary-600 to-secondary-500 p-6 rounded-xl shadow-lg max-w-sm w-full">
+              {/* GOSA Logo */}
+              <div className="absolute top-4 left-4">
+                <img
+                  src="/images/gosa.png"
+                  alt="GOSA Logo"
+                  className="w-12 h-12 object-contain"
+                />
+              </div>
+
+              {/* Convention Title */}
+              <div className="text-center mb-4 pt-8">
+                <h3 className="text-white font-bold text-lg">GOSA CONVENTION</h3>
+                <p className="text-white/90 text-sm">2024</p>
+              </div>
+
+              {/* Badge Image */}
+              <div className="relative mx-auto mb-4">
+                <img
+                  src={generatedBadge.badgeImageUrl}
+                  alt="Generated Badge"
+                  className="w-full rounded-lg shadow-md border-4 border-white/20"
+                />
+              </div>
+
+              {/* Attendee Info */}
+              <div className="text-center text-white">
+                <h4 className="font-bold text-lg mb-1">{formData.attendeeName}</h4>
+                {formData.attendeeTitle && (
+                  <p className="text-white/90 text-sm mb-1">{formData.attendeeTitle}</p>
+                )}
+                {formData.organization && (
+                  <p className="text-white/80 text-xs">{formData.organization}</p>
+                )}
+              </div>
+
+              {/* Decorative Elements */}
+              <div className="absolute bottom-4 right-4 opacity-20">
+                <div className="w-16 h-16 border-2 border-white rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">2024</span>
+                </div>
+              </div>
+            </div>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={handleDownloadBadge} className="flex items-center gap-2">
+            <Button
+              onClick={handleDownloadBadge}
+              className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-secondary-500 hover:from-primary-700 hover:to-secondary-600 text-white shadow-md"
+            >
               <ImageIcon className="h-4 w-4" />
               Download Badge
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
+              className="border-primary-300 text-primary-600 hover:bg-primary-50"
               onClick={() => {
                 setGeneratedBadge(null);
                 setSelectedFile(null);
@@ -189,8 +232,9 @@ export function BadgeGenerator({ userId, onBadgeGenerated }: BadgeGeneratorProps
             </Button>
           </div>
 
-          <div className="text-center text-sm text-muted-foreground">
-            <p>Badge created on {new Date(generatedBadge.createdAt).toLocaleDateString()}</p>
+          <div className="text-center text-sm bg-gray-50 p-3 rounded-lg">
+            <p className="text-gray-600">Badge created on {new Date(generatedBadge.createdAt).toLocaleDateString()}</p>
+            <p className="text-gray-500 text-xs mt-1">High-resolution PNG format • Perfect for social media</p>
           </div>
         </CardContent>
       </Card>
@@ -198,11 +242,11 @@ export function BadgeGenerator({ userId, onBadgeGenerated }: BadgeGeneratorProps
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>Generate Your Convention Badge</CardTitle>
-        <CardDescription>
-          Create a personalized badge for the GOSA Convention. Upload your photo and provide your details.
+    <Card className="w-full max-w-2xl mx-auto bg-white/90 backdrop-blur-sm border border-primary-200 shadow-xl">
+      <CardHeader className="bg-gradient-to-r from-primary-50 to-secondary-50">
+        <CardTitle className="text-gray-900">Generate Your GOSA Convention Badge</CardTitle>
+        <CardDescription className="text-gray-600">
+          Create a personalized badge with official GOSA branding. Upload your photo and provide your details.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -293,25 +337,27 @@ export function BadgeGenerator({ userId, onBadgeGenerated }: BadgeGeneratorProps
         <Button
           onClick={handleGenerateBadge}
           disabled={isGenerating || !selectedFile || !formData.attendeeName.trim()}
-          className="w-full"
+          className="w-full bg-gradient-to-r from-primary-600 to-secondary-500 hover:from-primary-700 hover:to-secondary-600 text-white shadow-md"
           size="lg"
         >
           {isGenerating ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Generating Badge...
+              Generating Your Badge...
             </>
           ) : (
             <>
               <ImageIcon className="h-4 w-4 mr-2" />
-              Generate Badge
+              Generate GOSA Badge
             </>
           )}
         </Button>
 
-        <div className="text-xs text-muted-foreground text-center">
-          <p>Your badge will be available for download immediately after generation.</p>
-          <p>You can also choose to share it in our public gallery.</p>
+        <div className="text-xs text-gray-600 text-center bg-gray-50 p-3 rounded-lg">
+          <p className="font-medium">Your badge will include:</p>
+          <p>• Official GOSA logo and branding</p>
+          <p>• High-resolution format for printing and sharing</p>
+          <p>• Option to share in our community gallery</p>
         </div>
       </CardContent>
     </Card>

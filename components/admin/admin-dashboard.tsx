@@ -9,10 +9,10 @@ import { AnalyticsCards } from './analytics-cards';
 import { AttendeeTable } from './attendee-table';
 import { PaymentHistory } from './payment-history';
 import { QRCodeManager } from './qr-code-manager';
-import { 
-  BarChart3, 
-  Users, 
-  CreditCard, 
+import {
+  BarChart3,
+  Users,
+  CreditCard,
   QrCode,
   AlertCircle
 } from 'lucide-react';
@@ -170,10 +170,10 @@ export function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${dashboardData.quickStats.totalRevenue.toLocaleString()}
+              ₦{dashboardData.quickStats.totalRevenue.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
-              ${dashboardData.quickStats.thisMonthRevenue.toLocaleString()} this month
+              ₦{dashboardData.quickStats.thisMonthRevenue.toLocaleString()} this month
             </p>
           </CardContent>
         </Card>
@@ -186,7 +186,7 @@ export function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{dashboardData.todayStats.totalPayments}</div>
             <p className="text-xs text-muted-foreground">
-              ${dashboardData.todayStats.revenue.toLocaleString()} revenue
+              ₦{dashboardData.todayStats.revenue.toLocaleString()} revenue
             </p>
           </CardContent>
         </Card>
@@ -218,7 +218,7 @@ export function AdminDashboard() {
 
         <TabsContent value="overview" className="space-y-4">
           <AnalyticsCards />
-          
+
           {/* Recent Activity */}
           <Card>
             <CardHeader>
@@ -236,7 +236,7 @@ export function AdminDashboard() {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(activity.timestamp).toLocaleString()}
-                        {activity.amount && ` • $${activity.amount.toLocaleString()}`}
+                        {activity.amount && ` • ₦${activity.amount.toLocaleString()}`}
                       </p>
                     </div>
                   </div>

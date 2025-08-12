@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Search, 
-  Filter, 
-  ChevronLeft, 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Search,
+  Filter,
+  ChevronLeft,
   ChevronRight,
   Download,
   DollarSign,
@@ -58,7 +59,7 @@ export function PaymentHistory() {
   const [summary, setSummary] = useState<PaymentSummaryStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [serviceFilter, setServiceFilter] = useState('all');
+  const [activeServiceTab, setActiveServiceTab] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -66,7 +67,7 @@ export function PaymentHistory() {
 
   useEffect(() => {
     fetchPayments();
-  }, [currentPage, serviceFilter, statusFilter, dateFrom, dateTo]);
+  }, [currentPage, activeServiceTab, statusFilter, dateFrom, dateTo]);
 
   const fetchPayments = async () => {
     try {
@@ -76,7 +77,7 @@ export function PaymentHistory() {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '20',
-        service: serviceFilter,
+        service: activeServiceTab,
         status: statusFilter
       });
 
@@ -101,8 +102,8 @@ export function PaymentHistory() {
     }
   };
 
-  const handleServiceFilter = (value: string) => {
-    setServiceFilter(value);
+  const handleServiceTabChange = (value: string) => {
+    setActiveServiceTab(value);
     setCurrentPage(1);
   };
 
@@ -129,7 +130,7 @@ export function PaymentHistory() {
   const exportPayments = async () => {
     try {
       const params = new URLSearchParams({
-        service: serviceFilter,
+        service: activeServiceTab,
         status: statusFilter,
         export: 'true'
       });
@@ -239,6 +240,19 @@ export function PaymentHistory() {
     );
   }
 
+  const getServiceDisplayName = (service: string) => {
+    const serviceNames: { [key: string]: string } = {
+      'all': 'All Services',
+      'convention': 'Convention Registration',
+      'dinner': 'Dinner Tickets',
+      'accommodation': 'Accommodation',
+      'brochure': 'Brochure Orders',
+      'goodwill': 'Goodwill Messages',
+      'donation': 'Donations'
+    };
+    return serviceNames[service] || service;
+  };
+
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
@@ -250,9 +264,9 @@ export function PaymentHistory() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${summary.totalAmount.toLocaleString()}</div>
+              <div className="text-2xl font-bold">₦{summary.totalAmount.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
-                Filtered results
+                {getServiceDisplayName(activeServiceTab)}
               </p>
             </CardContent>
           </Card>
@@ -289,7 +303,7 @@ export function PaymentHistory() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${summary.averageAmount.toFixed(0)}</div>
+              <div className="text-2xl font-bold">₦{summary.averageAmount.toFixed(0)}</div>
               <p className="text-xs text-muted-foreground">
                 Per payment
               </p>
@@ -298,188 +312,189 @@ export function PaymentHistory() {
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Payment History</CardTitle>
-              <CardDescription>
-                Track all payments across services
-                {pagination && ` (${pagination.totalPayments} total)`}
-              </CardDescription>
-            </div>
-            <Button onClick={exportPayments} variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-4 mb-6">
-            <Select value={serviceFilter} onValueChange={handleServiceFilter}>
-              <SelectTrigger className="w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by service" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Services</SelectItem>
-                <SelectItem value="convention">Convention</SelectItem>
-                <SelectItem value="dinner">Dinner</SelectItem>
-                <SelectItem value="accommodation">Accommodation</SelectItem>
-                <SelectItem value="brochure">Brochure</SelectItem>
-                <SelectItem value="goodwill">Goodwill</SelectItem>
-                <SelectItem value="donation">Donation</SelectItem>
-              </SelectContent>
-            </Select>
+      {/* Service Tabs */}
+      <Tabs value={activeServiceTab} onValueChange={handleServiceTabChange} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="convention">Convention</TabsTrigger>
+          <TabsTrigger value="dinner">Dinner</TabsTrigger>
+          <TabsTrigger value="accommodation">Accommodation</TabsTrigger>
+          <TabsTrigger value="brochure">Brochure</TabsTrigger>
+          <TabsTrigger value="goodwill">Goodwill</TabsTrigger>
+          <TabsTrigger value="donation">Donations</TabsTrigger>
+        </TabsList>
 
-            <Select value={statusFilter} onValueChange={handleStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-              </SelectContent>
-            </Select>
+        <TabsContent value={activeServiceTab} className="space-y-4">
 
-            <div className="flex items-center space-x-2">
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="w-40"
-                placeholder="From date"
-              />
-              <span className="text-muted-foreground">to</span>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-40"
-                placeholder="To date"
-              />
-              <Button onClick={handleDateFilter} variant="outline" size="sm">
-                Apply
-              </Button>
-              {(dateFrom || dateTo) && (
-                <Button onClick={clearDateFilter} variant="ghost" size="sm">
-                  Clear
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Payment Reference</TableHead>
-                  <TableHead>Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payments.map((payment) => (
-                  <TableRow key={payment.paymentId}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{payment.userName}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {payment.userEmail}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{payment.service}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <DollarSign className="h-3 w-3 mr-1" />
-                        {payment.amount.toLocaleString()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(payment.status)}
-                    </TableCell>
-                    <TableCell>
-                      <code className="text-xs bg-muted px-2 py-1 rounded">
-                        {payment.paymentReference}
-                      </code>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center text-sm">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          {new Date(payment.createdAt).toLocaleDateString()}
-                        </div>
-                        {payment.confirmedAt && (
-                          <div className="text-xs text-muted-foreground">
-                            Confirmed: {new Date(payment.confirmedAt).toLocaleDateString()}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
-          {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-muted-foreground">
-                Showing {((pagination.currentPage - 1) * pagination.limit) + 1} to{' '}
-                {Math.min(pagination.currentPage * pagination.limit, pagination.totalPayments)} of{' '}
-                {pagination.totalPayments} payments
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  onClick={() => handlePageChange(pagination.currentPage - 1)}
-                  disabled={!pagination.hasPrevPage || loading}
-                  variant="outline"
-                  size="sm"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <div className="flex items-center space-x-1">
-                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                    const page = i + 1;
-                    return (
-                      <Button
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        variant={pagination.currentPage === page ? "default" : "outline"}
-                        size="sm"
-                        className="w-8 h-8 p-0"
-                      >
-                        {page}
-                      </Button>
-                    );
-                  })}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Payment History</CardTitle>
+                  <CardDescription>
+                    Track all payments across services
+                    {pagination && ` (${pagination.totalPayments} total)`}
+                  </CardDescription>
                 </div>
-                <Button
-                  onClick={() => handlePageChange(pagination.currentPage + 1)}
-                  disabled={!pagination.hasNextPage || loading}
-                  variant="outline"
-                  size="sm"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
+                <Button onClick={exportPayments} variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
                 </Button>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardHeader>
+            <CardContent>
+              {/* Filters */}
+              <div className="flex flex-wrap items-center gap-4 mb-6">
+                <Select value={statusFilter} onValueChange={handleStatusFilter}>
+                  <SelectTrigger className="w-48">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="w-40"
+                    placeholder="From date"
+                  />
+                  <span className="text-muted-foreground">to</span>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="w-40"
+                    placeholder="To date"
+                  />
+                  <Button onClick={handleDateFilter} variant="outline" size="sm">
+                    Apply
+                  </Button>
+                  {(dateFrom || dateTo) && (
+                    <Button onClick={clearDateFilter} variant="ghost" size="sm">
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Service</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Payment Reference</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {payments.map((payment) => (
+                      <TableRow key={payment.paymentId}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{payment.userName}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {payment.userEmail}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{payment.service}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <span className="text-sm mr-1">₦</span>
+                            {payment.amount.toLocaleString()}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(payment.status)}
+                        </TableCell>
+                        <TableCell>
+                          <code className="text-xs bg-muted px-2 py-1 rounded">
+                            {payment.paymentReference}
+                          </code>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center text-sm">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {new Date(payment.createdAt).toLocaleDateString()}
+                            </div>
+                            {payment.confirmedAt && (
+                              <div className="text-xs text-muted-foreground">
+                                Confirmed: {new Date(payment.confirmedAt).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination */}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {((pagination.currentPage - 1) * pagination.limit) + 1} to{' '}
+                    {Math.min(pagination.currentPage * pagination.limit, pagination.totalPayments)} of{' '}
+                    {pagination.totalPayments} payments
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      onClick={() => handlePageChange(pagination.currentPage - 1)}
+                      disabled={!pagination.hasPrevPage || loading}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <div className="flex items-center space-x-1">
+                      {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                        const page = i + 1;
+                        return (
+                          <Button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            variant={pagination.currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            className="w-8 h-8 p-0"
+                          >
+                            {page}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      onClick={() => handlePageChange(pagination.currentPage + 1)}
+                      disabled={!pagination.hasNextPage || loading}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
