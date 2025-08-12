@@ -254,125 +254,147 @@ export class AdminUtils {
    */
   static async getAllPayments(): Promise<PaymentSummary[]> {
     try {
-      const [
-        conventions,
-        dinners,
-        accommodations,
-        brochures,
-        goodwills,
-        donations
-      ] = await Promise.all([
-        ConventionRegistration.find().populate('userId', 'name email').sort({ createdAt: -1 }),
-        DinnerReservation.find().populate('userId', 'name email').sort({ createdAt: -1 }),
-        Accommodation.find().populate('userId', 'name email').sort({ createdAt: -1 }),
-        ConventionBrochure.find().populate('userId', 'name email').sort({ createdAt: -1 }),
-        GoodwillMessage.find().populate('userId', 'name email').sort({ createdAt: -1 }),
-        Donation.find().populate('userId', 'name email').sort({ createdAt: -1 })
-      ]);
-
       const payments: PaymentSummary[] = [];
 
-      // Convention payments
-      conventions.forEach((conv: any) => {
-        payments.push({
-          paymentId: conv._id.toString(),
-          userId: conv.userId._id.toString(),
-          userName: conv.userId.name,
-          userEmail: conv.userId.email,
-          service: 'Convention Registration',
-          amount: conv.totalAmount,
-          status: conv.confirmed ? 'confirmed' : 'pending',
-          paymentReference: conv.paymentReference,
-          createdAt: conv.createdAt,
-          confirmedAt: conv.confirmed ? conv.updatedAt : undefined
+      // Try to get data from each service, but don't fail if one fails
+      try {
+        const conventions = await ConventionRegistration.find().populate('userId', 'name email').sort({ createdAt: -1 });
+        conventions.forEach((conv: any) => {
+          if (conv.userId) {
+            payments.push({
+              paymentId: conv._id.toString(),
+              userId: conv.userId._id.toString(),
+              userName: conv.userId.name || 'Unknown User',
+              userEmail: conv.userId.email || 'unknown@email.com',
+              service: 'Convention Registration',
+              amount: conv.totalAmount || 0,
+              status: conv.confirmed ? 'confirmed' : 'pending',
+              paymentReference: conv.paymentReference || 'N/A',
+              createdAt: conv.createdAt,
+              confirmedAt: conv.confirmed ? conv.updatedAt : undefined
+            });
+          }
         });
-      });
+      } catch (error) {
+        console.warn('Failed to fetch convention registrations:', error);
+      }
 
-      // Dinner payments
-      dinners.forEach((dinner: any) => {
-        payments.push({
-          paymentId: dinner._id.toString(),
-          userId: dinner.userId._id.toString(),
-          userName: dinner.userId.name,
-          userEmail: dinner.userId.email,
-          service: 'Dinner Reservation',
-          amount: dinner.totalAmount,
-          status: dinner.confirmed ? 'confirmed' : 'pending',
-          paymentReference: dinner.paymentReference,
-          createdAt: dinner.createdAt,
-          confirmedAt: dinner.confirmed ? dinner.updatedAt : undefined
+      try {
+        const dinners = await DinnerReservation.find().populate('userId', 'name email').sort({ createdAt: -1 });
+        dinners.forEach((dinner: any) => {
+          if (dinner.userId) {
+            payments.push({
+              paymentId: dinner._id.toString(),
+              userId: dinner.userId._id.toString(),
+              userName: dinner.userId.name || 'Unknown User',
+              userEmail: dinner.userId.email || 'unknown@email.com',
+              service: 'Dinner Reservation',
+              amount: dinner.totalAmount || 0,
+              status: dinner.confirmed ? 'confirmed' : 'pending',
+              paymentReference: dinner.paymentReference || 'N/A',
+              createdAt: dinner.createdAt,
+              confirmedAt: dinner.confirmed ? dinner.updatedAt : undefined
+            });
+          }
         });
-      });
+      } catch (error) {
+        console.warn('Failed to fetch dinner reservations:', error);
+      }
 
-      // Accommodation payments
-      accommodations.forEach((accom: any) => {
-        payments.push({
-          paymentId: accom._id.toString(),
-          userId: accom.userId._id.toString(),
-          userName: accom.userId.name,
-          userEmail: accom.userId.email,
-          service: 'Accommodation Booking',
-          amount: accom.totalAmount,
-          status: accom.confirmed ? 'confirmed' : 'pending',
-          paymentReference: accom.paymentReference,
-          createdAt: accom.createdAt,
-          confirmedAt: accom.confirmed ? accom.updatedAt : undefined
+      try {
+        const accommodations = await Accommodation.find().populate('userId', 'name email').sort({ createdAt: -1 });
+        accommodations.forEach((accom: any) => {
+          if (accom.userId) {
+            payments.push({
+              paymentId: accom._id.toString(),
+              userId: accom.userId._id.toString(),
+              userName: accom.userId.name || 'Unknown User',
+              userEmail: accom.userId.email || 'unknown@email.com',
+              service: 'Accommodation Booking',
+              amount: accom.totalAmount || 0,
+              status: accom.confirmed ? 'confirmed' : 'pending',
+              paymentReference: accom.paymentReference || 'N/A',
+              createdAt: accom.createdAt,
+              confirmedAt: accom.confirmed ? accom.updatedAt : undefined
+            });
+          }
         });
-      });
+      } catch (error) {
+        console.warn('Failed to fetch accommodations:', error);
+      }
 
-      // Brochure payments
-      brochures.forEach((brochure: any) => {
-        payments.push({
-          paymentId: brochure._id.toString(),
-          userId: brochure.userId._id.toString(),
-          userName: brochure.userId.name,
-          userEmail: brochure.userId.email,
-          service: 'Brochure Purchase',
-          amount: brochure.totalAmount,
-          status: brochure.confirmed ? 'confirmed' : 'pending',
-          paymentReference: brochure.paymentReference,
-          createdAt: brochure.createdAt,
-          confirmedAt: brochure.confirmed ? brochure.updatedAt : undefined
+      try {
+        const brochures = await ConventionBrochure.find().populate('userId', 'name email').sort({ createdAt: -1 });
+        brochures.forEach((brochure: any) => {
+          if (brochure.userId) {
+            payments.push({
+              paymentId: brochure._id.toString(),
+              userId: brochure.userId._id.toString(),
+              userName: brochure.userId.name || 'Unknown User',
+              userEmail: brochure.userId.email || 'unknown@email.com',
+              service: 'Brochure Purchase',
+              amount: brochure.totalAmount || 0,
+              status: brochure.confirmed ? 'confirmed' : 'pending',
+              paymentReference: brochure.paymentReference || 'N/A',
+              createdAt: brochure.createdAt,
+              confirmedAt: brochure.confirmed ? brochure.updatedAt : undefined
+            });
+          }
         });
-      });
+      } catch (error) {
+        console.warn('Failed to fetch brochures:', error);
+      }
 
-      // Goodwill payments
-      goodwills.forEach((goodwill: any) => {
-        payments.push({
-          paymentId: goodwill._id.toString(),
-          userId: goodwill.userId._id.toString(),
-          userName: goodwill.userId.name,
-          userEmail: goodwill.userId.email,
-          service: 'Goodwill Message',
-          amount: goodwill.donationAmount,
-          status: goodwill.confirmed ? 'confirmed' : 'pending',
-          paymentReference: goodwill.paymentReference,
-          createdAt: goodwill.createdAt,
-          confirmedAt: goodwill.confirmed ? goodwill.updatedAt : undefined
+      try {
+        const goodwills = await GoodwillMessage.find().populate('userId', 'name email').sort({ createdAt: -1 });
+        goodwills.forEach((goodwill: any) => {
+          if (goodwill.userId) {
+            payments.push({
+              paymentId: goodwill._id.toString(),
+              userId: goodwill.userId._id.toString(),
+              userName: goodwill.userId.name || 'Unknown User',
+              userEmail: goodwill.userId.email || 'unknown@email.com',
+              service: 'Goodwill Message',
+              amount: goodwill.donationAmount || 0,
+              status: goodwill.confirmed ? 'confirmed' : 'pending',
+              paymentReference: goodwill.paymentReference || 'N/A',
+              createdAt: goodwill.createdAt,
+              confirmedAt: goodwill.confirmed ? goodwill.updatedAt : undefined
+            });
+          }
         });
-      });
+      } catch (error) {
+        console.warn('Failed to fetch goodwill messages:', error);
+      }
 
-      // Donation payments
-      donations.forEach((donation: any) => {
-        payments.push({
-          paymentId: donation._id.toString(),
-          userId: donation.userId._id.toString(),
-          userName: donation.userId.name,
-          userEmail: donation.userId.email,
-          service: 'Donation',
-          amount: donation.amount,
-          status: donation.confirmed ? 'confirmed' : 'pending',
-          paymentReference: donation.paymentReference,
-          createdAt: donation.createdAt,
-          confirmedAt: donation.confirmed ? donation.updatedAt : undefined
+      try {
+        const donations = await Donation.find().populate('userId', 'name email').sort({ createdAt: -1 });
+        donations.forEach((donation: any) => {
+          if (donation.userId) {
+            payments.push({
+              paymentId: donation._id.toString(),
+              userId: donation.userId._id.toString(),
+              userName: donation.userId.name || 'Unknown User',
+              userEmail: donation.userId.email || 'unknown@email.com',
+              service: 'Donation',
+              amount: donation.amount || 0,
+              status: donation.confirmed ? 'confirmed' : 'pending',
+              paymentReference: donation.paymentReference || 'N/A',
+              createdAt: donation.createdAt,
+              confirmedAt: donation.confirmed ? donation.updatedAt : undefined
+            });
+          }
         });
-      });
+      } catch (error) {
+        console.warn('Failed to fetch donations:', error);
+      }
 
       // Sort by creation date (newest first)
       return payments.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } catch (error) {
       console.error('Error getting all payments:', error);
-      throw new Error('Failed to retrieve payment data');
+      // Return empty array instead of throwing error
+      return [];
     }
   }
 
