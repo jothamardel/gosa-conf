@@ -11,6 +11,7 @@ interface GoodwillMessageRequest {
   donationAmount: number;
   attributionName?: string;
   anonymous: boolean;
+  includeMessage?: boolean;
 }
 
 export async function POST(req: NextRequest) {
@@ -19,20 +20,29 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!body?.email || !body?.fullName || !body?.phoneNumber ||
-      !body?.message || !body?.donationAmount || body?.anonymous === undefined) {
+      !body?.donationAmount || body?.anonymous === undefined) {
       return NextResponse.json({
         success: false,
-        message: "Please provide all required fields: email, fullName, phoneNumber, message, donationAmount, and anonymous",
+        message: "Please provide all required fields: email, fullName, phoneNumber, donationAmount, and anonymous",
       }, { status: 400 });
     }
 
-    // Validate message
-    const messageValidation = GoodwillUtils.validateMessage(body.message);
-    if (!messageValidation.valid) {
-      return NextResponse.json({
-        success: false,
-        message: messageValidation.message || "Message validation failed",
-      }, { status: 400 });
+    // Validate message only if includeMessage is true
+    if (body.includeMessage !== false) {
+      if (!body?.message) {
+        return NextResponse.json({
+          success: false,
+          message: "Message is required when including a goodwill message",
+        }, { status: 400 });
+      }
+
+      const messageValidation = GoodwillUtils.validateMessage(body.message);
+      if (!messageValidation.valid) {
+        return NextResponse.json({
+          success: false,
+          message: messageValidation.message || "Message validation failed",
+        }, { status: 400 });
+      }
     }
 
     // Validate donation amount

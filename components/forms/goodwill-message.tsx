@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react'
-import { MessageCircle, Loader2, Heart, Send, Users, Sparkles, Star, DollarSign, User, EyeOff } from 'lucide-react'
+import { MessageCircle, Loader2, Heart, Users, Sparkles, Star, DollarSign, User, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface FormData {
@@ -76,7 +76,7 @@ const GoodwillMessage = () => {
       newErrors.message = "Message is required when including a goodwill message"
     }
 
-    if (formData.message.length > 500) {
+    if (formData.includeMessage && formData.message.length > 500) {
       newErrors.message = "Message must be 500 characters or less"
     }
 
@@ -117,10 +117,11 @@ const GoodwillMessage = () => {
           email: formData.email,
           fullName: formData.fullName,
           phoneNumber: formData.phoneNumber,
-          message: formData.includeMessage ? formData.message.trim() : '',
+          message: formData.includeMessage ? formData.message.trim() : 'No message - donation only',
           donationAmount: getDonationAmount(),
           attributionName: formData.anonymous ? undefined : formData.attributionName.trim(),
-          anonymous: formData.anonymous
+          anonymous: formData.anonymous,
+          includeMessage: formData.includeMessage
         }),
       })
 

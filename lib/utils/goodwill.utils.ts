@@ -300,11 +300,14 @@ export class GoodwillUtils {
   /**
    * Validate message content
    */
-  static validateMessage(message: string): {
+  static validateMessage(message: string, allowEmpty: boolean = false): {
     valid: boolean;
     message?: string;
   } {
     if (!message || message.trim().length === 0) {
+      if (allowEmpty) {
+        return { valid: true };
+      }
       return {
         valid: false,
         message: "Message cannot be empty"
@@ -312,6 +315,11 @@ export class GoodwillUtils {
     }
 
     const trimmedMessage = message.trim();
+
+    // Skip validation for donation-only placeholder messages
+    if (trimmedMessage === 'No message - donation only') {
+      return { valid: true };
+    }
 
     if (trimmedMessage.length < 10) {
       return {
