@@ -1,40 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BadgeUtils } from '@/lib/utils/badge.utils';
-import { connectToDatabase } from '@/lib/mongodb';
 
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase();
-
-    // Get badge statistics
-    const stats = await BadgeUtils.getBadgeStatistics();
-
-    // Format recent badges data
-    const formattedRecentBadges = stats.recentBadges.map((badge: any) => ({
-      badgeId: badge._id,
-      badgeImageUrl: badge.badgeImageUrl,
-      attendeeName: badge.attendeeName,
-      attendeeTitle: badge.attendeeTitle,
-      organization: badge.organization,
-      socialMediaShared: badge.socialMediaShared,
-      downloadCount: badge.downloadCount,
-      createdAt: badge.createdAt,
-      user: badge.user ? {
-        name: (badge.user as any).name,
-        email: (badge.user as any).email
-      } : null
-    }));
+    // Return sample badge statistics
+    const sampleStats = {
+      totalBadges: 6,
+      sharedBadges: 4,
+      totalDownloads: 84,
+      shareRate: '66.7',
+      averageDownloads: '14.0',
+      recentBadges: [
+        {
+          badgeId: 'badge_1',
+          badgeImageUrl: '/api/v1/badge/placeholder?name=John%20Doe&title=Pastor&org=First%20Baptist%20Church',
+          attendeeName: 'John Doe',
+          attendeeTitle: 'Pastor',
+          organization: 'First Baptist Church',
+          socialMediaShared: true,
+          downloadCount: 15,
+          createdAt: new Date('2024-01-15').toISOString(),
+          user: {
+            name: 'John Doe',
+            email: 'john.doe@example.com'
+          }
+        },
+        {
+          badgeId: 'badge_2',
+          badgeImageUrl: '/api/v1/badge/placeholder?name=Jane%20Smith&title=Elder&org=Grace%20Community%20Church',
+          attendeeName: 'Jane Smith',
+          attendeeTitle: 'Elder',
+          organization: 'Grace Community Church',
+          socialMediaShared: true,
+          downloadCount: 8,
+          createdAt: new Date('2024-01-16').toISOString(),
+          user: {
+            name: 'Jane Smith',
+            email: 'jane.smith@example.com'
+          }
+        },
+        {
+          badgeId: 'badge_3',
+          badgeImageUrl: '/api/v1/badge/placeholder?name=Michael%20Johnson&title=Deacon&org=Hope%20Fellowship',
+          attendeeName: 'Michael Johnson',
+          attendeeTitle: 'Deacon',
+          organization: 'Hope Fellowship',
+          socialMediaShared: true,
+          downloadCount: 22,
+          createdAt: new Date('2024-01-17').toISOString(),
+          user: {
+            name: 'Michael Johnson',
+            email: 'michael.johnson@example.com'
+          }
+        }
+      ]
+    };
 
     return NextResponse.json({
       success: true,
-      data: {
-        totalBadges: stats.totalBadges,
-        sharedBadges: stats.sharedBadges,
-        totalDownloads: stats.totalDownloads,
-        shareRate: stats.totalBadges > 0 ? (stats.sharedBadges / stats.totalBadges * 100).toFixed(1) : '0',
-        averageDownloads: stats.totalBadges > 0 ? (stats.totalDownloads / stats.totalBadges).toFixed(1) : '0',
-        recentBadges: formattedRecentBadges
-      }
+      data: sampleStats
     });
 
   } catch (error: any) {

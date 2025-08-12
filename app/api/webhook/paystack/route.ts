@@ -5,6 +5,7 @@ import { AccommodationUtils } from "@/lib/utils/accommodation.utils";
 import { BrochureUtils } from "@/lib/utils/brochure.utils";
 import { GoodwillUtils } from "@/lib/utils/goodwill.utils";
 import { DonationUtils } from "@/lib/utils/donation.utils";
+import { PDFWhatsAppUtils } from "@/lib/utils/pdf-whatsapp.utils";
 import { Wasender } from "@/lib/wasender-api";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -195,7 +196,7 @@ function hasValidResult(result: any): boolean {
   return true;
 }
 
-// Enhanced notification service for different payment types
+// Enhanced notification service for different payment types with PDF generation
 async function sendServiceNotification(serviceType: string, record: any): Promise<any> {
   try {
     const phoneNumber = record.userId?.phoneNumber || record.paymentReference?.split('_')[1];
@@ -205,54 +206,86 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
     }
 
     const internationalPhone = convertToInternationalFormat(phoneNumber);
+    console.log({ internationalPhone });
 
-    console.log({ internationalPhone })
+    // Prepare user details for PDF generation
+    const userDetails = {
+      name: record.userId?.fullName || record.fullName || 'Unknown User',
+      email: record.userId?.email || record.email || 'unknown@email.com',
+      phone: internationalPhone,
+      registrationId: record._id?.toString()
+    };
 
-    let message = '';
-    let imageUrl = null;
+    // Generate QR code data
+    const qrCodeData = record.qrCodes?.[0]?.qrCode || `GOSA2025-${serviceType.toUpperCase()}-${record._id}`;
 
+    let pdfResult: any = null;
+
+    // Generate and send PDF based on service type
     switch (serviceType) {
       case 'dinner':
-        message = `🍽️ Dinner Reservation Confirmed!\n\nHi ${record.userId?.fullName || 'there'},\n\nYour dinner reservation for ${record.numberOfGuests} guest(s) has been confirmed.\n\nReservation Details:\n• Guests: ${record.numberOfGuests}\n• Amount: ₦${record.totalAmount}\n• Reference: ${record.paymentReference}\n\nYour QR codes are attached. Please present them at the dinner venue.\n\nThank you!\nGOSA Convention 2025 Committee`;
-        // QR codes are already generated in the record
+        pdfResult = await PDFWhatsAppUtils.sendDinnerConfirmation(
+          userDetails,
+          record,
+          qrCodeData
+        );
         break;
 
       case 'accommodation':
-        message = `🏨 Accommodation Booking Confirmed!\n\nHi ${record.userId?.fullName || 'there'},\n\nYour ${record.accommodationType} accommodation booking has been confirmed.\n\nBooking Details:\n• Type: ${record.accommodationType.charAt(0).toUpperCase() + record.accommodationType.slice(1)}\n• Check-in: ${new Date(record.checkInDate).toLocaleDateString()}\n• Check-out: ${new Date(record.checkOutDate).toLocaleDateString()}\n• Guests: ${record.numberOfGuests}\n• Amount: ₦${record.totalAmount}\n• Confirmation Code: ${record.confirmationCode}\n\nPlease keep your confirmation code safe.\n\nThank you!\nGOSA Convention 2025 Committee`;
+        pdfResult = await PDFWhatsAppUtils.sendAccommodationConfirmation(
+          userDetails,
+          record,
+          qrCodeData
+        );
         break;
 
       case 'brochure':
-        message = `📖 Brochure Order Confirmed!\n\nHi ${record.userId?.fullName || 'there'},\n\nYour ${record.brochureType} brochure order has been confirmed.\n\nOrder Details:\n• Type: ${record.brochureType.charAt(0).toUpperCase() + record.brochureType.slice(1)}\n• Quantity: ${record.quantity}\n• Amount: ₦${record.totalAmount}\n• Reference: ${record.paymentReference}\n\n${record.brochureType === 'physical' ? 'Your brochures will be available for pickup at the convention venue.' : 'Your digital brochures will be sent to your email shortly.'}\n\nThank you!\nGOSA Convention 2025 Committee`;
+        pdfResult = await PDFWhatsAppUtils.sendBrochureConfirmation(
+          userDetails,
+          record,
+          qrCodeData
+        );
         break;
 
       case 'goodwill':
-        message = `💝 Goodwill Message Received!\n\nHi ${record.userId?.fullName || 'there'},\n\nThank you for your goodwill message and donation of ₦${record.donationAmount}.\n\nYour message has been received and is pending approval. Once approved, it will be displayed during the convention.\n\nReference: ${record.paymentReference}\n\nWe appreciate your support!\nGOSA Convention 2025 Committee`;
+        pdfResult = await PDFWhatsAppUtils.sendGoodwillConfirmation(
+          userDetails,
+          record,
+          qrCodeData
+        );
         break;
 
       case 'donation':
-        message = `🙏 Donation Received!\n\nHi ${record.userId?.fullName || 'there'},\n\nThank you for your generous donation of ₦${record.amount}.\n\nDonation Details:\n• Amount: ₦${record.amount}\n• Receipt Number: ${record.receiptNumber}\n• Reference: ${record.paymentReference}\n${record.onBehalfOf ? `• On behalf of: ${record.onBehalfOf}` : ''}\n\nYour support means a lot to us!\nGOSA Convention 2025 Committee`;
+        pdfResult = await PDFWhatsAppUtils.sendDonationConfirmation(
+          userDetails,
+          record,
+          qrCodeData
+        );
+        break;
+
+      case 'convention':
+        pdfResult = await PDFWhatsAppUtils.sendConventionConfirmation(
+          userDetails,
+          record,
+          qrCodeData
+        );
         break;
 
       default:
-        // Convention registration - use existing logic
+        console.warn(`Unknown service type: ${serviceType}`);
         return null;
     }
 
-    const result = await Wasender.httpSenderMessage({
-      to: internationalPhone,
-      text: message,
-      imageUrl,
-    });
-
     return {
-      success: true,
+      success: pdfResult?.success || false,
       serviceType,
       phoneNumber: internationalPhone,
-      result,
+      pdfGenerated: pdfResult?.success || false,
+      error: pdfResult?.error
     };
 
   } catch (error: any) {
-    console.error(`Error sending ${serviceType} notification:`, error);
+    console.error(`Error sending ${serviceType} notification with PDF:`, error);
     return {
       success: false,
       serviceType,
