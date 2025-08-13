@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PDFGeneratorService, PDFData } from '@/lib/services/pdf-generator.service';
+import { PDFGeneratorService, PDFGeneratorService as PDFData } from '@/lib/services/pdf-generator.service';
 import { ConventionRegistration } from '@/lib/schema/convention.schema';
 import { DinnerReservation } from '@/lib/schema/dinner.schema';
 import { Accommodation } from '@/lib/schema/accommodation.schema';
