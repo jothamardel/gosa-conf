@@ -1148,7 +1148,8 @@ export class PDFGeneratorService {
     return `GOSA-${year}-${shortRef}`;
   }
 }
- /**
+
+  /**
    * Parse convention additional information
    */
   private static parseConventionAdditionalInfo(additionalInfo ?: string): {
