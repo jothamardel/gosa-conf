@@ -162,6 +162,15 @@ export class PDFGeneratorService {
               box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             }
             
+            .logo-image {
+              width: 80px;
+              height: 80px;
+              border-radius: 50%;
+              object-fit: cover;
+              margin: 0 auto 15px;
+              box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            }
+            
             .title {
               font-size: 32px;
               font-weight: bold;
@@ -326,7 +335,8 @@ export class PDFGeneratorService {
           <div class="container">
             <div class="header">
               <div class="logo-section">
-                <div class="logo-placeholder">GOSA</div>
+                <img src="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${template.logoUrl}" alt="GOSA Logo" class="logo-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                <div class="logo-placeholder" style="display: none;">GOSA</div>
               </div>
               <h1 class="title">${template.title}</h1>
               <p class="subtitle">${template.subtitle}</p>

@@ -198,6 +198,8 @@ function hasValidResult(result: any): boolean {
 
 // Enhanced notification service for different payment types with PDF generation
 async function sendServiceNotification(serviceType: string, record: any): Promise<any> {
+  let internationalPhone: string = '';
+
   try {
     // Only send PDF for confirmed payments
     const isConfirmed = record.confirmed || record.confirm || false;
@@ -217,7 +219,7 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
       throw new Error('No phone number found for notification');
     }
 
-    const internationalPhone = convertToInternationalFormat(phoneNumber);
+    internationalPhone = convertToInternationalFormat(phoneNumber);
     console.log({ internationalPhone });
 
     // Prepare user details for PDF generation
@@ -240,7 +242,7 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
 
     console.log(`Generating PDF for ${serviceType} payment:`, record.paymentReference);
 
-    // Generate and send PDF based on service type
+    // Generate and send PDF based on service type (using existing methods for now)
     switch (serviceType) {
       case 'dinner':
         pdfResult = await PDFWhatsAppUtils.sendDinnerConfirmation(
@@ -283,14 +285,12 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
         break;
 
       case 'convention':
-        // Convention is handled separately in the main flow
-        console.log('Convention PDF delivery handled in main flow');
-        return {
-          success: true,
-          serviceType,
-          phoneNumber: internationalPhone,
-          handledSeparately: true
-        };
+        pdfResult = await PDFWhatsAppUtils.sendConventionConfirmation(
+          userDetails,
+          record,
+          qrCodeData
+        );
+        break;
 
       default:
         console.warn(`Unknown service type for PDF delivery: ${serviceType}`);
@@ -308,6 +308,7 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
       pdfGenerated: pdfResult?.pdfGenerated || false,
       whatsappSent: pdfResult?.whatsappSent || false,
       fallbackUsed: pdfResult?.fallbackUsed || false,
+
       error: pdfResult?.error
     };
 
@@ -402,7 +403,7 @@ export async function POST(req: NextRequest) {
 
     console.log(`Successfully processed ${serviceType} payment:`, paymentReference);
 
-    // Handle convention registration with PDF delivery
+    // Handle convention registration with PDF delivery (same as other services)
     if (serviceType === 'convention') {
       try {
         console.log('Processing convention registration with PDF delivery...');
@@ -413,44 +414,25 @@ export async function POST(req: NextRequest) {
 
         for (const conventionRecord of conventionRecords) {
           try {
-            // Prepare user details for PDF generation
-            const userDetails = {
-              name: conventionRecord.userId?.fullName || conventionRecord.fullName || 'Unknown User',
-              email: conventionRecord.userId?.email || conventionRecord.email || 'unknown@email.com',
-              phone: conventionRecord.paymentReference?.split('_')[1] || '',
-              registrationId: conventionRecord._id?.toString()
-            };
-
-            // Convert phone to international format
-            if (userDetails.phone) {
-              userDetails.phone = convertToInternationalFormat(userDetails.phone);
-            }
-
-            // Generate QR code data for convention entrance
-            const qrCodeData = conventionRecord.qrCodes?.[0]?.qrCode ||
-              `GOSA2025-CONVENTION-${conventionRecord._id}`;
-
-            // Send PDF confirmation
-            const pdfResult = await PDFWhatsAppUtils.sendConventionConfirmation(
-              userDetails,
-              conventionRecord,
-              qrCodeData
-            );
+            // Use the same notification service as other service types
+            const notificationResult = await sendServiceNotification('convention', conventionRecord);
 
             pdfResults.push({
               registrationId: conventionRecord._id,
               paymentReference: conventionRecord.paymentReference,
-              success: pdfResult.success,
-              pdfGenerated: pdfResult.pdfGenerated,
-              whatsappSent: pdfResult.whatsappSent,
-              fallbackUsed: pdfResult.fallbackUsed,
-              error: pdfResult.error
+              success: notificationResult.success,
+              pdfGenerated: notificationResult.pdfGenerated,
+              whatsappSent: notificationResult.whatsappSent,
+              fallbackUsed: notificationResult.fallbackUsed,
+              phoneNumber: notificationResult.phoneNumber,
+              error: notificationResult.error,
+              handledSeparately: notificationResult.handledSeparately
             });
 
             console.log(`Convention PDF processed for ${conventionRecord.paymentReference}:`, {
-              success: pdfResult.success,
-              pdfGenerated: pdfResult.pdfGenerated,
-              whatsappSent: pdfResult.whatsappSent
+              success: notificationResult.success,
+              pdfGenerated: notificationResult.pdfGenerated,
+              whatsappSent: notificationResult.whatsappSent
             });
 
           } catch (recordError: any) {

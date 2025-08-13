@@ -2,6 +2,8 @@ import connectDB from "../mongodb";
 import { Types } from "mongoose";
 import { QRCodeService } from "../services/qr-code.service";
 import { WhatsAppPDFService, DeliveryResult } from "../services/whatsapp-pdf.service";
+// import { PDFBlobService, BlobUploadResult } from "../services/pdf-blob.service";
+import { Wasender } from "../wasender-api";
 import {
   User,
   ConventionRegistration,
@@ -1011,3 +1013,495 @@ Generate QR code data for specific service types
     }
   }
 }
+// ========================================
+// Enhanced PDF Delivery with Vercel Blob (Commented out until dependencies are installed)
+// ========================================
+
+/*
+// Uncomment this section after installing @vercel/blob and puppeteer dependencies
+ 
+/**
+ * Generate PDF, upload to Vercel Blob, save URL to DB, and send via WhatsApp
+ */
+/*
+static async generateUploadAndSendPDF(
+  serviceType: 'convention' | 'dinner' | 'accommodation' | 'brochure' | 'goodwill' | 'donation',
+  userDetails: any,
+  record: any,
+  qrCodeData: string
+): Promise<DeliveryResult & { blobUrl?: string; dbSaved?: boolean }> {
+  const startTime = Date.now();
+
+  try {
+    console.log(`Generating and uploading PDF for ${serviceType}:`, userDetails.name);
+
+    // Prepare PDF data
+    const pdfData = {
+      userDetails: {
+        name: userDetails.name,
+        email: userDetails.email,
+        phone: userDetails.phone,
+        registrationId: userDetails.registrationId
+      },
+      operationDetails: {
+        type: serviceType,
+        amount: this.getRecordAmount(record, serviceType),
+        paymentReference: record.paymentReference,
+        date: record.createdAt || new Date(),
+        status: this.getRecordStatus(record, serviceType),
+        description: this.getServiceDescription(serviceType),
+        additionalInfo: this.getServiceAdditionalInfo(record, serviceType)
+      },
+      qrCodeData
+    };
+
+    // Generate and upload PDF to Vercel Blob
+    const blobResult = await PDFBlobService.generateAndUploadPDF(pdfData);
+
+    if (!blobResult.success) {
+      throw new Error(`PDF upload failed: ${blobResult.error}`);
+    }
+
+    console.log(`PDF uploaded successfully to: ${blobResult.url}`);
+
+    // Save PDF URL to database
+    const dbSaved = await this.savePDFUrlToDatabase(
+      serviceType,
+      record.paymentReference,
+      blobResult.url!,
+      blobResult.filename!
+    );
+
+    // Send PDF via WhatsApp using the blob URL
+    const whatsappResult = await this.sendPDFViaWhatsApp(
+      userDetails.phone,
+      userDetails.name,
+      serviceType,
+      blobResult.url!,
+      blobResult.filename!,
+      record.paymentReference
+    );
+
+    const result = {
+      success: blobResult.success && whatsappResult.success,
+      pdfGenerated: blobResult.success,
+      whatsappSent: whatsappResult.success,
+      blobUrl: blobResult.url,
+      dbSaved,
+      error: whatsappResult.error || blobResult.error,
+      fallbackUsed: whatsappResult.fallbackUsed || false
+    };
+
+    console.log(`${serviceType} PDF delivery result:`, result);
+    return result;
+
+  } catch (error) {
+    console.error(`Error in ${serviceType} PDF delivery:`, error);
+    return {
+      success: false,
+      pdfGenerated: false,
+      whatsappSent: false,
+      dbSaved: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+*/
+
+/*
+/**
+ * Send PDF document via WhatsApp using Vercel Blob URL
+ */
+/*
+private static async sendPDFViaWhatsApp(
+  phoneNumber: string,
+  userName: string,
+  serviceType: string,
+  blobUrl: string,
+  filename: string,
+  paymentReference: string
+): Promise<{ success: boolean; error?: string; fallbackUsed?: boolean }> {
+  try {
+    // Create service-specific message
+    const message = this.createWhatsAppMessage(userName, serviceType, paymentReference);
+
+    // Send document via WhatsApp
+    const result = await Wasender.sendDocument({
+      to: phoneNumber,
+      text: message,
+      documentUrl: blobUrl,
+      fileName: filename
+    });
+
+    if (result.success) {
+      console.log(`WhatsApp document sent successfully to ${phoneNumber}`);
+      return { success: true };
+    } else {
+      console.log(`WhatsApp document failed, trying fallback text message`);
+
+      // Fallback: Send text message with PDF link
+      const fallbackMessage = `${message}\n\n📄 Download your PDF: ${blobUrl}`;
+
+      const fallbackResult = await Wasender.httpSenderMessage({
+        to: phoneNumber,
+        text: fallbackMessage
+      });
+
+      return {
+        success: fallbackResult.success,
+        fallbackUsed: true,
+        error: fallbackResult.success ? undefined : 'Both document and text message failed'
+      };
+    }
+
+  } catch (error) {
+    console.error('WhatsApp sending error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+*/
+
+/*
+/**
+ * Save PDF URL to the appropriate database collection
+ */
+/*
+private static async savePDFUrlToDatabase(
+  serviceType: string,
+  paymentReference: string,
+  pdfUrl: string,
+  filename: string
+): Promise<boolean> {
+  try {
+    await connectDB();
+
+    const updateData = {
+      pdfUrl,
+      pdfFilename: filename,
+      pdfGeneratedAt: new Date()
+    };
+
+    let result;
+
+    switch (serviceType) {
+      case 'convention':
+        result = await ConventionRegistration.updateMany(
+          { paymentReference },
+          { $set: updateData }
+        );
+        break;
+
+      case 'dinner':
+        result = await DinnerReservation.updateOne(
+          { paymentReference },
+          { $set: updateData }
+        );
+        break;
+
+      case 'accommodation':
+        result = await Accommodation.updateOne(
+          { paymentReference },
+          { $set: updateData }
+        );
+        break;
+
+      case 'brochure':
+        result = await ConventionBrochure.updateOne(
+          { paymentReference },
+          { $set: updateData }
+        );
+        break;
+
+      case 'goodwill':
+        result = await GoodwillMessage.updateOne(
+          { paymentReference },
+          { $set: updateData }
+        );
+        break;
+
+      case 'donation':
+        result = await Donation.updateOne(
+          { paymentReference },
+          { $set: updateData }
+        );
+        break;
+
+      default:
+        console.error(`Unknown service type: ${serviceType}`);
+        return false;
+    }
+
+    const success = result.modifiedCount > 0 || result.matchedCount > 0;
+    console.log(`PDF URL saved to ${serviceType} database:`, success);
+    return success;
+
+  } catch (error) {
+    console.error('Error saving PDF URL to database:', error);
+    return false;
+  }
+}
+*/
+
+/*
+/**
+ * Create WhatsApp message for PDF delivery
+ */
+/*
+private static createWhatsAppMessage(
+  userName: string,
+  serviceType: string,
+  paymentReference: string
+): string {
+  const serviceNames = {
+    convention: 'Convention Registration',
+    dinner: 'Dinner Reservation',
+    accommodation: 'Accommodation Booking',
+    brochure: 'Brochure Order',
+    goodwill: 'Goodwill Message & Donation',
+    donation: 'Donation'
+  };
+
+  const serviceName = serviceNames[serviceType as keyof typeof serviceNames] || serviceType;
+
+  return `🎉 Hello ${userName}!
+
+Your ${serviceName} has been confirmed!
+
+📄 Please find your official confirmation document attached.
+
+📋 **Details:**
+• Service: ${serviceName}
+• Reference: ${paymentReference}
+• Status: Confirmed ✅
+
+📱 **Important:**
+• Save this document to your device
+• Present the QR code for verification when needed
+• Keep this for your records
+
+🏛️ **GOSA 2025 Convention**
+"For Light and Truth"
+
+Thank you for your participation! 🙏
+
+Need help? Contact our support team.`;
+}
+*/
+
+/*
+/**
+ * Enhanced convention confirmation with blob upload
+ */
+/*
+static async sendConventionConfirmationWithBlob(
+  userDetails: any,
+  record: any,
+  qrCodeData: string
+): Promise<DeliveryResult & { blobUrl?: string; dbSaved?: boolean }> {
+  return await this.generateUploadAndSendPDF('convention', userDetails, record, qrCodeData);
+}
+*/
+
+/*
+/**
+ * Enhanced dinner confirmation with blob upload
+ */
+/*
+static async sendDinnerConfirmationWithBlob(
+  userDetails: any,
+  record: any,
+  qrCodeData: string
+): Promise<DeliveryResult & { blobUrl?: string; dbSaved?: boolean }> {
+  return await this.generateUploadAndSendPDF('dinner', userDetails, record, qrCodeData);
+}
+
+/**
+ * Enhanced accommodation confirmation with blob upload
+ */
+/*
+static async sendAccommodationConfirmationWithBlob(
+  userDetails: any,
+  record: any,
+  qrCodeData: string
+): Promise<DeliveryResult & { blobUrl?: string; dbSaved?: boolean }> {
+  return await this.generateUploadAndSendPDF('accommodation', userDetails, record, qrCodeData);
+}
+
+/**
+ * Enhanced brochure confirmation with blob upload
+ */
+/*
+static async sendBrochureConfirmationWithBlob(
+  userDetails: any,
+  record: any,
+  qrCodeData: string
+): Promise<DeliveryResult & { blobUrl?: string; dbSaved?: boolean }> {
+  return await this.generateUploadAndSendPDF('brochure', userDetails, record, qrCodeData);
+}
+
+/**
+ * Enhanced goodwill confirmation with blob upload
+ */
+/*
+static async sendGoodwillConfirmationWithBlob(
+  userDetails: any,
+  record: any,
+  qrCodeData: string
+): Promise<DeliveryResult & { blobUrl?: string; dbSaved?: boolean }> {
+  return await this.generateUploadAndSendPDF('goodwill', userDetails, record, qrCodeData);
+}
+
+/**
+ * Enhanced donation confirmation with blob upload
+ */
+/*
+static async sendDonationConfirmationWithBlob(
+  userDetails: any,
+  record: any,
+  qrCodeData: string
+): Promise<DeliveryResult & { blobUrl?: string; dbSaved?: boolean }> {
+  return await this.generateUploadAndSendPDF('donation', userDetails, record, qrCodeData);
+}
+*/
+
+/*
+// Helper methods for service-specific data extraction
+
+private static getRecordAmount(record: any, serviceType: string): number {
+  switch (serviceType) {
+    case 'convention':
+      return record.amount || 0;
+    case 'dinner':
+    case 'accommodation':
+    case 'brochure':
+      return record.totalAmount || 0;
+    case 'goodwill':
+      return record.donationAmount || 0;
+    case 'donation':
+      return record.amount || 0;
+    default:
+      return 0;
+  }
+}
+
+private static getRecordStatus(record: any, serviceType: string): 'confirmed' | 'pending' {
+  switch (serviceType) {
+    case 'convention':
+      return record.confirm ? 'confirmed' : 'pending';
+    case 'dinner':
+    case 'accommodation':
+    case 'brochure':
+    case 'goodwill':
+    case 'donation':
+      return record.confirmed ? 'confirmed' : 'pending';
+    default:
+      return 'pending';
+  }
+}
+
+private static getServiceDescription(serviceType: string): string {
+  const descriptions = {
+    convention: 'GOSA 2025 Convention Registration',
+    dinner: 'GOSA 2025 Convention Dinner Reservation',
+    accommodation: 'GOSA 2025 Convention Accommodation Booking',
+    brochure: 'GOSA 2025 Convention Brochure Order',
+    goodwill: 'GOSA 2025 Convention Goodwill Message & Donation',
+    donation: 'GOSA 2025 Convention Donation'
+  };
+
+  return descriptions[serviceType as keyof typeof descriptions] || `GOSA 2025 ${serviceType}`;
+}
+
+private static getServiceAdditionalInfo(record: any, serviceType: string): string {
+  switch (serviceType) {
+    case 'convention':
+      return this.formatConventionAdditionalInfo(record);
+    case 'dinner':
+      return this.formatDinnerAdditionalInfo(record);
+    case 'accommodation':
+      return this.formatAccommodationAdditionalInfo(record);
+    case 'brochure':
+      return this.formatBrochureAdditionalInfo(record);
+    case 'goodwill':
+      return this.formatGoodwillAdditionalInfo(record);
+    case 'donation':
+      return this.formatDonationAdditionalInfo(record);
+    default:
+      return '';
+  }
+}
+*/
+
+/*
+/**
+ * Retrieve PDF URL from database
+ */
+/*
+static async getPDFUrlFromDatabase(
+  serviceType: string,
+  paymentReference: string
+): Promise<{ pdfUrl?: string; pdfFilename?: string; pdfGeneratedAt?: Date } | null> {
+  try {
+    await connectDB();
+
+    let record;
+
+    switch (serviceType) {
+      case 'convention':
+        record = await ConventionRegistration.findOne(
+          { paymentReference },
+          { pdfUrl: 1, pdfFilename: 1, pdfGeneratedAt: 1 }
+        );
+        break;
+
+      case 'dinner':
+        record = await DinnerReservation.findOne(
+          { paymentReference },
+          { pdfUrl: 1, pdfFilename: 1, pdfGeneratedAt: 1 }
+        );
+        break;
+
+      case 'accommodation':
+        record = await Accommodation.findOne(
+          { paymentReference },
+          { pdfUrl: 1, pdfFilename: 1, pdfGeneratedAt: 1 }
+        );
+        break;
+
+      case 'brochure':
+        record = await ConventionBrochure.findOne(
+          { paymentReference },
+          { pdfUrl: 1, pdfFilename: 1, pdfGeneratedAt: 1 }
+        );
+        break;
+
+      case 'goodwill':
+        record = await GoodwillMessage.findOne(
+          { paymentReference },
+          { pdfUrl: 1, pdfFilename: 1, pdfGeneratedAt: 1 }
+        );
+        break;
+
+      case 'donation':
+        record = await Donation.findOne(
+          { paymentReference },
+          { pdfUrl: 1, pdfFilename: 1, pdfGeneratedAt: 1 }
+        );
+        break;
+
+      default:
+        return null;
+    }
+
+    return record || null;
+
+  } catch (error) {
+    console.error('Error retrieving PDF URL from database:', error);
+    return null;
+  }
+}
+} 
+ */
