@@ -280,7 +280,7 @@ export class PDFPerformanceMonitorService {
     return {
       errorRateTrend: this.calculateTrend(hourlyErrorRate, dailyErrorRate, 2),
       responseTimeTrend: this.calculateTrend(hourlyResponseTime, dailyResponseTime, 500),
-      volumeTrend: this.calculateTrend(hourlyVolume, dailyVolume, 10),
+      volumeTrend: this.calculateVolumeTrend(hourlyVolume, dailyVolume, 10),
       overallTrend: this.calculateOverallTrend(metrics)
     };
   }
@@ -484,6 +484,14 @@ export class PDFPerformanceMonitorService {
 
     if (Math.abs(percentageChange) < 10) return 'stable';
     return percentageChange > 0 ? 'degrading' : 'improving';
+  }
+
+  private static calculateVolumeTrend(current: number, baseline: number, threshold: number): 'increasing' | 'stable' | 'decreasing' {
+    const difference = current - baseline;
+    const percentageChange = baseline > 0 ? (difference / baseline) * 100 : 0;
+
+    if (Math.abs(percentageChange) < 10) return 'stable';
+    return percentageChange > 0 ? 'increasing' : 'decreasing';
   }
 
   private static calculateOverallTrend(metrics: PerformanceMetrics): 'improving' | 'stable' | 'degrading' {

@@ -1344,69 +1344,7 @@ export class PDFGeneratorService {
     return { brochureType, quantity, deliveryMethod, recipientDetails };
   }
 
-  /**
-   * Extract message from goodwill additional information
-   */
-  private static extractMessageFromAdditionalInfo(additionalInfo?: string): string {
-    if (!additionalInfo) return 'Thank you for your generous contribution to GOSA 2025 Convention.';
 
-    const messageMatch = additionalInfo.match(/message:\s*"([^"]+)"/i);
-    if (messageMatch) {
-      return messageMatch[1];
-    }
-
-    // Fallback: look for message without quotes
-    const messageMatch2 = additionalInfo.match(/message:\s*([^|]+)/i);
-    if (messageMatch2) {
-      return messageMatch2[1].trim();
-    }
-
-    return 'Thank you for your generous contribution to GOSA 2025 Convention.';
-  }
-
-  /**
-   * Get attribution from goodwill additional information
-   */
-  private static getAttributionFromAdditionalInfo(additionalInfo?: string): string {
-    if (!additionalInfo) return 'Anonymous';
-
-    if (additionalInfo.toLowerCase().includes('anonymous: yes')) {
-      return 'Anonymous';
-    }
-
-    const attributionMatch = additionalInfo.match(/attribution:\s*([^|]+)/i);
-    if (attributionMatch) {
-      return attributionMatch[1].trim();
-    }
-
-    return 'Anonymous';
-  }
-
-  /**
-   * Generate receipt number from payment reference
-   */
-  private static generateReceiptNumber(paymentReference: string): string {
-    const timestamp = Date.now().toString().slice(-6);
-    const refSuffix = paymentReference.slice(-4).toUpperCase();
-    return `GOSA-${timestamp}-${refSuffix}`;
-  }
-
-  /**
-   * Get brochure delivery instructions
-   */
-  private static getBrochureDeliveryInstructions(additionalInfo?: string): string {
-    if (!additionalInfo) {
-      return 'Digital brochure will be sent to your email address within 24 hours.';
-    }
-
-    const info = additionalInfo.toLowerCase();
-
-    if (info.includes('physical')) {
-      return 'Present this QR code at the convention registration desk to collect your physical brochure(s). Available from December 26-29, 2025.';
-    }
-
-    return 'Digital brochure will be sent to your email address within 24 hours.';
-  }
 
   /**
    * Generate PDF buffer with caching (placeholder for actual PDF generation)
@@ -1502,30 +1440,7 @@ export class PDFGeneratorService {
     }
   }
 
-  /**
-   * Get brochure type title from additional info
-   */
-  private static getBrochureTypeTitle(additionalInfo?: string): string {
-    if (!additionalInfo) return 'Digital';
 
-    const info = additionalInfo.toLowerCase();
-    if (info.includes('physical')) return 'Physical';
-    return 'Digital';
-  }
-
-  /**
-   * Extract quantity from additional info
-   */
-  private static extractQuantityFromAdditionalInfo(additionalInfo?: string): number {
-    if (!additionalInfo) return 1;
-
-    const quantityMatch = additionalInfo.match(/quantity:\s*(\d+)/i);
-    if (quantityMatch) {
-      return parseInt(quantityMatch[1]);
-    }
-
-    return 1;
-  }
 
   /**
    * Parse donation additional information
