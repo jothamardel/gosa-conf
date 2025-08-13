@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { PDFData } from './pdf-generator.service';
+import { PDFData } from '../types';
 import { PDFMonitoringService } from './pdf-monitoring.service';
 
 export interface CacheEntry<T> {

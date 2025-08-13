@@ -1,4 +1,5 @@
-import { PDFGeneratorService, PDFData } from '../pdf-generator.service';
+import { PDFGeneratorService } from '../pdf-generator.service';
+import { PDFData } from '../../types';
 import { PDFCacheService } from '../pdf-cache.service';
 
 // Mock QRCode module

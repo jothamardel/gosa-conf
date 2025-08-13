@@ -1,4 +1,4 @@
-import { PDFData } from './pdf-generator.service';
+import { PDFData } from '../types';
 import { PDFCacheService } from './pdf-cache.service';
 import { PDFMonitoringService } from './pdf-monitoring.service';
 

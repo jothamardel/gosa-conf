@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PDFGeneratorService, PDFData } from '@/lib/services/pdf-generator.service';
+import { PDFGeneratorService } from '@/lib/services/pdf-generator.service';
+import { PDFData } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   try {

@@ -2,7 +2,7 @@ import { put } from '@vercel/blob';
 const jsPDF = require('jspdf');
 import { PDFGeneratorService } from './pdf-generator.service';
 import { PDFLoggerService } from './pdf-logger.service';
-import type { PDFData } from './pdf-generator.service';
+import type { PDFData } from '../types';
 
 export interface BlobUploadResult {
   success: boolean;
