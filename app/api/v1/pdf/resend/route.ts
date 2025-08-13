@@ -82,7 +82,7 @@ Need help? Contact our support team.`;
           success: true,
           metadata: {
             existingPdf: true,
-            messageId: result.data?.messageId
+            messageId: result.data?.msgId
           }
         });
 
@@ -94,7 +94,7 @@ Need help? Contact our support team.`;
             serviceType,
             pdfUrl: existingPDF.pdfUrl,
             resent: true,
-            messageId: result.data?.messageId
+            messageId: result.data?.msgId
           }
         });
       } else {
@@ -166,7 +166,7 @@ Need help? Contact our support team.`;
       pdfData.userDetails.phone = phoneNumber;
 
       // Generate new PDF and send
-      const result = await PDFWhatsAppUtils.generateUploadAndSendPDF(
+      const result = await PDFWhatsAppUtils.sendServiceConfirmation(
         serviceType as any,
         pdfData.userDetails,
         {
@@ -194,8 +194,7 @@ Need help? Contact our support team.`;
         metadata: {
           regenerated: true,
           pdfGenerated: result.pdfGenerated,
-          whatsappSent: result.whatsappSent,
-          dbSaved: result.dbSaved
+          whatsappSent: result.whatsappSent
         }
       });
 
@@ -207,8 +206,6 @@ Need help? Contact our support team.`;
           serviceType,
           pdfGenerated: result.pdfGenerated,
           whatsappSent: result.whatsappSent,
-          blobUrl: result.blobUrl,
-          dbSaved: result.dbSaved,
           regenerated: true
         },
         error: result.error

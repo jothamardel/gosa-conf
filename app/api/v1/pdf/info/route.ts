@@ -10,7 +10,11 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     paymentReference = searchParams.get('ref');
-    serviceType = searchParams.get('type');
+    const rawServiceType = searchParams.get('type');
+
+    // Validate service type
+    const validServiceTypes = ['convention', 'dinner', 'accommodation', 'brochure', 'goodwill', 'donation'];
+    serviceType = rawServiceType && validServiceTypes.includes(rawServiceType) ? rawServiceType : null;
 
     if (!paymentReference) {
       PDFLoggerService.logSecurityEvent(

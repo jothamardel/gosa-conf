@@ -308,12 +308,17 @@ export class PDFAccessControlMiddleware {
   static cleanupExpiredBlocks(): void {
     const now = Date.now();
 
-    for (const [ip, unblockTime] of this.blockedIPs.entries()) {
+    const ipsToUnblock: string[] = [];
+    this.blockedIPs.forEach((unblockTime, ip) => {
       if (now > unblockTime) {
-        this.blockedIPs.delete(ip);
-        this.suspiciousIPs.delete(ip);
+        ipsToUnblock.push(ip);
       }
-    }
+    });
+
+    ipsToUnblock.forEach(ip => {
+      this.blockedIPs.delete(ip);
+      this.suspiciousIPs.delete(ip);
+    });
   }
 
   /**

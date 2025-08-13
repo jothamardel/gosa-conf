@@ -1,16 +1,8 @@
 import { put } from '@vercel/blob';
+const jsPDF = require('jspdf');
 import { PDFGeneratorService } from './pdf-generator.service';
 import { PDFLoggerService } from './pdf-logger.service';
-import { PDFBlobAlternativeService } from './pdf-blob-alternative.service';
 import type { PDFData } from './pdf-generator.service';
-
-// Dynamic import for puppeteer to handle cases where it's not available
-let puppeteer: any = null;
-try {
-  puppeteer = require('puppeteer');
-} catch (error) {
-  console.warn('Puppeteer not available, falling back to jsPDF');
-}
 
 export interface BlobUploadResult {
   success: boolean;
@@ -21,17 +13,11 @@ export interface BlobUploadResult {
   duration?: number;
 }
 
-export class PDFBlobService {
+export class PDFBlobAlternativeService {
   /**
-   * Generate PDF from HTML and upload to Vercel Blob
+   * Generate PDF from data and upload to Vercel Blob (using jsPDF)
    */
   static async generateAndUploadPDF(data: PDFData): Promise<BlobUploadResult> {
-    // If puppeteer is not available, use the alternative service
-    if (!puppeteer) {
-      console.log('Using alternative PDF service (jsPDF)');
-      return PDFBlobAlternativeService.generateAndUploadPDF(data);
-    }
-
     const startTime = Date.now();
 
     try {
@@ -47,11 +33,8 @@ export class PDFBlobService {
         }
       });
 
-      // Generate HTML content
-      const htmlContent = await PDFGeneratorService.generatePDFHTML(data);
-
-      // Generate PDF buffer using Puppeteer
-      const pdfBuffer = await this.generatePDFBuffer(htmlContent);
+      // Generate PDF buffer using jsPDF
+      const pdfBuffer = await this.generatePDFBuffer(data);
 
       // Generate filename
       const filename = PDFGeneratorService.generateFilename(
@@ -95,12 +78,6 @@ export class PDFBlobService {
       const duration = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-      // If puppeteer fails, try the alternative service as fallback
-      if (errorMessage.toLowerCase().includes('puppeteer') || errorMessage.toLowerCase().includes('browser')) {
-        console.log('Puppeteer failed, falling back to alternative PDF service');
-        return PDFBlobAlternativeService.generateAndUploadPDF(data);
-      }
-
       PDFLoggerService.logEvent({
         level: 'error',
         operation: 'generation',
@@ -127,51 +104,95 @@ export class PDFBlobService {
   }
 
   /**
-   * Generate PDF buffer from HTML using Puppeteer
+   * Generate PDF buffer from data using jsPDF
    */
-  private static async generatePDFBuffer(htmlContent: string): Promise<Buffer> {
-    let browser;
-
+  private static async generatePDFBuffer(data: PDFData): Promise<Buffer> {
     try {
-      browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
-          '--disable-gpu'
-        ]
+      const doc = new jsPDF();
+
+      // Set up document properties
+      doc.setProperties({
+        title: `${data.operationDetails.type} Receipt`,
+        subject: `Payment Receipt for ${data.userDetails.name}`,
+        author: 'Convention Management System',
+        creator: 'Convention Management System'
       });
 
-      const page = await browser.newPage();
+      // Add header
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Convention Management System', 20, 30);
 
-      // Set content and wait for images to load
-      await page.setContent(htmlContent, {
-        waitUntil: 'networkidle0'
-      });
+      doc.setFontSize(16);
+      doc.text(`${data.operationDetails.type} Receipt`, 20, 45);
 
-      // Generate PDF with proper formatting
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20px',
-          right: '20px',
-          bottom: '20px',
-          left: '20px'
-        }
-      });
+      // Add horizontal line
+      doc.setLineWidth(0.5);
+      doc.line(20, 50, 190, 50);
 
-      return Buffer.from(pdfBuffer);
+      // Add user details
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      let yPos = 65;
 
-    } finally {
-      if (browser) {
-        await browser.close();
+      doc.text('Personal Information:', 20, yPos);
+      yPos += 10;
+      doc.text(`Name: ${data.userDetails.name}`, 25, yPos);
+      yPos += 8;
+      doc.text(`Email: ${data.userDetails.email}`, 25, yPos);
+      yPos += 8;
+      if (data.userDetails.phone) {
+        doc.text(`Phone: ${data.userDetails.phone}`, 25, yPos);
+        yPos += 8;
       }
+
+      // Add payment details
+      yPos += 10;
+      doc.text('Payment Details:', 20, yPos);
+      yPos += 10;
+      doc.text(`Payment Reference: ${data.operationDetails.paymentReference}`, 25, yPos);
+      yPos += 8;
+      doc.text(`Amount: $${data.operationDetails.amount.toFixed(2)}`, 25, yPos);
+      yPos += 8;
+      doc.text(`Date: ${new Date(data.operationDetails.date).toLocaleDateString()}`, 25, yPos);
+      yPos += 8;
+      doc.text(`Status: ${data.operationDetails.status}`, 25, yPos);
+
+      // Add service-specific details
+      if (data.operationDetails.type === 'convention') {
+        yPos += 15;
+        doc.text('Convention Details:', 20, yPos);
+        yPos += 10;
+
+        if (data.operationDetails.additionalInfo) {
+          doc.text(`Details: ${data.operationDetails.additionalInfo}`, 25, yPos);
+          yPos += 8;
+        }
+      }
+
+      // Add QR code placeholder (text-based for now)
+      if (data.qrCodeData) {
+        yPos += 15;
+        doc.text('QR Code Data:', 20, yPos);
+        yPos += 10;
+        doc.setFontSize(10);
+        doc.text(data.qrCodeData, 25, yPos, { maxWidth: 160 });
+      }
+
+      // Add footer
+      const pageHeight = doc.internal.pageSize.height;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'italic');
+      doc.text('Thank you for your registration!', 20, pageHeight - 30);
+      doc.text('For support, please contact our team.', 20, pageHeight - 20);
+
+      // Generate buffer
+      const pdfArrayBuffer = doc.output('arraybuffer');
+      return Buffer.from(pdfArrayBuffer);
+
+    } catch (error) {
+      console.error('Error generating PDF with jsPDF:', error);
+      throw error;
     }
   }
 
@@ -248,36 +269,15 @@ export class PDFBlobService {
   }
 
   /**
-   * Delete PDF from Vercel Blob (for cleanup)
-   */
-  static async deletePDF(url: string): Promise<boolean> {
-    try {
-      // Extract the blob key from the URL
-      const urlParts = url.split('/');
-      const blobKey = urlParts[urlParts.length - 1];
-
-      // Note: Vercel Blob doesn't have a direct delete API in the current version
-      // This is a placeholder for future implementation
-      console.log(`Would delete blob: ${blobKey}`);
-
-      return true;
-    } catch (error) {
-      console.error('Error deleting PDF blob:', error);
-      return false;
-    }
-  }
-
-  /**
    * Categorize error types for monitoring
    */
   private static categorizeError(error: string): string {
     const errorLower = error.toLowerCase();
 
-    if (errorLower.includes('puppeteer') || errorLower.includes('browser')) return 'browser_error';
+    if (errorLower.includes('jspdf') || errorLower.includes('pdf')) return 'pdf_generation_error';
     if (errorLower.includes('blob') || errorLower.includes('upload')) return 'upload_error';
     if (errorLower.includes('network') || errorLower.includes('timeout')) return 'network_error';
     if (errorLower.includes('memory') || errorLower.includes('resource')) return 'resource_error';
-    if (errorLower.includes('html') || errorLower.includes('content')) return 'content_error';
 
     return 'unknown_error';
   }

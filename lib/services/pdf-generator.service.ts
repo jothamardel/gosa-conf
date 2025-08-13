@@ -1147,325 +1147,324 @@ export class PDFGeneratorService {
     const shortRef = paymentReference.substring(0, 8).toUpperCase();
     return `GOSA-${year}-${shortRef}`;
   }
-}
 
   /**
    * Parse convention additional information
    */
-  private static parseConventionAdditionalInfo(additionalInfo ?: string): {
-  quantity: number;
-  accommodationType ?: string;
-  additionalPersons: any[];
-} {
-  if (!additionalInfo) {
-    return { quantity: 1, additionalPersons: [] };
-  }
-
-  const info = additionalInfo.toLowerCase();
-  let quantity = 1;
-  let accommodationType: string | undefined;
-  const additionalPersons: any[] = [];
-
-  // Extract quantity
-  const quantityMatch = info.match(/quantity:\s*(\d+)/);
-  if (quantityMatch) {
-    quantity = parseInt(quantityMatch[1]);
-  }
-
-  // Extract accommodation type
-  if (info.includes('premium')) {
-    accommodationType = 'premium';
-  } else if (info.includes('luxury')) {
-    accommodationType = 'luxury';
-  } else if (info.includes('standard')) {
-    accommodationType = 'standard';
-  }
-
-  // Extract additional persons (simplified parsing)
-  const personsMatch = info.match(/additional persons:\s*(\d+)/);
-  if (personsMatch) {
-    const count = parseInt(personsMatch[1]);
-    for (let i = 0; i < count; i++) {
-      additionalPersons.push({
-        name: `Additional Person ${i + 1}`,
-        email: 'Not provided',
-        phone: 'Not provided'
-      });
+  private static parseConventionAdditionalInfo(additionalInfo?: string): {
+    quantity: number;
+    accommodationType?: string;
+    additionalPersons: any[];
+  } {
+    if (!additionalInfo) {
+      return { quantity: 1, additionalPersons: [] };
     }
-  }
 
-  return { quantity, accommodationType, additionalPersons };
-}
+    const info = additionalInfo.toLowerCase();
+    let quantity = 1;
+    let accommodationType: string | undefined;
+    const additionalPersons: any[] = [];
+
+    // Extract quantity
+    const quantityMatch = info.match(/quantity:\s*(\d+)/);
+    if (quantityMatch) {
+      quantity = parseInt(quantityMatch[1]);
+    }
+
+    // Extract accommodation type
+    if (info.includes('premium')) {
+      accommodationType = 'premium';
+    } else if (info.includes('luxury')) {
+      accommodationType = 'luxury';
+    } else if (info.includes('standard')) {
+      accommodationType = 'standard';
+    }
+
+    // Extract additional persons (simplified parsing)
+    const personsMatch = info.match(/additional persons:\s*(\d+)/);
+    if (personsMatch) {
+      const count = parseInt(personsMatch[1]);
+      for (let i = 0; i < count; i++) {
+        additionalPersons.push({
+          name: `Additional Person ${i + 1}`,
+          email: 'Not provided',
+          phone: 'Not provided'
+        });
+      }
+    }
+
+    return { quantity, accommodationType, additionalPersons };
+  }
 
   /**
    * Parse dinner additional information
    */
-  private static parseDinnerAdditionalInfo(additionalInfo ?: string): {
-  numberOfGuests: number;
-  guestDetails: any[];
-  specialRequests ?: string;
-} {
-  if (!additionalInfo) {
-    return { numberOfGuests: 1, guestDetails: [] };
+  private static parseDinnerAdditionalInfo(additionalInfo?: string): {
+    numberOfGuests: number;
+    guestDetails: any[];
+    specialRequests?: string;
+  } {
+    if (!additionalInfo) {
+      return { numberOfGuests: 1, guestDetails: [] };
+    }
+
+    const info = additionalInfo.toLowerCase();
+    let numberOfGuests = 1;
+    const guestDetails: any[] = [];
+    let specialRequests: string | undefined;
+
+    // Extract number of guests
+    const guestsMatch = info.match(/guests:\s*(\d+)/);
+    if (guestsMatch) {
+      numberOfGuests = parseInt(guestsMatch[1]);
+    }
+
+    // Extract guest names (simplified parsing)
+    const guestNamesMatch = additionalInfo.match(/guest names:\s*([^|]+)/i);
+    if (guestNamesMatch) {
+      const names = guestNamesMatch[1].split(',').map(name => name.trim());
+      names.forEach((name, index) => {
+        if (name && index < numberOfGuests - 1) { // -1 because main attendee is not in guest list
+          guestDetails.push({
+            name,
+            email: 'Not provided',
+            phone: 'Not provided',
+            dietaryRestrictions: 'None specified'
+          });
+        }
+      });
+    }
+
+    // Extract special requests
+    const requestsMatch = additionalInfo.match(/special requests:\s*([^|]+)/i);
+    if (requestsMatch) {
+      specialRequests = requestsMatch[1].trim();
+    }
+
+    return { numberOfGuests, guestDetails, specialRequests };
   }
-
-  const info = additionalInfo.toLowerCase();
-  let numberOfGuests = 1;
-  const guestDetails: any[] = [];
-  let specialRequests: string | undefined;
-
-  // Extract number of guests
-  const guestsMatch = info.match(/guests:\s*(\d+)/);
-  if (guestsMatch) {
-    numberOfGuests = parseInt(guestsMatch[1]);
-  }
-
-  // Extract guest names (simplified parsing)
-  const guestNamesMatch = additionalInfo.match(/guest names:\s*([^|]+)/i);
-  if (guestNamesMatch) {
-    const names = guestNamesMatch[1].split(',').map(name => name.trim());
-    names.forEach((name, index) => {
-      if (name && index < numberOfGuests - 1) { // -1 because main attendee is not in guest list
-        guestDetails.push({
-          name,
-          email: 'Not provided',
-          phone: 'Not provided',
-          dietaryRestrictions: 'None specified'
-        });
-      }
-    });
-  }
-
-  // Extract special requests
-  const requestsMatch = additionalInfo.match(/special requests:\s*([^|]+)/i);
-  if (requestsMatch) {
-    specialRequests = requestsMatch[1].trim();
-  }
-
-  return { numberOfGuests, guestDetails, specialRequests };
-}
 
   /**
    * Parse accommodation additional information
    */
-  private static parseAccommodationAdditionalInfo(additionalInfo ?: string): {
-  accommodationType: string;
-  checkInDate: string;
-  checkOutDate: string;
-  numberOfGuests: number;
-  confirmationCode: string;
-  specialRequests ?: string;
-} {
-  const defaultInfo = {
-    accommodationType: 'standard',
-    checkInDate: 'December 25, 2025',
-    checkOutDate: 'December 30, 2025',
-    numberOfGuests: 1,
-    confirmationCode: 'GOSA-' + Math.random().toString(36).substr(2, 8).toUpperCase()
-  };
+  private static parseAccommodationAdditionalInfo(additionalInfo?: string): {
+    accommodationType: string;
+    checkInDate: string;
+    checkOutDate: string;
+    numberOfGuests: number;
+    confirmationCode: string;
+    specialRequests?: string;
+  } {
+    const defaultInfo = {
+      accommodationType: 'standard',
+      checkInDate: 'December 25, 2025',
+      checkOutDate: 'December 30, 2025',
+      numberOfGuests: 1,
+      confirmationCode: 'GOSA-' + Math.random().toString(36).substr(2, 8).toUpperCase()
+    };
 
-  if (!additionalInfo) {
-    return defaultInfo;
+    if (!additionalInfo) {
+      return defaultInfo;
+    }
+
+    const info = additionalInfo.toLowerCase();
+    let accommodationType = 'standard';
+    let specialRequests: string | undefined;
+
+    // Extract accommodation type
+    if (info.includes('premium')) {
+      accommodationType = 'premium';
+    } else if (info.includes('luxury')) {
+      accommodationType = 'luxury';
+    }
+
+    // Extract special requests
+    const requestsMatch = additionalInfo.match(/special requests:\s*([^|]+)/i);
+    if (requestsMatch) {
+      specialRequests = requestsMatch[1].trim();
+    }
+
+    return {
+      ...defaultInfo,
+      accommodationType,
+      specialRequests
+    };
   }
-
-  const info = additionalInfo.toLowerCase();
-  let accommodationType = 'standard';
-  let specialRequests: string | undefined;
-
-  // Extract accommodation type
-  if (info.includes('premium')) {
-    accommodationType = 'premium';
-  } else if (info.includes('luxury')) {
-    accommodationType = 'luxury';
-  }
-
-  // Extract special requests
-  const requestsMatch = additionalInfo.match(/special requests:\s*([^|]+)/i);
-  if (requestsMatch) {
-    specialRequests = requestsMatch[1].trim();
-  }
-
-  return {
-    ...defaultInfo,
-    accommodationType,
-    specialRequests
-  };
-}
 
   /**
    * Parse brochure additional information
    */
-  private static parseBrochureAdditionalInfo(additionalInfo ?: string): {
-  brochureType: string;
-  quantity: number;
-  deliveryMethod: string;
-  recipientDetails: any[];
-} {
-  if (!additionalInfo) {
-    return {
-      brochureType: 'digital',
-      quantity: 1,
-      deliveryMethod: 'email',
-      recipientDetails: []
-    };
+  private static parseBrochureAdditionalInfo(additionalInfo?: string): {
+    brochureType: string;
+    quantity: number;
+    deliveryMethod: string;
+    recipientDetails: any[];
+  } {
+    if (!additionalInfo) {
+      return {
+        brochureType: 'digital',
+        quantity: 1,
+        deliveryMethod: 'email',
+        recipientDetails: []
+      };
+    }
+
+    const info = additionalInfo.toLowerCase();
+    let brochureType = 'digital';
+    let quantity = 1;
+    let deliveryMethod = 'email';
+    const recipientDetails: any[] = [];
+
+    // Extract brochure type
+    if (info.includes('physical')) {
+      brochureType = 'physical';
+      deliveryMethod = 'pickup';
+    }
+
+    // Extract quantity
+    const quantityMatch = info.match(/quantity:\s*(\d+)/);
+    if (quantityMatch) {
+      quantity = parseInt(quantityMatch[1]);
+    }
+
+    // Extract recipient details (simplified)
+    const recipientsMatch = additionalInfo.match(/recipients:\s*([^|]+)/i);
+    if (recipientsMatch) {
+      const names = recipientsMatch[1].split(',').map(name => name.trim());
+      names.forEach(name => {
+        if (name) {
+          recipientDetails.push({
+            name,
+            email: 'Not provided'
+          });
+        }
+      });
+    }
+
+    return { brochureType, quantity, deliveryMethod, recipientDetails };
   }
-
-  const info = additionalInfo.toLowerCase();
-  let brochureType = 'digital';
-  let quantity = 1;
-  let deliveryMethod = 'email';
-  const recipientDetails: any[] = [];
-
-  // Extract brochure type
-  if (info.includes('physical')) {
-    brochureType = 'physical';
-    deliveryMethod = 'pickup';
-  }
-
-  // Extract quantity
-  const quantityMatch = info.match(/quantity:\s*(\d+)/);
-  if (quantityMatch) {
-    quantity = parseInt(quantityMatch[1]);
-  }
-
-  // Extract recipient details (simplified)
-  const recipientsMatch = additionalInfo.match(/recipients:\s*([^|]+)/i);
-  if (recipientsMatch) {
-    const names = recipientsMatch[1].split(',').map(name => name.trim());
-    names.forEach(name => {
-      if (name) {
-        recipientDetails.push({
-          name,
-          email: 'Not provided'
-        });
-      }
-    });
-  }
-
-  return { brochureType, quantity, deliveryMethod, recipientDetails };
-}
 
   /**
    * Extract message from goodwill additional information
    */
-  private static extractMessageFromAdditionalInfo(additionalInfo ?: string): string {
-  if (!additionalInfo) return 'Thank you for your generous contribution to GOSA 2025 Convention.';
+  private static extractMessageFromAdditionalInfo(additionalInfo?: string): string {
+    if (!additionalInfo) return 'Thank you for your generous contribution to GOSA 2025 Convention.';
 
-  const messageMatch = additionalInfo.match(/message:\s*"([^"]+)"/i);
-  if (messageMatch) {
-    return messageMatch[1];
+    const messageMatch = additionalInfo.match(/message:\s*"([^"]+)"/i);
+    if (messageMatch) {
+      return messageMatch[1];
+    }
+
+    // Fallback: look for message without quotes
+    const messageMatch2 = additionalInfo.match(/message:\s*([^|]+)/i);
+    if (messageMatch2) {
+      return messageMatch2[1].trim();
+    }
+
+    return 'Thank you for your generous contribution to GOSA 2025 Convention.';
   }
-
-  // Fallback: look for message without quotes
-  const messageMatch2 = additionalInfo.match(/message:\s*([^|]+)/i);
-  if (messageMatch2) {
-    return messageMatch2[1].trim();
-  }
-
-  return 'Thank you for your generous contribution to GOSA 2025 Convention.';
-}
 
   /**
    * Get attribution from goodwill additional information
    */
-  private static getAttributionFromAdditionalInfo(additionalInfo ?: string): string {
-  if (!additionalInfo) return 'Anonymous';
+  private static getAttributionFromAdditionalInfo(additionalInfo?: string): string {
+    if (!additionalInfo) return 'Anonymous';
 
-  if (additionalInfo.toLowerCase().includes('anonymous: yes')) {
+    if (additionalInfo.toLowerCase().includes('anonymous: yes')) {
+      return 'Anonymous';
+    }
+
+    const attributionMatch = additionalInfo.match(/attribution:\s*([^|]+)/i);
+    if (attributionMatch) {
+      return attributionMatch[1].trim();
+    }
+
     return 'Anonymous';
   }
-
-  const attributionMatch = additionalInfo.match(/attribution:\s*([^|]+)/i);
-  if (attributionMatch) {
-    return attributionMatch[1].trim();
-  }
-
-  return 'Anonymous';
-}
 
   /**
    * Generate receipt number from payment reference
    */
   private static generateReceiptNumber(paymentReference: string): string {
-  const timestamp = Date.now().toString().slice(-6);
-  const refSuffix = paymentReference.slice(-4).toUpperCase();
-  return `GOSA-${timestamp}-${refSuffix}`;
-}
+    const timestamp = Date.now().toString().slice(-6);
+    const refSuffix = paymentReference.slice(-4).toUpperCase();
+    return `GOSA-${timestamp}-${refSuffix}`;
+  }
 
   /**
    * Get brochure delivery instructions
    */
-  private static getBrochureDeliveryInstructions(additionalInfo ?: string): string {
-  if (!additionalInfo) {
+  private static getBrochureDeliveryInstructions(additionalInfo?: string): string {
+    if (!additionalInfo) {
+      return 'Digital brochure will be sent to your email address within 24 hours.';
+    }
+
+    const info = additionalInfo.toLowerCase();
+
+    if (info.includes('physical')) {
+      return 'Present this QR code at the convention registration desk to collect your physical brochure(s). Available from December 26-29, 2025.';
+    }
+
     return 'Digital brochure will be sent to your email address within 24 hours.';
   }
-
-  const info = additionalInfo.toLowerCase();
-
-  if (info.includes('physical')) {
-    return 'Present this QR code at the convention registration desk to collect your physical brochure(s). Available from December 26-29, 2025.';
-  }
-
-  return 'Digital brochure will be sent to your email address within 24 hours.';
-}
 
   /**
    * Generate PDF buffer with caching (placeholder for actual PDF generation)
    */
-  static async generatePDFBuffer(data: PDFData): Promise < Buffer > {
-  try {
-    // Generate cache key for PDF buffer
-    const cacheKey = PDFCacheService.generateCacheKey(data);
-    const pdfCacheKey = `pdf:${cacheKey}`;
+  static async generatePDFBuffer(data: PDFData): Promise<Buffer> {
+    try {
+      // Generate cache key for PDF buffer
+      const cacheKey = PDFCacheService.generateCacheKey(data);
+      const pdfCacheKey = `pdf:${cacheKey}`;
 
-    // Try to get from cache first
-    const cachedPDF = await PDFCacheService.getCachedPDF(pdfCacheKey);
-    if(cachedPDF) {
-      console.log('PDF buffer served from cache:', pdfCacheKey.substring(0, 12));
-      return cachedPDF;
-    }
+      // Try to get from cache first
+      const cachedPDF = await PDFCacheService.getCachedPDF(pdfCacheKey);
+      if (cachedPDF) {
+        console.log('PDF buffer served from cache:', pdfCacheKey.substring(0, 12));
+        return cachedPDF;
+      }
 
       console.log('Generating new PDF buffer:', pdfCacheKey.substring(0, 12));
 
-    // This is a placeholder implementation
-    // In a real implementation, you would use puppeteer or similar to convert HTML to PDF
-    const html = await this.generatePDFHTML(data);
+      // This is a placeholder implementation
+      // In a real implementation, you would use puppeteer or similar to convert HTML to PDF
+      const html = await this.generatePDFHTML(data);
 
-    // For now, return the HTML as a buffer
-    // In production, this would be replaced with actual PDF generation
-    const pdfBuffer = Buffer.from(html, 'utf-8');
+      // For now, return the HTML as a buffer
+      // In production, this would be replaced with actual PDF generation
+      const pdfBuffer = Buffer.from(html, 'utf-8');
 
-    // Cache the generated PDF buffer
-    await PDFCacheService.cachePDF(pdfCacheKey, pdfBuffer);
+      // Cache the generated PDF buffer
+      await PDFCacheService.cachePDF(pdfCacheKey, pdfBuffer);
 
-    return pdfBuffer;
-  } catch(error) {
-    console.error('Error generating PDF buffer:', error);
-    throw new Error('Failed to generate PDF buffer');
+      return pdfBuffer;
+    } catch (error) {
+      console.error('Error generating PDF buffer:', error);
+      throw new Error('Failed to generate PDF buffer');
+    }
   }
-}
 
   /**
    * Clear cache for a specific payment reference
    */
-  static async clearCache(paymentReference: string): Promise < void> {
-  await PDFCacheService.invalidatePaymentReference(paymentReference);
-}
+  static async clearCache(paymentReference: string): Promise<void> {
+    await PDFCacheService.invalidatePaymentReference(paymentReference);
+  }
 
   /**
    * Get cache statistics
    */
   static getCacheStats() {
-  return PDFCacheService.getCacheStats();
-}
-}  /
-  **
+    return PDFCacheService.getCacheStats();
+  }
+
+  /**
    * Get room features based on accommodation type
   */
   private static getRoomFeatures(accommodationType: string): string {
-  switch (accommodationType.toLowerCase()) {
-    case 'luxury':
-      return `
+    switch (accommodationType.toLowerCase()) {
+      case 'luxury':
+        return `
           • Spacious suite with separate living area<br>
           • King-size bed with premium linens<br>
           • Marble bathroom with jacuzzi tub<br>
@@ -1476,8 +1475,8 @@ export class PDFGeneratorService {
           • Complimentary premium breakfast<br>
           • Priority room service and concierge
         `;
-    case 'premium':
-      return `
+      case 'premium':
+        return `
           • Comfortable room with modern furnishings<br>
           • Queen-size bed with quality linens<br>
           • Updated bathroom with shower/tub combo<br>
@@ -1488,8 +1487,8 @@ export class PDFGeneratorService {
           • Complimentary continental breakfast<br>
           • Enhanced room service options
         `;
-    default: // standard
-      return `
+      default: // standard
+        return `
           • Well-appointed room with essential amenities<br>
           • Comfortable double bed with clean linens<br>
           • Private bathroom with shower<br>
@@ -1500,63 +1499,64 @@ export class PDFGeneratorService {
           • Access to hotel breakfast (additional charge)<br>
           • Standard room service available
         `;
+    }
   }
-}  /**
-  
- * Get brochure type title from additional info
-   */
-  private static getBrochureTypeTitle(additionalInfo ?: string): string {
-  if (!additionalInfo) return 'Digital';
 
-  const info = additionalInfo.toLowerCase();
-  if (info.includes('physical')) return 'Physical';
-  return 'Digital';
-}
+  /**
+   * Get brochure type title from additional info
+   */
+  private static getBrochureTypeTitle(additionalInfo?: string): string {
+    if (!additionalInfo) return 'Digital';
+
+    const info = additionalInfo.toLowerCase();
+    if (info.includes('physical')) return 'Physical';
+    return 'Digital';
+  }
 
   /**
    * Extract quantity from additional info
    */
-  private static extractQuantityFromAdditionalInfo(additionalInfo ?: string): number {
-  if (!additionalInfo) return 1;
+  private static extractQuantityFromAdditionalInfo(additionalInfo?: string): number {
+    if (!additionalInfo) return 1;
 
-  const quantityMatch = additionalInfo.match(/quantity:\s*(\d+)/i);
-  if (quantityMatch) {
-    return parseInt(quantityMatch[1]);
+    const quantityMatch = additionalInfo.match(/quantity:\s*(\d+)/i);
+    if (quantityMatch) {
+      return parseInt(quantityMatch[1]);
+    }
+
+    return 1;
   }
 
-  return 1;
-}
-}  /
-  **
+  /**
    * Parse donation additional information
   */
-  private static parseDonationAdditionalInfo(additionalInfo ?: string): {
-  anonymous: boolean;
-  donorName ?: string;
-  onBehalfOf ?: string;
-} {
-  if (!additionalInfo) {
-    return { anonymous: false };
+  private static parseDonationAdditionalInfo(additionalInfo?: string): {
+    anonymous: boolean;
+    donorName?: string;
+    onBehalfOf?: string;
+  } {
+    if (!additionalInfo) {
+      return { anonymous: false };
+    }
+
+    const info = additionalInfo.toLowerCase();
+    const anonymous = info.includes('anonymous: yes') || info.includes('anonymous donation');
+
+    let donorName: string | undefined;
+    let onBehalfOf: string | undefined;
+
+    // Extract donor name
+    const donorMatch = additionalInfo.match(/donor:\s*([^|]+)/i);
+    if (donorMatch && !anonymous) {
+      donorName = donorMatch[1].trim();
+    }
+
+    // Extract "on behalf of" information
+    const behalfMatch = additionalInfo.match(/on behalf of:\s*([^|]+)/i);
+    if (behalfMatch) {
+      onBehalfOf = behalfMatch[1].trim();
+    }
+
+    return { anonymous, donorName, onBehalfOf };
   }
-
-  const info = additionalInfo.toLowerCase();
-  const anonymous = info.includes('anonymous: yes') || info.includes('anonymous donation');
-
-  let donorName: string | undefined;
-  let onBehalfOf: string | undefined;
-
-  // Extract donor name
-  const donorMatch = additionalInfo.match(/donor:\s*([^|]+)/i);
-  if (donorMatch && !anonymous) {
-    donorName = donorMatch[1].trim();
-  }
-
-  // Extract "on behalf of" information
-  const behalfMatch = additionalInfo.match(/on behalf of:\s*([^|]+)/i);
-  if (behalfMatch) {
-    onBehalfOf = behalfMatch[1].trim();
-  }
-
-  return { anonymous, donorName, onBehalfOf };
-}
 }

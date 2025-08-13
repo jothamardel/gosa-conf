@@ -1,6 +1,9 @@
 import { PDFGeneratorService } from './pdf-generator.service';
 import { Wasender, WASenderDocument, WASenderResult } from '../wasender-api';
 import { PDFWhatsAppUtils, WhatsAppPDFData, PDFData } from '../utils/pdf-whatsapp.utils';
+
+// Re-export types for external use
+export type { WhatsAppPDFData };
 import {
   PDFErrorHandlerService,
   PDFErrorType,

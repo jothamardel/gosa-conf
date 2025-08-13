@@ -552,7 +552,7 @@ Time: ${new Date().toLocaleString()}`;
       }
     };
 
-    return configs[type] || {
+    return configs[type as keyof typeof configs] || {
       statusCode: 500,
       retryable: true,
       severity: 'medium' as const,

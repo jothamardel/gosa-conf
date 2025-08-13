@@ -430,20 +430,20 @@ export class PDFCacheService {
       let invalidatedCount = 0;
 
       // Invalidate HTML cache
-      for (const [key, entry] of this.htmlCache.entries()) {
+      Array.from(this.htmlCache.entries()).forEach(([key, entry]) => {
         if (key.includes(keyPattern)) {
           this.htmlCache.delete(key);
           invalidatedCount++;
         }
-      }
+      });
 
       // Invalidate PDF cache
-      for (const [key, entry] of this.pdfCache.entries()) {
+      Array.from(this.pdfCache.entries()).forEach(([key, entry]) => {
         if (key.includes(keyPattern)) {
           this.pdfCache.delete(key);
           invalidatedCount++;
         }
-      }
+      });
 
       await this.recordCacheOperation('CACHE_INVALIDATION', {
         paymentReference,
@@ -523,20 +523,20 @@ export class PDFCacheService {
     let clearedCount = 0;
 
     // Clear expired HTML cache entries
-    for (const [key, entry] of this.htmlCache.entries()) {
+    Array.from(this.htmlCache.entries()).forEach(([key, entry]) => {
       if (now > entry.expiresAt) {
         this.htmlCache.delete(key);
         clearedCount++;
       }
-    }
+    });
 
     // Clear expired PDF cache entries
-    for (const [key, entry] of this.pdfCache.entries()) {
+    Array.from(this.pdfCache.entries()).forEach(([key, entry]) => {
       if (now > entry.expiresAt) {
         this.pdfCache.delete(key);
         clearedCount++;
       }
-    }
+    });
 
     // Clear expired QR code cache entries
     for (const [key, entry] of this.qrCodeCache.entries()) {
