@@ -240,66 +240,32 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
 
     let pdfResult: any = null;
 
-    console.log(`Generating PDF for ${serviceType} payment:`, record.paymentReference);
+    console.log(`Generating PDF with Vercel Blob for ${serviceType} payment:`, record.paymentReference);
 
-    // Generate and send PDF based on service type (using existing methods for now)
-    switch (serviceType) {
-      case 'dinner':
-        pdfResult = await PDFWhatsAppUtils.sendDinnerConfirmation(
-          userDetails,
-          record,
-          qrCodeData
-        );
-        break;
+    // Use the new WhatsApp PDF Service with Vercel Blob integration
+    const { WhatsAppPDFService } = await import('@/lib/services/whatsapp-pdf.service');
 
-      case 'accommodation':
-        pdfResult = await PDFWhatsAppUtils.sendAccommodationConfirmation(
-          userDetails,
-          record,
-          qrCodeData
-        );
-        break;
-
-      case 'brochure':
-        pdfResult = await PDFWhatsAppUtils.sendBrochureConfirmation(
-          userDetails,
-          record,
-          qrCodeData
-        );
-        break;
-
-      case 'goodwill':
-        pdfResult = await PDFWhatsAppUtils.sendGoodwillConfirmation(
-          userDetails,
-          record,
-          qrCodeData
-        );
-        break;
-
-      case 'donation':
-        pdfResult = await PDFWhatsAppUtils.sendDonationConfirmation(
-          userDetails,
-          record,
-          qrCodeData
-        );
-        break;
-
-      case 'convention':
-        pdfResult = await PDFWhatsAppUtils.sendConventionConfirmation(
-          userDetails,
-          record,
-          qrCodeData
-        );
-        break;
-
-      default:
-        console.warn(`Unknown service type for PDF delivery: ${serviceType}`);
-        return {
-          success: false,
+    // Prepare WhatsApp PDF data
+    const whatsappPDFData = {
+      userDetails,
+      operationDetails: {
+        type: serviceType as 'convention' | 'dinner' | 'accommodation' | 'brochure' | 'goodwill' | 'donation',
+        amount: record.totalAmount || record.amount || record.donationAmount || 0,
+        paymentReference: record.paymentReference,
+        date: new Date(),
+        status: 'confirmed' as const,
+        description: `${serviceType.charAt(0).toUpperCase() + serviceType.slice(1)} confirmation`,
+        additionalInfo: JSON.stringify({
           serviceType,
-          error: `Unsupported service type: ${serviceType}`
-        };
-    }
+          recordId: record._id,
+          confirmed: true
+        })
+      },
+      qrCodeData
+    };
+
+    // Generate PDF and send via WhatsApp using Vercel Blob
+    pdfResult = await WhatsAppPDFService.generateAndSendPDF(whatsappPDFData);
 
     const result = {
       success: pdfResult?.success || false,

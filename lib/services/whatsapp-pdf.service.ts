@@ -74,19 +74,20 @@ export class WhatsAppPDFService {
       PDFErrorHandlerService.validatePDFData(data);
       const context = PDFErrorHandlerService.createErrorContext(data);
 
-      // Step 1: Generate PDF with comprehensive error handling and retry logic
+      // Step 1: Generate PDF and upload to Vercel Blob storage
+      let blobUrl: string;
       try {
-        await PDFErrorHandlerService.executeWithRetry(
-          () => PDFGeneratorService.generatePDFHTML(data),
+        blobUrl = await PDFErrorHandlerService.executeWithRetry(
+          () => PDFGeneratorService.generateAndUploadToBlob(data),
           PDFErrorHandlerService['PDF_GENERATION_RETRY_CONFIG'],
           context,
           PDFErrorType.PDF_GENERATION_FAILED
         );
 
         result.pdfGenerated = true;
-        console.log('PDF generated successfully for:', data.operationDetails.paymentReference);
+        console.log('PDF generated and uploaded to blob successfully for:', data.operationDetails.paymentReference);
       } catch (pdfError) {
-        console.error('PDF generation failed completely:', pdfError);
+        console.error('PDF generation and blob upload failed completely:', pdfError);
         result.error = `PDF generation failed: ${pdfError instanceof Error ? pdfError.message : 'Unknown error'}`;
         result.errorType = PDFErrorType.PDF_GENERATION_FAILED;
 
@@ -98,10 +99,10 @@ export class WhatsAppPDFService {
         return result;
       }
 
-      // Step 2: Send PDF via WhatsApp with comprehensive error handling
+      // Step 2: Send PDF via WhatsApp using Vercel Blob URL
       try {
         const whatsappResult = await PDFErrorHandlerService.executeWithRetry(
-          () => this.sendPDFDocument(data),
+          () => this.sendPDFDocumentWithBlob(data, blobUrl),
           PDFErrorHandlerService['WHATSAPP_RETRY_CONFIG'],
           context,
           PDFErrorType.WHATSAPP_DELIVERY_FAILED
@@ -151,10 +152,34 @@ export class WhatsAppPDFService {
   }
 
   /**
-   * Send PDF document via WhatsApp (extracted for retry logic)
+   * Send PDF document via WhatsApp using Vercel Blob URL (extracted for retry logic)
+   */
+  private static async sendPDFDocumentWithBlob(data: WhatsAppPDFData, blobUrl: string): Promise<{ messageId?: string | number }> {
+    const documentData = await this.createDocumentMessage(data, blobUrl);
+    const result = await Wasender.sendDocument(documentData);
+
+    if (!result.success) {
+      throw new Error(result.error || 'WhatsApp document delivery failed');
+    }
+
+    return { messageId: result.data?.msgId };
+  }
+
+  /**
+   * Send PDF document via WhatsApp (legacy method for fallback)
    */
   private static async sendPDFDocument(data: WhatsAppPDFData): Promise<{ messageId?: string | number }> {
-    const documentData = this.createDocumentMessage(data);
+    const filename = PDFGeneratorService.generateFilename(data.userDetails, data.operationDetails.type);
+    const pdfDownloadUrl = this.generatePDFDownloadUrl(data.operationDetails.paymentReference);
+    const messageText = this.createStandardizedGOSAMessage(data, pdfDownloadUrl);
+
+    const documentData: WASenderDocument = {
+      to: data.userDetails.phone,
+      text: messageText,
+      documentUrl: pdfDownloadUrl,
+      fileName: filename
+    };
+
     const result = await Wasender.sendDocument(documentData);
 
     if (!result.success) {
@@ -201,32 +226,65 @@ export class WhatsAppPDFService {
   }
 
   /**
-   * Create WhatsApp document message data
+   * Create WhatsApp document message data with Vercel Blob URL
    */
-  private static createDocumentMessage(data: WhatsAppPDFData): WASenderDocument {
-    const filename = PDFGeneratorService.generateFilename(data.userDetails, data.operationDetails.type);
-    const pdfDownloadUrl = this.generatePDFDownloadUrl(data.operationDetails.paymentReference);
-
-    const messageText = this.createServiceSpecificMessage(data);
+  private static async createDocumentMessage(data: WhatsAppPDFData, blobUrl: string): Promise<WASenderDocument> {
+    const { PDFBlobService } = await import('./pdf-blob.service');
+    const filename = PDFBlobService.generateBlobFilename(data.userDetails, data.operationDetails.type);
+    const messageText = this.createStandardizedGOSAMessage(data, blobUrl);
 
     return {
       to: data.userDetails.phone,
       text: messageText,
-      documentUrl: pdfDownloadUrl,
+      documentUrl: blobUrl,
       fileName: filename
     };
   }
 
   /**
-   * Generate PDF download URL
+   * Generate PDF download URL using www.gosa.events domain
    */
   private static generatePDFDownloadUrl(paymentReference: string): string {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://www.gosa.events';
     return `${baseUrl}/api/v1/pdf/download?ref=${encodeURIComponent(paymentReference)}&format=pdf`;
   }
 
   /**
-   * Create service-specific WhatsApp message
+   * Create standardized GOSA WhatsApp message with personalized details
+   */
+  private static createStandardizedGOSAMessage(data: WhatsAppPDFData, documentUrl: string): string {
+    const { userDetails, operationDetails } = data;
+    const serviceTitle = this.getServiceTitle(operationDetails.type);
+
+    return `🎉 GOSA 2025 Convention
+For Light and Truth
+
+Dear ${userDetails.name},
+
+Your ${serviceTitle} has been confirmed!
+
+📄 Download your confirmation document:
+${documentUrl}
+
+💳 Payment Details:
+• Amount: ₦${operationDetails.amount.toLocaleString()}
+• Reference: ${operationDetails.paymentReference}
+• Status: Confirmed ✅
+
+📱 Important Instructions:
+• Click the link above to download your PDF
+• Save the document to your device
+• Present the QR code when required
+• Keep this document for your records
+
+🔗 Need help? Contact support@gosa.org
+
+GOSA 2025 Convention Team
+www.gosa.events`;
+  }
+
+  /**
+   * Create service-specific WhatsApp message (legacy method)
    */
   private static createServiceSpecificMessage(data: WhatsAppPDFData): string {
     const { userDetails, operationDetails } = data;

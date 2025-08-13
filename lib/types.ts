@@ -1,4 +1,27 @@
 import { Types } from "mongoose";
+
+// PDF and WhatsApp Types
+export interface UserDetails {
+  name: string;
+  email: string;
+  phone: string;
+  registrationId?: string;
+}
+
+export interface PDFData {
+  userDetails: UserDetails;
+  operationDetails: {
+    type: 'convention' | 'dinner' | 'accommodation' | 'brochure' | 'goodwill' | 'donation';
+    amount: number;
+    paymentReference: string;
+    date: Date;
+    status: 'confirmed' | 'pending';
+    description: string;
+    additionalInfo?: string;
+  };
+  qrCodeData: string;
+}
+
 // Database Types
 export interface User {
   id: string;

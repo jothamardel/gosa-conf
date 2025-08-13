@@ -14,28 +14,33 @@ The design follows a service-oriented architecture where PDF generation, file ma
 graph TB
     A[Payment Webhook] --> B[Payment Confirmation]
     B --> C[PDF Generation Service]
-    C --> D[PDF File Management]
+    C --> D[Vercel Blob Upload]
     D --> E[WhatsApp Document Service]
-    E --> F[WASender API]
+    E --> F[WASender API Document Endpoint]
     
     C --> G[QR Code Service]
     C --> H[Database Models]
     
-    I[PDF Download API] --> D
-    J[User Request] --> I
+    D --> I[Vercel Blob Storage]
+    I --> J[Public PDF URLs]
     
-    K[Error Handler] --> L[Fallback Systems]
-    E --> K
-    C --> K
+    K[PDF Download API - Fallback] --> L[Local PDF Serving]
+    M[User Request] --> K
+    
+    N[Error Handler] --> O[Fallback Systems]
+    E --> N
+    C --> N
+    D --> N
 ```
 
 ### Service Layer Architecture
 
-The system introduces three main services that work together:
+The system introduces four main services that work together:
 
 1. **PDFGeneratorService** - Handles PDF creation with templates and content generation
-2. **PDFFileService** - Manages PDF hosting, URLs, and file access
-3. **WhatsAppPDFService** - Orchestrates PDF delivery via WhatsApp
+2. **PDFBlobService** - Manages PDF upload to Vercel Blob storage and URL generation
+3. **WhatsAppPDFService** - Orchestrates PDF delivery via WhatsApp with standardized messaging
+4. **WASenderDocumentService** - Handles document delivery through WASender API
 
 ### Integration Points
 
@@ -67,24 +72,33 @@ class PDFGeneratorService {
 - QR code embedding with proper sizing
 - Responsive design for various PDF viewers
 
-### 2. PDF File Management Service
+### 2. PDF Vercel Blob Storage Service
 
-**Purpose**: Handle PDF file hosting, secure access, and download management.
+**Purpose**: Upload PDFs to Vercel Blob storage and manage secure access URLs for WhatsApp delivery.
 
-**API Endpoints**:
+**Key Methods**:
 ```typescript
-// PDF Download API
+class PDFBlobService {
+  static async uploadPDFToBlob(pdfBuffer: Buffer, filename: string): Promise<string>
+  static generateBlobFilename(userDetails: UserDetails, serviceType: string): string
+  static async handleBlobUploadError(error: Error, fallbackData: PDFData): Promise<string>
+}
+```
+
+**Vercel Blob Integration**:
+- Upload PDFs with descriptive filenames: `gosa-2025-{serviceType}-{userName}-{timestamp}.pdf`
+- Generate secure, publicly accessible URLs
+- Handle upload failures with fallback mechanisms
+- Optimize file sizes for WhatsApp delivery
+
+**API Endpoints** (fallback):
+```typescript
+// PDF Download API (fallback when blob fails)
 GET /api/v1/pdf/download?ref={paymentReference}&format={html|pdf}
 
 // PDF View API (fallback)
 GET /api/v1/pdf/view?ref={paymentReference}
 ```
-
-**Security Features**:
-- Payment reference validation
-- User authorization checks
-- Secure URL generation
-- Cache control headers
 
 ### 3. WhatsApp PDF Service
 
@@ -105,26 +119,56 @@ class WhatsAppPDFService {
 - Professional tone with GOSA branding
 - Fallback text for delivery failures
 
-### 4. Enhanced WASender Integration
+### 4. Enhanced WASender Integration with Document Delivery
 
-**Purpose**: Extend existing WASender API integration to support document sending.
+**Purpose**: Extend existing WASender API integration to support document sending using Vercel Blob URLs.
 
-**New Interface**:
+**WASender Document API**:
 ```typescript
-interface WASenderDocument {
-  to: string;
-  text: string;
-  documentUrl: string;
-  fileName: string;
+// API Endpoint: POST https://www.wasenderapi.com/api/send-message
+interface WASenderDocumentRequest {
+  to: string;           // Phone number with country code
+  text: string;         // Standardized GOSA message
+  documentUrl: string;  // Vercel Blob storage URL
+  fileName: string;     // Descriptive filename
 }
 ```
 
 **Enhanced Methods**:
 ```typescript
 class Wasender {
-  static async sendDocument(data: WASenderDocument): Promise<WASenderResult>
+  static async sendDocument(data: WASenderDocumentRequest): Promise<WASenderResult>
   static async httpSenderMessage(data: WASenderMessage): Promise<WASenderResult> // existing
 }
+```
+
+**Standardized Message Template**:
+```
+🎉 GOSA 2025 Convention
+For Light and Truth
+
+Dear {userName},
+
+Your {serviceType} has been confirmed!
+
+📄 Download your confirmation document:
+{documentUrl}
+
+💳 Payment Details:
+• Amount: ₦{amount}
+• Reference: {paymentReference}
+• Status: Confirmed ✅
+
+📱 Important Instructions:
+• Click the link above to download your PDF
+• Save the document to your device
+• Present the QR code when required
+• Keep this document for your records
+
+🔗 Need help? Contact support@gosa.org
+
+GOSA 2025 Convention Team
+www.gosa.events
 ```
 
 ## Data Models
@@ -364,11 +408,13 @@ const PDF_RETRY_CONFIG: RetryConfig = {
 
 1. **Required Environment Variables**:
    - `WASENDER_API_KEY` - WASender API authentication
-   - `NEXTAUTH_URL` - Base URL for PDF download links
+   - `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage authentication
+   - `NEXTAUTH_URL` - Base URL for fallback PDF download links (www.gosa.events)
    - `PDF_CACHE_DURATION` - PDF cache control settings
 
 2. **Service Dependencies**:
    - MongoDB for data retrieval
+   - Vercel Blob storage for PDF hosting
    - WASender API for document delivery
    - Existing QR Code Service integration
 

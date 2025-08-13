@@ -20,33 +20,33 @@ This specification covers the implementation of PDF document generation and What
 6. WHEN formatting PDFs THEN the system SHALL use professional layout with proper typography and spacing
 7. IF additional service information exists THEN the system SHALL include relevant details like accommodation dates, dinner guest count, or delivery addresses
 
-### Requirement 2: PDF File Management and Hosting
+### Requirement 2: PDF File Management and Vercel Blob Storage
 
-**User Story:** As a system administrator, I want PDF documents to be properly generated and accessible via secure URLs, so that they can be delivered through WhatsApp and accessed by users.
-
-#### Acceptance Criteria
-
-1. WHEN PDFs are generated THEN the system SHALL create unique, descriptive filenames based on user and service type
-2. WHEN serving PDFs THEN the system SHALL provide secure download URLs with proper authentication
-3. WHEN accessing PDF URLs THEN the system SHALL validate payment references and ensure data integrity
-4. WHEN generating download links THEN the system SHALL support both HTML preview and PDF download formats
-5. WHEN handling file requests THEN the system SHALL implement proper caching headers for performance
-6. WHEN managing PDF access THEN the system SHALL ensure only authorized users can access their documents
-7. IF PDF generation fails THEN the system SHALL provide fallback HTML versions and error handling
-
-### Requirement 3: WhatsApp Document Delivery
-
-**User Story:** As a convention attendee, I want to receive my PDF documents directly via WhatsApp, so that I can easily access and save my convention materials on my mobile device.
+**User Story:** As a system administrator, I want PDF documents to be uploaded to Vercel Blob storage and accessible via secure URLs, so that they can be delivered through WhatsApp and accessed by users reliably.
 
 #### Acceptance Criteria
 
-1. WHEN payment is confirmed THEN the system SHALL automatically send PDF documents via WhatsApp using WASender API
-2. WHEN sending documents THEN the system SHALL use the WASender document sending endpoint with proper authentication
-3. WHEN preparing WhatsApp messages THEN the system SHALL include personalized text with service details and instructions
-4. WHEN attaching PDFs THEN the system SHALL provide the document URL and proper filename to WASender API
-5. WHEN delivery fails THEN the system SHALL implement retry logic and fallback to text message with PDF link
-6. WHEN sending confirmations THEN the system SHALL include clear instructions on how to save and use the PDF
-7. IF user phone number is invalid THEN the system SHALL log errors and provide alternative delivery methods
+1. WHEN PDFs are generated THEN the system SHALL upload them to Vercel Blob storage with unique, descriptive filenames based on user and service type
+2. WHEN uploading to Vercel Blob THEN the system SHALL use proper authentication and handle upload errors gracefully
+3. WHEN storing PDFs THEN the system SHALL generate secure, publicly accessible URLs from Vercel Blob storage
+4. WHEN creating filenames THEN the system SHALL use format: "gosa-2025-{serviceType}-{userName}-{timestamp}.pdf"
+5. WHEN managing blob storage THEN the system SHALL implement proper error handling for upload failures and storage limits
+6. WHEN accessing stored PDFs THEN the system SHALL provide direct Vercel Blob URLs for WhatsApp document delivery
+7. IF blob upload fails THEN the system SHALL fall back to local PDF generation and provide alternative delivery methods
+
+### Requirement 3: WhatsApp Document Delivery with Vercel Blob URLs
+
+**User Story:** As a convention attendee, I want to receive my PDF documents directly via WhatsApp using the Vercel Blob storage URLs, so that I can easily access and save my convention materials on my mobile device.
+
+#### Acceptance Criteria
+
+1. WHEN payment is confirmed THEN the system SHALL automatically send PDF documents via WhatsApp using WASender API with Vercel Blob URLs
+2. WHEN sending documents THEN the system SHALL use the WASender document sending endpoint: POST https://www.wasenderapi.com/api/send-message
+3. WHEN preparing WhatsApp messages THEN the system SHALL use the standardized GOSA message format with personalized details
+4. WHEN attaching PDFs THEN the system SHALL provide the Vercel Blob documentUrl and proper fileName to WASender API
+5. WHEN formatting messages THEN the system SHALL include GOSA branding, user details, payment information, and instructions
+6. WHEN sending confirmations THEN the system SHALL replace localhost URLs with www.gosa.events domain in message text
+7. IF document delivery fails THEN the system SHALL implement retry logic and fallback to text message with Vercel Blob PDF link
 
 ### Requirement 4: Multi-Service PDF Support
 
@@ -104,7 +104,21 @@ This specification covers the implementation of PDF document generation and What
 6. WHEN handling errors THEN the system SHALL integrate with existing error logging and monitoring systems
 7. IF payment confirmation fails THEN the system SHALL ensure PDF delivery doesn't proceed for unconfirmed payments
 
-### Requirement 8: Performance and Scalability
+### Requirement 8: Standardized WhatsApp Message Format
+
+**User Story:** As a convention attendee, I want to receive WhatsApp messages with consistent, professional formatting and clear instructions, so that I understand my registration status and know how to access my documents.
+
+#### Acceptance Criteria
+
+1. WHEN sending WhatsApp messages THEN the system SHALL use the standardized GOSA message template with emoji indicators
+2. WHEN personalizing messages THEN the system SHALL include user's full name and specific service details
+3. WHEN including payment details THEN the system SHALL show amount in Nigerian Naira (₦), payment reference, and confirmation status
+4. WHEN providing document access THEN the system SHALL include both the attached PDF and backup instructions
+5. WHEN formatting instructions THEN the system SHALL include clear steps for downloading, saving, and using the PDF
+6. WHEN adding contact information THEN the system SHALL include support@gosa.org for help requests
+7. WHEN branding messages THEN the system SHALL include "GOSA 2025 Convention - For Light and Truth" and "www.gosa.events" domain
+
+### Requirement 9: Performance and Scalability
 
 **User Story:** As a system administrator, I want PDF generation and delivery to be performant and scalable, so that the system can handle high volumes of confirmations during peak registration periods.
 

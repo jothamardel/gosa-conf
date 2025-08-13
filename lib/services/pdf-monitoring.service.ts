@@ -494,4 +494,181 @@ export class PDFMonitoringService {
 
     return report;
   }
+
+  /**
+   * Record blob storage operation metrics
+   */
+  static async recordBlobOperation(
+    operation: 'upload' | 'download' | 'delete',
+    success: boolean,
+    fileSize?: number,
+    processingTime?: number,
+    error?: string,
+    context?: Record<string, any>
+  ): Promise<void> {
+    const blobMetrics = {
+      timestamp: new Date().toISOString(),
+      operation,
+      success,
+      fileSize: fileSize || 0,
+      processingTime: processingTime || 0,
+      error,
+      context: context || {}
+    };
+
+    console.log('[BLOB-METRICS]', blobMetrics);
+
+    // Record error if operation failed
+    if (!success && error) {
+      await this.recordError(
+        'error',
+        'BLOB_STORAGE',
+        `BLOB_${operation.toUpperCase()}_FAILED`,
+        `Blob ${operation} operation failed: ${error}`,
+        {
+          ...context,
+          operation,
+          fileSize,
+          processingTime,
+          error
+        },
+        operation === 'upload' // Upload failures require immediate attention
+      );
+    }
+
+    // Alert on large file sizes (>10MB)
+    if (fileSize && fileSize > 10 * 1024 * 1024) {
+      await this.recordError(
+        'warning',
+        'BLOB_STORAGE',
+        'LARGE_FILE_UPLOAD',
+        `Large file uploaded to blob storage: ${(fileSize / 1024 / 1024).toFixed(2)}MB`,
+        {
+          ...context,
+          operation,
+          fileSize,
+          fileSizeMB: (fileSize / 1024 / 1024).toFixed(2)
+        }
+      );
+    }
+
+    // Alert on slow blob operations (>10 seconds)
+    if (processingTime && processingTime > 10000) {
+      await this.recordError(
+        'warning',
+        'BLOB_STORAGE',
+        'SLOW_BLOB_OPERATION',
+        `Slow blob ${operation} operation: ${processingTime}ms`,
+        {
+          ...context,
+          operation,
+          processingTime,
+          threshold: 10000
+        }
+      );
+    }
+  }
+
+  /**
+   * Monitor blob storage usage and costs
+   */
+  static async monitorBlobStorageUsage(): Promise<{
+    totalFiles: number;
+    totalSize: number;
+    estimatedCost: number;
+    lastUpdated: string;
+  }> {
+    try {
+      // In a real implementation, this would query Vercel Blob API for usage stats
+      // For now, we'll return mock data and log the monitoring attempt
+
+      console.log('[BLOB-MONITORING] Checking blob storage usage...');
+
+      const mockUsage = {
+        totalFiles: 0,
+        totalSize: 0,
+        estimatedCost: 0,
+        lastUpdated: new Date().toISOString()
+      };
+
+      // Log usage for monitoring
+      console.log('[BLOB-USAGE]', mockUsage);
+
+      return mockUsage;
+    } catch (error) {
+      console.error('Failed to monitor blob storage usage:', error);
+
+      await this.recordError(
+        'error',
+        'BLOB_STORAGE',
+        'USAGE_MONITORING_FAILED',
+        `Failed to monitor blob storage usage: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString()
+        }
+      );
+
+      return {
+        totalFiles: -1,
+        totalSize: -1,
+        estimatedCost: -1,
+        lastUpdated: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Get blob storage health metrics
+   */
+  static getBlobStorageHealth(): {
+    configured: boolean;
+    operational: boolean;
+    lastCheck: string;
+    issues: string[];
+  } {
+    const issues: string[] = [];
+
+    // Check if blob storage is configured
+    const configured = !!process.env.BLOB_READ_WRITE_TOKEN;
+    if (!configured) {
+      issues.push('BLOB_READ_WRITE_TOKEN not configured');
+    }
+
+    // For now, assume operational if configured
+    const operational = configured;
+
+    const health = {
+      configured,
+      operational,
+      lastCheck: new Date().toISOString(),
+      issues
+    };
+
+    console.log('[BLOB-HEALTH]', health);
+    return health;
+  }
+
+  /**
+   * Record blob storage cost alert
+   */
+  static async recordBlobCostAlert(
+    currentCost: number,
+    threshold: number,
+    context?: Record<string, any>
+  ): Promise<void> {
+    await this.recordError(
+      'warning',
+      'BLOB_STORAGE',
+      'COST_THRESHOLD_EXCEEDED',
+      `Blob storage cost (${currentCost}) exceeded threshold (${threshold})`,
+      {
+        currentCost,
+        threshold,
+        percentageOver: ((currentCost - threshold) / threshold * 100).toFixed(2),
+        ...context
+      },
+      currentCost > threshold * 1.5 // Require immediate action if 50% over threshold
+    );
+  }
 }

@@ -1,25 +1,7 @@
 import * as QRCode from 'qrcode';
 import { PDFCacheService } from './pdf-cache.service';
 import { PDFLoggerService } from './pdf-logger.service';
-
-export interface PDFData {
-  userDetails: {
-    name: string;
-    email: string;
-    phone: string;
-    registrationId?: string;
-  };
-  operationDetails: {
-    type: 'convention' | 'dinner' | 'accommodation' | 'brochure' | 'goodwill' | 'donation';
-    amount: number;
-    paymentReference: string;
-    date: Date;
-    status: 'confirmed' | 'pending';
-    description: string;
-    additionalInfo?: string;
-  };
-  qrCodeData: string;
-}
+import { PDFData } from '@/lib/types';
 
 export interface PDFTemplate {
   title: string;
@@ -335,7 +317,7 @@ export class PDFGeneratorService {
           <div class="container">
             <div class="header">
               <div class="logo-section">
-                <img src="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${template.logoUrl}" alt="GOSA Logo" class="logo-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                <img src="${process.env.NEXTAUTH_URL || 'https://www.gosa.events'}${template.logoUrl}" alt="GOSA Logo" class="logo-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
                 <div class="logo-placeholder" style="display: none;">GOSA</div>
               </div>
               <h1 class="title">${template.title}</h1>
@@ -1473,5 +1455,32 @@ export class PDFGeneratorService {
     }
 
     return { anonymous, donorName, onBehalfOf };
+  }
+
+  /**
+   * Generate PDF and upload to Vercel Blob storage
+   */
+  static async generateAndUploadToBlob(data: PDFData): Promise<string> {
+    const { PDFBlobService } = await import('./pdf-blob.service');
+
+    try {
+      // Generate PDF buffer
+      const pdfBuffer = await this.generatePDFBuffer(data);
+
+      // Generate blob filename
+      const filename = PDFBlobService.generateBlobFilename(data.userDetails, data.operationDetails.type);
+
+      // Upload to Vercel Blob storage
+      const blobUrl = await PDFBlobService.uploadPDFToBlob(pdfBuffer, filename);
+
+      console.log(`[PDF-GENERATOR] Successfully uploaded PDF to blob: ${filename}`);
+      return blobUrl;
+    } catch (error) {
+      console.error('[PDF-GENERATOR] Failed to generate and upload PDF to blob:', error);
+
+      // Use fallback mechanism
+      const { PDFBlobService } = await import('./pdf-blob.service');
+      return await PDFBlobService.handleBlobUploadError(error as Error, data);
+    }
   }
 }

@@ -13,7 +13,11 @@ export enum PDFErrorType {
   NETWORK_ERROR = 'NETWORK_ERROR',
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
   INVALID_PHONE_NUMBER = 'INVALID_PHONE_NUMBER',
-  DOCUMENT_SIZE_EXCEEDED = 'DOCUMENT_SIZE_EXCEEDED'
+  DOCUMENT_SIZE_EXCEEDED = 'DOCUMENT_SIZE_EXCEEDED',
+  BLOB_UPLOAD_FAILED = 'BLOB_UPLOAD_FAILED',
+  BLOB_STORAGE_UNAVAILABLE = 'BLOB_STORAGE_UNAVAILABLE',
+  BLOB_AUTHENTICATION_FAILED = 'BLOB_AUTHENTICATION_FAILED',
+  BLOB_QUOTA_EXCEEDED = 'BLOB_QUOTA_EXCEEDED'
 }
 
 export interface PDFError extends AppError {
@@ -240,6 +244,44 @@ export class PDFErrorHandlerService {
   }
 
   /**
+   * Handle blob upload failure with local PDF serving fallback
+   */
+  static async handleBlobUploadFailure(
+    data: WhatsAppPDFData,
+    context: ErrorContext,
+    blobError: Error
+  ): Promise<string> {
+    console.log('Blob upload failed, falling back to local PDF serving:', {
+      paymentReference: context.paymentReference,
+      error: blobError.message
+    });
+
+    // Log blob failure for monitoring
+    try {
+      const { PDFMonitoringService } = await import('./pdf-monitoring.service');
+      await PDFMonitoringService.recordError(
+        'error',
+        'BLOB_UPLOAD',
+        'BLOB_UPLOAD_FAILED',
+        `Blob upload failed, using local fallback: ${blobError.message}`,
+        {
+          paymentReference: context.paymentReference,
+          userPhone: data.userDetails.phone,
+          operationType: data.operationDetails.type,
+          error: blobError.message,
+          fallbackUsed: true
+        },
+        false // Not requiring immediate action since we have fallback
+      );
+    } catch (monitoringError) {
+      console.error('Failed to record blob failure:', monitoringError);
+    }
+
+    // Return local PDF download URL as fallback
+    return this.generatePDFDownloadUrl(data.operationDetails.paymentReference);
+  }
+
+  /**
    * Execute fallback delivery mechanism (text message with PDF link)
    */
   static async executeFallbackDelivery(
@@ -446,6 +488,21 @@ Time: ${new Date().toLocaleString()}`;
   private static classifyPDFGenerationError(error: Error): PDFErrorType {
     const message = error.message.toLowerCase();
 
+    // Blob storage specific errors
+    if (message.includes('blob_read_write_token') || message.includes('blob authentication')) {
+      return PDFErrorType.BLOB_AUTHENTICATION_FAILED;
+    }
+    if (message.includes('blob') && (message.includes('upload') || message.includes('put'))) {
+      return PDFErrorType.BLOB_UPLOAD_FAILED;
+    }
+    if (message.includes('blob') && message.includes('unavailable')) {
+      return PDFErrorType.BLOB_STORAGE_UNAVAILABLE;
+    }
+    if (message.includes('quota') || message.includes('storage limit')) {
+      return PDFErrorType.BLOB_QUOTA_EXCEEDED;
+    }
+
+    // Existing error classifications
     if (message.includes('template') || message.includes('render')) {
       return PDFErrorType.TEMPLATE_RENDERING_FAILED;
     }
@@ -497,7 +554,10 @@ Time: ${new Date().toLocaleString()}`;
       PDFErrorType.PDF_GENERATION_FAILED,
       PDFErrorType.WHATSAPP_DELIVERY_FAILED,
       PDFErrorType.TEMPLATE_RENDERING_FAILED,
-      PDFErrorType.FILE_ACCESS_FAILED
+      PDFErrorType.FILE_ACCESS_FAILED,
+      PDFErrorType.BLOB_UPLOAD_FAILED,
+      PDFErrorType.BLOB_STORAGE_UNAVAILABLE,
+      PDFErrorType.BLOB_QUOTA_EXCEEDED
     ];
 
     return retryableErrors.includes(errorType);
@@ -549,6 +609,34 @@ Time: ${new Date().toLocaleString()}`;
         severity: 'low' as const,
         userImpact: 'minor' as const,
         adminNotificationRequired: false
+      },
+      [PDFErrorType.BLOB_UPLOAD_FAILED]: {
+        statusCode: 503,
+        retryable: true,
+        severity: 'high' as const,
+        userImpact: 'major' as const,
+        adminNotificationRequired: true
+      },
+      [PDFErrorType.BLOB_STORAGE_UNAVAILABLE]: {
+        statusCode: 503,
+        retryable: true,
+        severity: 'high' as const,
+        userImpact: 'major' as const,
+        adminNotificationRequired: true
+      },
+      [PDFErrorType.BLOB_AUTHENTICATION_FAILED]: {
+        statusCode: 401,
+        retryable: false,
+        severity: 'critical' as const,
+        userImpact: 'severe' as const,
+        adminNotificationRequired: true
+      },
+      [PDFErrorType.BLOB_QUOTA_EXCEEDED]: {
+        statusCode: 507,
+        retryable: false,
+        severity: 'critical' as const,
+        userImpact: 'severe' as const,
+        adminNotificationRequired: true
       }
     };
 
@@ -565,7 +653,7 @@ Time: ${new Date().toLocaleString()}`;
    * Generate PDF download URL
    */
   private static generatePDFDownloadUrl(paymentReference: string): string {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://www.gosa.events';
     return `${baseUrl}/api/v1/pdf/download?ref=${encodeURIComponent(paymentReference)}&format=pdf`;
   }
 

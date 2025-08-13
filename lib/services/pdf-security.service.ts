@@ -76,7 +76,7 @@ export class PDFSecurityService {
     };
 
     const token = this.createSecureToken(payload);
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://www.gosa.events';
 
     return `${baseUrl}/api/v1/pdf/secure-download?token=${token}`;
   }
