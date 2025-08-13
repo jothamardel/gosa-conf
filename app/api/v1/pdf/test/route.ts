@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PDFGeneratorService, PDFData } from '@/lib/services/pdf-generator.service';
+import { PDFGeneratorService, PDFGeneratorService as PDFData } from '@/lib/services/pdf-generator.service';
 
 export async function GET(request: NextRequest) {
   try {

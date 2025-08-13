@@ -23,7 +23,7 @@ export class PDFGeneratorService {
   /**
    * Generate PDF as HTML string with caching (can be converted to PDF using puppeteer or similar)
    */
-  static async generatePDFHTML(data: PDFData): Promise<string> {
+  static async generatePDFHTML(data: PDFData | any): Promise<string> {
     const startTime = Date.now();
 
     try {
