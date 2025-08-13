@@ -210,7 +210,7 @@ export async function generateQrCode(data = []) {
       console.log(`WhatsApp message sent successfully to ${phoneNumber}:`, res);
 
       return {
-        success: true,
+        // success: true,
         item: item.paymentReference,
         phoneNumber,
         result: res,

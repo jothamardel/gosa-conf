@@ -163,3 +163,29 @@ export interface PaymentRecord {
   collected: boolean;
   persons: [];
 }
+
+// WASender API Types
+export interface WASenderMessage {
+  to: string;
+  text: string;
+  [key: string]: any;
+}
+
+export interface WASenderDocument {
+  to: string;
+  text: string;
+  documentUrl: string;
+  fileName: string;
+}
+
+export interface WASenderResult {
+  success: boolean;
+  data?: {
+    msgId?: string | number;
+    jid?: string;
+    status?: string;
+    message?: string;
+  };
+  error?: string;
+  message?: string;
+}

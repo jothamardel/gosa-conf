@@ -2,51 +2,7 @@ import '@testing-library/jest-dom'
 
 // Mock environment variables
 process.env.NEXTAUTH_URL = 'http://localhost:3000'
-process.env.PAYSTACK_SECRET_KEY = 'test-secret-key'
-process.env.MONGODB_URI = 'mongodb://localhost:27017/test'
-
-// Mock Next.js router
-jest.mock('next/router', () => ({
-  useRouter() {
-    return {
-      route: '/',
-      pathname: '/',
-      query: {},
-      asPath: '/',
-      push: jest.fn(),
-      pop: jest.fn(),
-      reload: jest.fn(),
-      back: jest.fn(),
-      prefetch: jest.fn(),
-      beforePopState: jest.fn(),
-      events: {
-        on: jest.fn(),
-        off: jest.fn(),
-        emit: jest.fn(),
-      },
-    }
-  },
-}))
-
-// Mock Next.js navigation
-jest.mock('next/navigation', () => ({
-  useRouter() {
-    return {
-      push: jest.fn(),
-      replace: jest.fn(),
-      prefetch: jest.fn(),
-      back: jest.fn(),
-      forward: jest.fn(),
-      refresh: jest.fn(),
-    }
-  },
-  useSearchParams() {
-    return new URLSearchParams()
-  },
-  usePathname() {
-    return '/'
-  },
-}))
+process.env.WASENDER_API_KEY = 'test-api-key'
 
 // Mock console methods to reduce noise in tests
 global.console = {
@@ -58,39 +14,22 @@ global.console = {
   error: jest.fn(),
 }
 
-// Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
-}
+// Mock fetch globally
+global.fetch = jest.fn()
 
-// Mock ResizeObserver
-global.ResizeObserver = class ResizeObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
-}
+// Mock PDF generation (puppeteer/playwright would be heavy for tests)
+jest.mock('puppeteer', () => ({
+  launch: jest.fn().mockResolvedValue({
+    newPage: jest.fn().mockResolvedValue({
+      setContent: jest.fn(),
+      pdf: jest.fn().mockResolvedValue(Buffer.from('mock-pdf-content')),
+      close: jest.fn(),
+    }),
+    close: jest.fn(),
+  }),
+}))
 
-// Mock matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-})
-
-// Mock scrollTo
-Object.defineProperty(window, 'scrollTo', {
-  value: jest.fn(),
-  writable: true
+// Reset all mocks after each test
+afterEach(() => {
+  jest.clearAllMocks()
 })

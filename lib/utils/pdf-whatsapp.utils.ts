@@ -1,279 +1,1013 @@
-import { PDFGeneratorService, PDFData } from '@/lib/services/pdf-generator.service';
-import { Wasender } from '@/lib/wasender-api';
+import connectDB from "../mongodb";
+import { Types } from "mongoose";
+import { QRCodeService } from "../services/qr-code.service";
+import { WhatsAppPDFService, DeliveryResult } from "../services/whatsapp-pdf.service";
+import {
+  User,
+  ConventionRegistration,
+  DinnerReservation,
+  Accommodation,
+  ConventionBrochure,
+  GoodwillMessage,
+  Donation,
+} from "../schema";
 
-export interface WhatsAppPDFData {
-  userDetails: {
-    name: string;
-    email: string;
-    phone: string;
-    registrationId?: string;
-  };
-  operationDetails: {
-    type: 'convention' | 'dinner' | 'accommodation' | 'brochure' | 'goodwill' | 'donation';
-    amount: number;
-    paymentReference: string;
-    date: Date;
-    status: 'confirmed' | 'pending';
-    description: string;
-    additionalInfo?: string;
-  };
+export interface PDFUserDetails {
+  name: string;
+  email: string;
+  phone: string;
+  registrationId: string;
+}
+
+export interface PDFOperationDetails {
+  type: 'convention' | 'dinner' | 'accommodation' | 'brochure' | 'goodwill' | 'donation';
+  amount: number;
+  paymentReference: string;
+  date: Date;
+  status: 'confirmed' | 'pending';
+  description: string;
+  additionalInfo?: string;
+}
+
+export interface PDFData {
+  userDetails: PDFUserDetails;
+  operationDetails: PDFOperationDetails;
   qrCodeData: string;
+}
+
+export interface WhatsAppPDFData extends PDFData {
+  // Inherits all PDFData properties for WhatsApp delivery
 }
 
 export class PDFWhatsAppUtils {
   /**
-   * Generate PDF and send via WhatsApp
+   * Retrieve and format PDF data for convention registration
    */
-  static async generateAndSendPDF(data: WhatsAppPDFData): Promise<{
-    success: boolean;
-    pdfGenerated: boolean;
-    whatsappSent: boolean;
-    error?: string;
-  }> {
+  static async getConventionPDFData(paymentReference: string): Promise<PDFData | null> {
     try {
-      // Create PDF data
-      const pdfData: PDFData = {
-        userDetails: data.userDetails,
-        operationDetails: data.operationDetails,
-        qrCodeData: data.qrCodeData
+      await connectDB();
+
+      const registration = await ConventionRegistration.findOne({ paymentReference })
+        .populate('userId')
+        .exec();
+
+      if (!registration || !registration.userId) {
+        return null;
+      }
+
+      const user = registration.userId as any;
+      const userDetails: PDFUserDetails = {
+        name: user.fullName,
+        email: user.email,
+        phone: user.phoneNumber,
+        registrationId: registration._id.toString(),
       };
 
-      // Generate PDF HTML
-      const pdfHTML = await PDFGeneratorService.generatePDFHTML(pdfData);
-      const filename = PDFGeneratorService.generateFilename(
-        data.userDetails,
-        data.operationDetails.type
+      const operationDetails: PDFOperationDetails = {
+        type: 'convention',
+        amount: registration.amount,
+        paymentReference: registration.paymentReference,
+        date: registration.createdAt,
+        status: registration.confirm ? 'confirmed' : 'pending',
+        description: 'GOSA 2025 Convention Registration',
+        additionalInfo: this.formatConventionAdditionalInfo(registration),
+      };
+
+      // Generate QR code data for convention entrance
+      const qrCodeData = QRCodeService.generateUniqueQRData(
+        'convention',
+        registration._id.toString(),
+        {
+          userId: user._id.toString(),
+          name: user.fullName,
+          email: user.email,
+          validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+        }
       );
 
-      // For now, we'll send the PDF as a link to view it
-      // In production, you would convert HTML to PDF and upload to a file service
-      const pdfViewUrl = `${process.env.NEXTAUTH_URL}/api/v1/pdf/view?ref=${data.operationDetails.paymentReference}`;
+      return {
+        userDetails,
+        operationDetails,
+        qrCodeData,
+      };
+    } catch (error) {
+      console.error('Error getting convention PDF data:', error);
+      return null;
+    }
+  }
 
-      // Prepare WhatsApp message
-      const message = this.createWhatsAppMessage(data, pdfViewUrl);
+  /**
+   * Retrieve and format PDF data for dinner reservation
+   */
+  static async getDinnerPDFData(paymentReference: string): Promise<PDFData | null> {
+    try {
+      await connectDB();
 
-      // Send WhatsApp message
-      const whatsappResult = await Wasender.httpSenderMessage({
-        to: data.userDetails.phone,
-        text: message
+      const reservation = await DinnerReservation.findOne({ paymentReference })
+        .populate('userId')
+        .exec();
+
+      if (!reservation || !reservation.userId) {
+        return null;
+      }
+
+      const user = reservation.userId as any;
+      const userDetails: PDFUserDetails = {
+        name: user.fullName,
+        email: user.email,
+        phone: user.phoneNumber,
+        registrationId: reservation._id.toString(),
+      };
+
+      const operationDetails: PDFOperationDetails = {
+        type: 'dinner',
+        amount: reservation.totalAmount,
+        paymentReference: reservation.paymentReference,
+        date: reservation.createdAt,
+        status: reservation.confirmed ? 'confirmed' : 'pending',
+        description: 'GOSA 2025 Convention Dinner Reservation',
+        additionalInfo: this.formatDinnerAdditionalInfo(reservation),
+      };
+
+      // Generate QR code data for dinner access (main attendee)
+      const qrCodeData = QRCodeService.generateUniqueQRData(
+        'dinner',
+        reservation._id.toString(),
+        {
+          userId: user._id.toString(),
+          numberOfGuests: reservation.numberOfGuests,
+          guestDetails: reservation.guestDetails,
+          validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        }
+      );
+
+      return {
+        userDetails,
+        operationDetails,
+        qrCodeData,
+      };
+    } catch (error) {
+      console.error('Error getting dinner PDF data:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Retrieve and format PDF data for accommodation booking
+   */
+  static async getAccommodationPDFData(paymentReference: string): Promise<PDFData | null> {
+    try {
+      await connectDB();
+
+      const accommodation = await Accommodation.findOne({ paymentReference })
+        .populate('userId')
+        .exec();
+
+      if (!accommodation || !accommodation.userId) {
+        return null;
+      }
+
+      const user = accommodation.userId as any;
+      const userDetails: PDFUserDetails = {
+        name: user.fullName,
+        email: user.email,
+        phone: user.phoneNumber,
+        registrationId: accommodation._id.toString(),
+      };
+
+      const operationDetails: PDFOperationDetails = {
+        type: 'accommodation',
+        amount: accommodation.totalAmount,
+        paymentReference: accommodation.paymentReference,
+        date: accommodation.createdAt,
+        status: accommodation.confirmed ? 'confirmed' : 'pending',
+        description: 'GOSA 2025 Convention Accommodation Booking',
+        additionalInfo: this.formatAccommodationAdditionalInfo(accommodation),
+      };
+
+      // For accommodation, use confirmation code as QR data
+      const qrCodeData = JSON.stringify({
+        type: 'accommodation',
+        id: accommodation._id.toString(),
+        userId: user._id.toString(),
+        confirmationCode: accommodation.confirmationCode,
+        accommodationType: accommodation.accommodationType,
+        checkInDate: accommodation.checkInDate.toISOString(),
+        checkOutDate: accommodation.checkOutDate.toISOString(),
+        validUntil: accommodation.checkOutDate.toISOString(),
       });
 
       return {
-        success: true,
-        pdfGenerated: true,
-        whatsappSent: whatsappResult.success,
-        error: whatsappResult.success ? undefined : whatsappResult.error
+        userDetails,
+        operationDetails,
+        qrCodeData,
+      };
+    } catch (error) {
+      console.error('Error getting accommodation PDF data:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Retrieve and format PDF data for brochure order
+   */
+  static async getBrochurePDFData(paymentReference: string): Promise<PDFData | null> {
+    try {
+      await connectDB();
+
+      const brochure = await ConventionBrochure.findOne({ paymentReference })
+        .populate('userId')
+        .exec();
+
+      if (!brochure || !brochure.userId) {
+        return null;
+      }
+
+      const user = brochure.userId as any;
+      const userDetails: PDFUserDetails = {
+        name: user.fullName,
+        email: user.email,
+        phone: user.phoneNumber,
+        registrationId: brochure._id.toString(),
       };
 
-    } catch (error: any) {
-      console.error('PDF WhatsApp generation error:', error);
+      const operationDetails: PDFOperationDetails = {
+        type: 'brochure',
+        amount: brochure.totalAmount,
+        paymentReference: brochure.paymentReference,
+        date: brochure.createdAt,
+        status: brochure.confirmed ? 'confirmed' : 'pending',
+        description: 'GOSA 2025 Convention Brochure Order',
+        additionalInfo: this.formatBrochureAdditionalInfo(brochure),
+      };
+
+      // Generate QR code data for brochure collection (if physical)
+      const qrCodeData = brochure.brochureType === 'physical'
+        ? brochure.qrCode
+        : QRCodeService.generateUniqueQRData(
+          'brochure',
+          brochure._id.toString(),
+          {
+            userId: user._id.toString(),
+            quantity: brochure.quantity,
+            brochureType: brochure.brochureType,
+            validUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
+          }
+        );
+
+      return {
+        userDetails,
+        operationDetails,
+        qrCodeData,
+      };
+    } catch (error) {
+      console.error('Error getting brochure PDF data:', error);
+      return null;
+    }
+  }
+  /**
+    * Retrieve and format PDF data for goodwill message
+    */
+  static async getGoodwillPDFData(paymentReference: string): Promise<PDFData | null> {
+    try {
+      await connectDB();
+
+      const goodwill = await GoodwillMessage.findOne({ paymentReference })
+        .populate('userId')
+        .exec();
+
+      if (!goodwill || !goodwill.userId) {
+        return null;
+      }
+
+      const user = goodwill.userId as any;
+      const userDetails: PDFUserDetails = {
+        name: user.fullName,
+        email: user.email,
+        phone: user.phoneNumber,
+        registrationId: goodwill._id.toString(),
+      };
+
+      const operationDetails: PDFOperationDetails = {
+        type: 'goodwill',
+        amount: goodwill.donationAmount,
+        paymentReference: goodwill.paymentReference,
+        date: goodwill.createdAt,
+        status: goodwill.confirmed ? 'confirmed' : 'pending',
+        description: 'GOSA 2025 Convention Goodwill Message & Donation',
+        additionalInfo: this.formatGoodwillAdditionalInfo(goodwill),
+      };
+
+      // Generate QR code data for goodwill message receipt
+      const qrCodeData = QRCodeService.generateUniqueQRData(
+        'goodwill',
+        goodwill._id.toString(),
+        {
+          userId: user._id.toString(),
+          donationAmount: goodwill.donationAmount,
+          anonymous: goodwill.anonymous,
+          approved: goodwill.approved,
+          validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+        }
+      );
+
+      return {
+        userDetails,
+        operationDetails,
+        qrCodeData,
+      };
+    } catch (error) {
+      console.error('Error getting goodwill PDF data:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Retrieve and format PDF data for donation
+   */
+  static async getDonationPDFData(paymentReference: string): Promise<PDFData | null> {
+    try {
+      await connectDB();
+
+      const donation = await Donation.findOne({ paymentReference })
+        .populate('userId')
+        .exec();
+
+      if (!donation || !donation.userId) {
+        return null;
+      }
+
+      const user = donation.userId as any;
+      const userDetails: PDFUserDetails = {
+        name: user.fullName,
+        email: user.email,
+        phone: user.phoneNumber,
+        registrationId: donation._id.toString(),
+      };
+
+      const operationDetails: PDFOperationDetails = {
+        type: 'donation',
+        amount: donation.amount,
+        paymentReference: donation.paymentReference,
+        date: donation.createdAt,
+        status: donation.confirmed ? 'confirmed' : 'pending',
+        description: 'GOSA 2025 Convention Donation',
+        additionalInfo: this.formatDonationAdditionalInfo(donation),
+      };
+
+      // Generate QR code data for donation receipt
+      const qrCodeData = QRCodeService.generateUniqueQRData(
+        'donation',
+        donation._id.toString(),
+        {
+          userId: user._id.toString(),
+          amount: donation.amount,
+          receiptNumber: donation.receiptNumber,
+          anonymous: donation.anonymous,
+          validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+        }
+      );
+
+      return {
+        userDetails,
+        operationDetails,
+        qrCodeData,
+      };
+    } catch (error) {
+      console.error('Error getting donation PDF data:', error);
+      return null;
+    }
+  }  /*
+*
+   * Generic function to retrieve PDF data for any service type
+   */
+  static async getPDFDataByReference(
+    paymentReference: string,
+    serviceType?: 'convention' | 'dinner' | 'accommodation' | 'brochure' | 'goodwill' | 'donation'
+  ): Promise<PDFData | null> {
+    try {
+      // If service type is specified, use the specific method
+      if (serviceType) {
+        switch (serviceType) {
+          case 'convention':
+            return await this.getConventionPDFData(paymentReference);
+          case 'dinner':
+            return await this.getDinnerPDFData(paymentReference);
+          case 'accommodation':
+            return await this.getAccommodationPDFData(paymentReference);
+          case 'brochure':
+            return await this.getBrochurePDFData(paymentReference);
+          case 'goodwill':
+            return await this.getGoodwillPDFData(paymentReference);
+          case 'donation':
+            return await this.getDonationPDFData(paymentReference);
+          default:
+            return null;
+        }
+      }
+
+      // If no service type specified, try all services
+      const services = [
+        this.getConventionPDFData(paymentReference),
+        this.getDinnerPDFData(paymentReference),
+        this.getAccommodationPDFData(paymentReference),
+        this.getBrochurePDFData(paymentReference),
+        this.getGoodwillPDFData(paymentReference),
+        this.getDonationPDFData(paymentReference),
+      ];
+
+      const results = await Promise.allSettled(services);
+
+      // Return the first successful result
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value) {
+          return result.value;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error getting PDF data by reference:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Populate user details from database
+   */
+  static async populateUserDetails(userId: string | Types.ObjectId): Promise<PDFUserDetails | null> {
+    try {
+      await connectDB();
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return null;
+      }
+
+      return {
+        name: user.fullName,
+        email: user.email,
+        phone: user.phoneNumber,
+        registrationId: user._id.toString(),
+      };
+    } catch (error) {
+      console.error('Error populating user details:', error);
+      return null;
+    }
+  }
+
+  // Private helper methods for formatting additional information
+
+  private static formatConventionAdditionalInfo(registration: any): string {
+    const info: string[] = [];
+
+    info.push(`Registration ID: ${registration._id}`);
+    info.push(`Amount: ₦${registration.amount.toLocaleString()}`);
+    info.push(`Quantity: ${registration.quantity} person(s)`);
+
+    if (registration.persons && registration.persons.length > 0) {
+      info.push(`Additional Persons: ${registration.persons.length}`);
+    }
+
+    return info.join(' | ');
+  }
+
+  private static formatDinnerAdditionalInfo(reservation: any): string {
+    const info: string[] = [];
+
+    info.push(`Guests: ${reservation.numberOfGuests}`);
+    info.push(`Total Amount: ₦${reservation.totalAmount.toLocaleString()}`);
+
+    if (reservation.guestDetails && reservation.guestDetails.length > 0) {
+      const guestNames = reservation.guestDetails.map((guest: any) => guest.name).join(', ');
+      info.push(`Guest Names: ${guestNames}`);
+    }
+
+    if (reservation.specialRequests) {
+      info.push(`Special Requests: ${reservation.specialRequests}`);
+    }
+
+    return info.join(' | ');
+  }
+
+  private static formatAccommodationAdditionalInfo(accommodation: any): string {
+    const info: string[] = [];
+
+    info.push(`Type: ${accommodation.accommodationType.charAt(0).toUpperCase() + accommodation.accommodationType.slice(1)}`);
+    info.push(`Check-in: ${accommodation.checkInDate.toLocaleDateString()}`);
+    info.push(`Check-out: ${accommodation.checkOutDate.toLocaleDateString()}`);
+    info.push(`Guests: ${accommodation.numberOfGuests}`);
+    info.push(`Confirmation Code: ${accommodation.confirmationCode}`);
+
+    if (accommodation.specialRequests) {
+      info.push(`Special Requests: ${accommodation.specialRequests}`);
+    }
+
+    return info.join(' | ');
+  }
+
+  private static formatBrochureAdditionalInfo(brochure: any): string {
+    const info: string[] = [];
+
+    info.push(`Type: ${brochure.brochureType.charAt(0).toUpperCase() + brochure.brochureType.slice(1)}`);
+    info.push(`Quantity: ${brochure.quantity}`);
+    info.push(`Total Amount: ₦${brochure.totalAmount.toLocaleString()}`);
+
+    if (brochure.recipientDetails && brochure.recipientDetails.length > 0) {
+      const recipientNames = brochure.recipientDetails.map((recipient: any) => recipient.name).join(', ');
+      info.push(`Recipients: ${recipientNames}`);
+    }
+
+    return info.join(' | ');
+  }
+
+  private static formatGoodwillAdditionalInfo(goodwill: any): string {
+    const info: string[] = [];
+
+    info.push(`Donation: ₦${goodwill.donationAmount.toLocaleString()}`);
+    info.push(`Status: ${goodwill.approved ? 'Approved' : 'Pending Approval'}`);
+    info.push(`Anonymous: ${goodwill.anonymous ? 'Yes' : 'No'}`);
+
+    if (goodwill.attributionName && !goodwill.anonymous) {
+      info.push(`Attribution: ${goodwill.attributionName}`);
+    }
+
+    if (goodwill.message) {
+      const truncatedMessage = goodwill.message.length > 100
+        ? goodwill.message.substring(0, 100) + '...'
+        : goodwill.message;
+      info.push(`Message: "${truncatedMessage}"`);
+    }
+
+    return info.join(' | ');
+  }
+
+  private static formatDonationAdditionalInfo(donation: any): string {
+    const info: string[] = [];
+
+    info.push(`Amount: ₦${donation.amount.toLocaleString()}`);
+    info.push(`Receipt: ${donation.receiptNumber}`);
+    info.push(`Anonymous: ${donation.anonymous ? 'Yes' : 'No'}`);
+
+    if (donation.onBehalfOf) {
+      info.push(`On Behalf Of: ${donation.onBehalfOf}`);
+    }
+
+    if (donation.donorName && !donation.anonymous) {
+      info.push(`Donor: ${donation.donorName}`);
+    }
+
+    return info.join(' | ');
+  }  /**
+   * 
+Generate QR code data for specific service types
+   */
+  static async generateServiceQRCodeData(
+    serviceType: 'convention' | 'dinner' | 'accommodation' | 'brochure' | 'goodwill' | 'donation',
+    serviceId: string,
+    additionalData?: any
+  ): Promise<string> {
+    try {
+      const baseData = {
+        type: serviceType,
+        id: serviceId,
+        timestamp: new Date().toISOString(),
+        ...additionalData,
+      };
+
+      // Set appropriate expiration based on service type
+      let validUntil: Date;
+      switch (serviceType) {
+        case 'convention':
+        case 'goodwill':
+        case 'donation':
+          validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year
+          break;
+        case 'dinner':
+          validUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+          break;
+        case 'accommodation':
+          validUntil = additionalData?.checkOutDate
+            ? new Date(additionalData.checkOutDate)
+            : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days default
+          break;
+        case 'brochure':
+          validUntil = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days
+          break;
+        default:
+          validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year default
+      }
+
+      baseData.validUntil = validUntil.toISOString();
+
+      return JSON.stringify(baseData);
+    } catch (error) {
+      console.error('Error generating service QR code data:', error);
+      throw new Error('Failed to generate QR code data');
+    }
+  }
+
+  /**
+   * Validate and extract service information from payment reference
+   */
+  static extractServiceInfoFromReference(paymentReference: string): {
+    serviceType?: string;
+    baseReference: string;
+  } {
+    // Common patterns in payment references that might indicate service type
+    const patterns = {
+      convention: /^(conv|convention|reg)/i,
+      dinner: /^(dinner|meal)/i,
+      accommodation: /^(accom|hotel|room)/i,
+      brochure: /^(broch|book)/i,
+      goodwill: /^(good|message)/i,
+      donation: /^(don|donate)/i,
+    };
+
+    for (const [serviceType, pattern] of Object.entries(patterns)) {
+      if (pattern.test(paymentReference)) {
+        return {
+          serviceType,
+          baseReference: paymentReference,
+        };
+      }
+    }
+
+    return {
+      baseReference: paymentReference,
+    };
+  }
+
+  /**
+   * Get all PDF data for a user across all services
+   */
+  static async getAllUserPDFData(userId: string | Types.ObjectId): Promise<PDFData[]> {
+    try {
+      await connectDB();
+
+      const objectId = new Types.ObjectId(userId);
+      const pdfDataList: PDFData[] = [];
+
+      // Get all services for the user
+      const [conventions, dinners, accommodations, brochures, goodwills, donations] = await Promise.all([
+        ConventionRegistration.find({ userId: objectId }).populate('userId'),
+        DinnerReservation.find({ userId: objectId }).populate('userId'),
+        Accommodation.find({ userId: objectId }).populate('userId'),
+        ConventionBrochure.find({ userId: objectId }).populate('userId'),
+        GoodwillMessage.find({ userId: objectId }).populate('userId'),
+        Donation.find({ userId: objectId }).populate('userId'),
+      ]);
+
+      // Process each service type
+      for (const convention of conventions) {
+        const pdfData = await this.getConventionPDFData(convention.paymentReference);
+        if (pdfData) pdfDataList.push(pdfData);
+      }
+
+      for (const dinner of dinners) {
+        const pdfData = await this.getDinnerPDFData(dinner.paymentReference);
+        if (pdfData) pdfDataList.push(pdfData);
+      }
+
+      for (const accommodation of accommodations) {
+        const pdfData = await this.getAccommodationPDFData(accommodation.paymentReference);
+        if (pdfData) pdfDataList.push(pdfData);
+      }
+
+      for (const brochure of brochures) {
+        const pdfData = await this.getBrochurePDFData(brochure.paymentReference);
+        if (pdfData) pdfDataList.push(pdfData);
+      }
+
+      for (const goodwill of goodwills) {
+        const pdfData = await this.getGoodwillPDFData(goodwill.paymentReference);
+        if (pdfData) pdfDataList.push(pdfData);
+      }
+
+      for (const donation of donations) {
+        const pdfData = await this.getDonationPDFData(donation.paymentReference);
+        if (pdfData) pdfDataList.push(pdfData);
+      }
+
+      return pdfDataList;
+    } catch (error) {
+      console.error('Error getting all user PDF data:', error);
+      return [];
+    }
+  }
+
+  // ========================================
+  // Service-Specific PDF Confirmation Methods
+  // ========================================
+
+  /**
+   * Send convention registration confirmation with PDF
+   */
+  static async sendConventionConfirmation(
+    userDetails: any,
+    record: any,
+    qrCodeData: string
+  ): Promise<DeliveryResult> {
+    const startTime = Date.now();
+
+    try {
+      console.log('Sending convention confirmation PDF for:', userDetails.name);
+
+      const pdfData: WhatsAppPDFData = {
+        userDetails: {
+          name: userDetails.name,
+          email: userDetails.email,
+          phone: userDetails.phone,
+          registrationId: userDetails.registrationId
+        },
+        operationDetails: {
+          type: 'convention',
+          amount: record.amount || 0,
+          paymentReference: record.paymentReference,
+          date: record.createdAt || new Date(),
+          status: record.confirm ? 'confirmed' : 'pending',
+          description: 'GOSA 2025 Convention Registration',
+          additionalInfo: this.formatConventionAdditionalInfo(record)
+        },
+        qrCodeData
+      };
+
+      const result = await WhatsAppPDFService.generateAndSendPDF(pdfData);
+
+      // Log delivery metrics for monitoring
+      await WhatsAppPDFService.logDeliveryMetrics(pdfData, result, startTime);
+
+      return result;
+    } catch (error) {
+      console.error('Error sending convention confirmation:', error);
+
+      const result: DeliveryResult = {
+        success: false,
+        pdfGenerated: false,
+        whatsappSent: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+
+      // Log failed delivery metrics
+      const pdfData: WhatsAppPDFData = {
+        userDetails: {
+          name: userDetails.name,
+          email: userDetails.email,
+          phone: userDetails.phone,
+          registrationId: userDetails.registrationId
+        },
+        operationDetails: {
+          type: 'convention',
+          amount: record.amount || 0,
+          paymentReference: record.paymentReference,
+          date: record.createdAt || new Date(),
+          status: record.confirm ? 'confirmed' : 'pending',
+          description: 'GOSA 2025 Convention Registration',
+          additionalInfo: this.formatConventionAdditionalInfo(record)
+        },
+        qrCodeData
+      };
+
+      await WhatsAppPDFService.logDeliveryMetrics(pdfData, result, startTime);
+
+      return result;
+    }
+  }
+
+  /**
+   * Send dinner reservation confirmation with PDF
+   */
+  static async sendDinnerConfirmation(
+    userDetails: any,
+    record: any,
+    qrCodeData: string
+  ): Promise<DeliveryResult> {
+    try {
+      console.log('Sending dinner confirmation PDF for:', userDetails.name);
+
+      const pdfData: WhatsAppPDFData = {
+        userDetails: {
+          name: userDetails.name,
+          email: userDetails.email,
+          phone: userDetails.phone,
+          registrationId: userDetails.registrationId
+        },
+        operationDetails: {
+          type: 'dinner',
+          amount: record.totalAmount || 0,
+          paymentReference: record.paymentReference,
+          date: record.createdAt || new Date(),
+          status: record.confirmed ? 'confirmed' : 'pending',
+          description: 'GOSA 2025 Convention Dinner Reservation',
+          additionalInfo: this.formatDinnerAdditionalInfo(record)
+        },
+        qrCodeData
+      };
+
+      return await WhatsAppPDFService.generateAndSendPDF(pdfData);
+    } catch (error) {
+      console.error('Error sending dinner confirmation:', error);
       return {
         success: false,
         pdfGenerated: false,
         whatsappSent: false,
-        error: error.message || 'Failed to generate and send PDF'
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
 
   /**
-   * Create WhatsApp message with PDF information
+   * Send accommodation booking confirmation with PDF
    */
-  private static createWhatsAppMessage(data: WhatsAppPDFData, pdfUrl: string): string {
-    const { userDetails, operationDetails } = data;
-    const operationTitle = this.getOperationTypeTitle(operationDetails.type);
-
-    return `🎉 *GOSA 2025 Convention - For Light and Truth*
-
-Dear ${userDetails.name},
-
-Your ${operationTitle.toLowerCase()} has been ${operationDetails.status === 'confirmed' ? 'confirmed' : 'received'}! ✅
-
-📋 *Details:*
-• Service: ${operationTitle}
-• Amount: ₦${operationDetails.amount.toLocaleString()}
-• Reference: ${operationDetails.paymentReference}
-• Date: ${operationDetails.date.toLocaleDateString()}
-
-${operationDetails.status === 'confirmed' ?
-        `🎫 *Your digital pass is ready!*
-Please save this document and present your QR code at the convention.
-
-📄 View/Download your PDF: ${pdfUrl}
-
-⚠️ *Important:*
-• Keep this QR code safe
-• Present it at the convention entrance
-• Contact support if you need assistance` :
-        `⏳ *Payment Processing*
-Your payment is being processed. You'll receive your digital pass once confirmed.`}
-
-📞 *Need Help?*
-Contact us at support@gosa.org
-
-Thank you for joining GOSA 2025 Convention! 🙏
-
----
-*This is an automated message from GOSA Convention Management System*`;
-  }
-
-  /**
-   * Send confirmation with PDF for different operation types
-   */
-  static async sendConventionConfirmation(
-    userDetails: WhatsAppPDFData['userDetails'],
-    registrationDetails: any,
-    qrCodeData: string
-  ): Promise<{ success: boolean; error?: string }> {
-    const data: WhatsAppPDFData = {
-      userDetails,
-      operationDetails: {
-        type: 'convention',
-        amount: registrationDetails.totalAmount,
-        paymentReference: registrationDetails.paymentReference,
-        date: registrationDetails.createdAt,
-        status: registrationDetails.confirmed ? 'confirmed' : 'pending',
-        description: `Convention registration including ${registrationDetails.accommodationType ? 'accommodation' : 'registration only'}`,
-        additionalInfo: registrationDetails.accommodationType ?
-          `Accommodation: ${registrationDetails.accommodationType} (${registrationDetails.numberOfGuests} guests)` :
-          undefined
-      },
-      qrCodeData
-    };
-
-    const result = await this.generateAndSendPDF(data);
-    return { success: result.success, error: result.error };
-  }
-
-  static async sendDinnerConfirmation(
-    userDetails: WhatsAppPDFData['userDetails'],
-    dinnerDetails: any,
-    qrCodeData: string
-  ): Promise<{ success: boolean; error?: string }> {
-    const data: WhatsAppPDFData = {
-      userDetails,
-      operationDetails: {
-        type: 'dinner',
-        amount: dinnerDetails.totalAmount,
-        paymentReference: dinnerDetails.paymentReference,
-        date: dinnerDetails.createdAt,
-        status: dinnerDetails.confirmed ? 'confirmed' : 'pending',
-        description: `Dinner reservation for ${dinnerDetails.numberOfGuests} guests`,
-        additionalInfo: `Date: ${dinnerDetails.dinnerDate} | Guests: ${dinnerDetails.numberOfGuests}`
-      },
-      qrCodeData
-    };
-
-    const result = await this.generateAndSendPDF(data);
-    return { success: result.success, error: result.error };
-  }
-
   static async sendAccommodationConfirmation(
-    userDetails: WhatsAppPDFData['userDetails'],
-    accommodationDetails: any,
+    userDetails: any,
+    record: any,
     qrCodeData: string
-  ): Promise<{ success: boolean; error?: string }> {
-    const data: WhatsAppPDFData = {
-      userDetails,
-      operationDetails: {
-        type: 'accommodation',
-        amount: accommodationDetails.totalAmount,
-        paymentReference: accommodationDetails.paymentReference,
-        date: accommodationDetails.createdAt,
-        status: accommodationDetails.confirmed ? 'confirmed' : 'pending',
-        description: `${accommodationDetails.accommodationType} accommodation booking`,
-        additionalInfo: `Check-in: ${accommodationDetails.checkInDate} | Check-out: ${accommodationDetails.checkOutDate} | Guests: ${accommodationDetails.numberOfGuests}`
-      },
-      qrCodeData
-    };
+  ): Promise<DeliveryResult> {
+    try {
+      console.log('Sending accommodation confirmation PDF for:', userDetails.name);
 
-    const result = await this.generateAndSendPDF(data);
-    return { success: result.success, error: result.error };
-  }
+      const pdfData: WhatsAppPDFData = {
+        userDetails: {
+          name: userDetails.name,
+          email: userDetails.email,
+          phone: userDetails.phone,
+          registrationId: userDetails.registrationId
+        },
+        operationDetails: {
+          type: 'accommodation',
+          amount: record.totalAmount || 0,
+          paymentReference: record.paymentReference,
+          date: record.createdAt || new Date(),
+          status: record.confirmed ? 'confirmed' : 'pending',
+          description: 'GOSA 2025 Convention Accommodation Booking',
+          additionalInfo: this.formatAccommodationAdditionalInfo(record)
+        },
+        qrCodeData
+      };
 
-  static async sendBrochureConfirmation(
-    userDetails: WhatsAppPDFData['userDetails'],
-    brochureDetails: any,
-    qrCodeData: string
-  ): Promise<{ success: boolean; error?: string }> {
-    const data: WhatsAppPDFData = {
-      userDetails,
-      operationDetails: {
-        type: 'brochure',
-        amount: brochureDetails.totalAmount,
-        paymentReference: brochureDetails.paymentReference,
-        date: brochureDetails.createdAt,
-        status: brochureDetails.confirmed ? 'confirmed' : 'pending',
-        description: `Convention brochure purchase (${brochureDetails.quantity} copies)`,
-        additionalInfo: `Delivery Address: ${brochureDetails.deliveryAddress}`
-      },
-      qrCodeData
-    };
-
-    const result = await this.generateAndSendPDF(data);
-    return { success: result.success, error: result.error };
-  }
-
-  static async sendGoodwillConfirmation(
-    userDetails: WhatsAppPDFData['userDetails'],
-    goodwillDetails: any,
-    qrCodeData: string
-  ): Promise<{ success: boolean; error?: string }> {
-    const data: WhatsAppPDFData = {
-      userDetails,
-      operationDetails: {
-        type: 'goodwill',
-        amount: goodwillDetails.donationAmount,
-        paymentReference: goodwillDetails.paymentReference,
-        date: goodwillDetails.createdAt,
-        status: goodwillDetails.confirmed ? 'confirmed' : 'pending',
-        description: 'Goodwill message with donation',
-        additionalInfo: goodwillDetails.message ?
-          `Message: "${goodwillDetails.message.substring(0, 100)}${goodwillDetails.message.length > 100 ? '...' : ''}"` :
-          'Donation only'
-      },
-      qrCodeData
-    };
-
-    const result = await this.generateAndSendPDF(data);
-    return { success: result.success, error: result.error };
-  }
-
-  static async sendDonationConfirmation(
-    userDetails: WhatsAppPDFData['userDetails'],
-    donationDetails: any,
-    qrCodeData: string
-  ): Promise<{ success: boolean; error?: string }> {
-    const data: WhatsAppPDFData = {
-      userDetails,
-      operationDetails: {
-        type: 'donation',
-        amount: donationDetails.amount,
-        paymentReference: donationDetails.paymentReference,
-        date: donationDetails.createdAt,
-        status: donationDetails.confirmed ? 'confirmed' : 'pending',
-        description: 'Donation to GOSA Convention',
-        additionalInfo: donationDetails.purpose ? `Purpose: ${donationDetails.purpose}` : undefined
-      },
-      qrCodeData
-    };
-
-    const result = await this.generateAndSendPDF(data);
-    return { success: result.success, error: result.error };
+      return await WhatsAppPDFService.generateAndSendPDF(pdfData);
+    } catch (error) {
+      console.error('Error sending accommodation confirmation:', error);
+      return {
+        success: false,
+        pdfGenerated: false,
+        whatsappSent: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 
   /**
-   * Get operation type display title
+   * Send brochure order confirmation with PDF
    */
-  private static getOperationTypeTitle(type: string): string {
-    const titles: { [key: string]: string } = {
-      'convention': 'Convention Registration',
-      'dinner': 'Dinner Reservation',
-      'accommodation': 'Accommodation Booking',
-      'brochure': 'Brochure Purchase',
-      'goodwill': 'Goodwill Message',
-      'donation': 'Donation'
-    };
-    return titles[type] || type.charAt(0).toUpperCase() + type.slice(1);
+  static async sendBrochureConfirmation(
+    userDetails: any,
+    record: any,
+    qrCodeData: string
+  ): Promise<DeliveryResult> {
+    try {
+      console.log('Sending brochure confirmation PDF for:', userDetails.name);
+
+      const pdfData: WhatsAppPDFData = {
+        userDetails: {
+          name: userDetails.name,
+          email: userDetails.email,
+          phone: userDetails.phone,
+          registrationId: userDetails.registrationId
+        },
+        operationDetails: {
+          type: 'brochure',
+          amount: record.totalAmount || 0,
+          paymentReference: record.paymentReference,
+          date: record.createdAt || new Date(),
+          status: record.confirmed ? 'confirmed' : 'pending',
+          description: 'GOSA 2025 Convention Brochure Order',
+          additionalInfo: this.formatBrochureAdditionalInfo(record)
+        },
+        qrCodeData
+      };
+
+      return await WhatsAppPDFService.generateAndSendPDF(pdfData);
+    } catch (error) {
+      console.error('Error sending brochure confirmation:', error);
+      return {
+        success: false,
+        pdfGenerated: false,
+        whatsappSent: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Send goodwill message confirmation with PDF
+   */
+  static async sendGoodwillConfirmation(
+    userDetails: any,
+    record: any,
+    qrCodeData: string
+  ): Promise<DeliveryResult> {
+    try {
+      console.log('Sending goodwill confirmation PDF for:', userDetails.name);
+
+      const pdfData: WhatsAppPDFData = {
+        userDetails: {
+          name: userDetails.name,
+          email: userDetails.email,
+          phone: userDetails.phone,
+          registrationId: userDetails.registrationId
+        },
+        operationDetails: {
+          type: 'goodwill',
+          amount: record.donationAmount || 0,
+          paymentReference: record.paymentReference,
+          date: record.createdAt || new Date(),
+          status: record.confirmed ? 'confirmed' : 'pending',
+          description: 'GOSA 2025 Convention Goodwill Message & Donation',
+          additionalInfo: this.formatGoodwillAdditionalInfo(record)
+        },
+        qrCodeData
+      };
+
+      return await WhatsAppPDFService.generateAndSendPDF(pdfData);
+    } catch (error) {
+      console.error('Error sending goodwill confirmation:', error);
+      return {
+        success: false,
+        pdfGenerated: false,
+        whatsappSent: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Send donation confirmation with PDF
+   */
+  static async sendDonationConfirmation(
+    userDetails: any,
+    record: any,
+    qrCodeData: string
+  ): Promise<DeliveryResult> {
+    try {
+      console.log('Sending donation confirmation PDF for:', userDetails.name);
+
+      const pdfData: WhatsAppPDFData = {
+        userDetails: {
+          name: userDetails.name,
+          email: userDetails.email,
+          phone: userDetails.phone,
+          registrationId: userDetails.registrationId
+        },
+        operationDetails: {
+          type: 'donation',
+          amount: record.amount || 0,
+          paymentReference: record.paymentReference,
+          date: record.createdAt || new Date(),
+          status: record.confirmed ? 'confirmed' : 'pending',
+          description: 'GOSA 2025 Convention Donation',
+          additionalInfo: this.formatDonationAdditionalInfo(record)
+        },
+        qrCodeData
+      };
+
+      return await WhatsAppPDFService.generateAndSendPDF(pdfData);
+    } catch (error) {
+      console.error('Error sending donation confirmation:', error);
+      return {
+        success: false,
+        pdfGenerated: false,
+        whatsappSent: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Generic method to send PDF confirmation for any service type
+   */
+  static async sendServiceConfirmation(
+    serviceType: 'convention' | 'dinner' | 'accommodation' | 'brochure' | 'goodwill' | 'donation',
+    userDetails: any,
+    record: any,
+    qrCodeData: string
+  ): Promise<DeliveryResult> {
+    switch (serviceType) {
+      case 'convention':
+        return await this.sendConventionConfirmation(userDetails, record, qrCodeData);
+      case 'dinner':
+        return await this.sendDinnerConfirmation(userDetails, record, qrCodeData);
+      case 'accommodation':
+        return await this.sendAccommodationConfirmation(userDetails, record, qrCodeData);
+      case 'brochure':
+        return await this.sendBrochureConfirmation(userDetails, record, qrCodeData);
+      case 'goodwill':
+        return await this.sendGoodwillConfirmation(userDetails, record, qrCodeData);
+      case 'donation':
+        return await this.sendDonationConfirmation(userDetails, record, qrCodeData);
+      default:
+        throw new Error(`Unsupported service type: ${serviceType}`);
+    }
   }
 }

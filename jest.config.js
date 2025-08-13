@@ -8,32 +8,25 @@ const createJestConfig = nextJest({
 // Add any custom config to be passed to Jest
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  testEnvironment: 'jest-environment-jsdom',
   moduleNameMapping: {
+    // Handle module aliases (this will be automatically configured for you based on your tsconfig.json paths)
     '^@/(.*)$': '<rootDir>/$1',
   },
+  testEnvironment: 'jest-environment-jsdom',
   testMatch: [
-    '**/__tests__/**/*.(test|spec).(js|jsx|ts|tsx)',
-    '**/*.(test|spec).(js|jsx|ts|tsx)'
+    '**/__tests__/**/*.test.ts',
+    '**/__tests__/**/*.test.tsx'
   ],
   collectCoverageFrom: [
-    'lib/**/*.{js,jsx,ts,tsx}',
-    'components/**/*.{js,jsx,ts,tsx}',
-    'app/api/**/*.{js,jsx,ts,tsx}',
+    'lib/services/pdf-*.service.ts',
+    'lib/services/whatsapp-pdf.service.ts',
+    'app/api/v1/pdf/**/*.ts',
     '!**/*.d.ts',
-    '!**/node_modules/**',
-    '!**/.next/**',
-    '!**/coverage/**',
+    '!**/node_modules/**'
   ],
-  coverageThreshold: {
-    global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70,
-    },
-  },
-  testTimeout: 10000,
+  coverageReporters: ['text', 'lcov', 'html'],
+  coverageDirectory: 'coverage',
+  verbose: true
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

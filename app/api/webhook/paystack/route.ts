@@ -199,6 +199,18 @@ function hasValidResult(result: any): boolean {
 // Enhanced notification service for different payment types with PDF generation
 async function sendServiceNotification(serviceType: string, record: any): Promise<any> {
   try {
+    // Only send PDF for confirmed payments
+    const isConfirmed = record.confirmed || record.confirm || false;
+    if (!isConfirmed) {
+      console.log(`Skipping PDF delivery for unconfirmed ${serviceType} payment:`, record.paymentReference);
+      return {
+        success: false,
+        serviceType,
+        error: 'Payment not confirmed',
+        skipped: true
+      };
+    }
+
     const phoneNumber = record.userId?.phoneNumber || record.paymentReference?.split('_')[1];
 
     if (!phoneNumber) {
@@ -216,10 +228,17 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
       registrationId: record._id?.toString()
     };
 
-    // Generate QR code data
-    const qrCodeData = record.qrCodes?.[0]?.qrCode || `GOSA2025-${serviceType.toUpperCase()}-${record._id}`;
+    // Generate QR code data - use existing QR codes if available
+    let qrCodeData = record.qrCodes?.[0]?.qrCode;
+
+    // If no QR code exists, generate a basic one
+    if (!qrCodeData) {
+      qrCodeData = `GOSA2025-${serviceType.toUpperCase()}-${record._id}`;
+    }
 
     let pdfResult: any = null;
+
+    console.log(`Generating PDF for ${serviceType} payment:`, record.paymentReference);
 
     // Generate and send PDF based on service type
     switch (serviceType) {
@@ -264,28 +283,61 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
         break;
 
       case 'convention':
-        pdfResult = await PDFWhatsAppUtils.sendConventionConfirmation(
-          userDetails,
-          record,
-          qrCodeData
-        );
-        break;
+        // Convention is handled separately in the main flow
+        console.log('Convention PDF delivery handled in main flow');
+        return {
+          success: true,
+          serviceType,
+          phoneNumber: internationalPhone,
+          handledSeparately: true
+        };
 
       default:
-        console.warn(`Unknown service type: ${serviceType}`);
-        return null;
+        console.warn(`Unknown service type for PDF delivery: ${serviceType}`);
+        return {
+          success: false,
+          serviceType,
+          error: `Unsupported service type: ${serviceType}`
+        };
     }
 
-    return {
+    const result = {
       success: pdfResult?.success || false,
       serviceType,
       phoneNumber: internationalPhone,
-      pdfGenerated: pdfResult?.success || false,
+      pdfGenerated: pdfResult?.pdfGenerated || false,
+      whatsappSent: pdfResult?.whatsappSent || false,
+      fallbackUsed: pdfResult?.fallbackUsed || false,
       error: pdfResult?.error
     };
 
+    console.log(`PDF delivery result for ${serviceType}:`, result);
+    return result;
+
   } catch (error: any) {
     console.error(`Error sending ${serviceType} notification with PDF:`, error);
+
+    // Record error for monitoring
+    try {
+      const { PDFMonitoringService } = await import('@/lib/services/pdf-monitoring.service');
+      await PDFMonitoringService.recordError(
+        'error',
+        'WEBHOOK_PDF_DELIVERY',
+        'PDF_DELIVERY_EXCEPTION',
+        `PDF delivery failed in webhook for ${serviceType}: ${error.message}`,
+        {
+          serviceType,
+          paymentReference: record?.paymentReference,
+          userPhone: internationalPhone,
+          error: error.message,
+          stack: error.stack
+        },
+        true // Requires immediate action
+      );
+    } catch (monitoringError) {
+      console.error('Failed to record webhook PDF error:', monitoringError);
+    }
+
     return {
       success: false,
       serviceType,
@@ -350,38 +402,86 @@ export async function POST(req: NextRequest) {
 
     console.log(`Successfully processed ${serviceType} payment:`, paymentReference);
 
-    // Handle convention registration separately (multiple records)
+    // Handle convention registration with PDF delivery
     if (serviceType === 'convention') {
       try {
-        // Generate QR codes and send messages for convention registration
-        // @ts-ignore
-        const qrResults = await generateQrCode(record);
+        console.log('Processing convention registration with PDF delivery...');
 
-        const failedOperations = qrResults.filter(
-          (result) =>
-            result.status === "rejected" ||
-            (result.status === "fulfilled" && !result.value.success),
-        );
+        // Handle multiple convention records (array)
+        const conventionRecords = Array.isArray(record) ? record : [record];
+        const pdfResults = [];
 
-        if (failedOperations.length > 0) {
-          console.error("Some QR operations failed:", failedOperations);
-          return NextResponse.json({
-            message: `Convention registration partially successful. ${qrResults.length - failedOperations.length} out of ${qrResults.length} operations completed successfully.`,
-            success: true,
-            serviceType: 'convention',
-            reference: paymentReference,
-            details: qrResults,
-          });
+        for (const conventionRecord of conventionRecords) {
+          try {
+            // Prepare user details for PDF generation
+            const userDetails = {
+              name: conventionRecord.userId?.fullName || conventionRecord.fullName || 'Unknown User',
+              email: conventionRecord.userId?.email || conventionRecord.email || 'unknown@email.com',
+              phone: conventionRecord.paymentReference?.split('_')[1] || '',
+              registrationId: conventionRecord._id?.toString()
+            };
+
+            // Convert phone to international format
+            if (userDetails.phone) {
+              userDetails.phone = convertToInternationalFormat(userDetails.phone);
+            }
+
+            // Generate QR code data for convention entrance
+            const qrCodeData = conventionRecord.qrCodes?.[0]?.qrCode ||
+              `GOSA2025-CONVENTION-${conventionRecord._id}`;
+
+            // Send PDF confirmation
+            const pdfResult = await PDFWhatsAppUtils.sendConventionConfirmation(
+              userDetails,
+              conventionRecord,
+              qrCodeData
+            );
+
+            pdfResults.push({
+              registrationId: conventionRecord._id,
+              paymentReference: conventionRecord.paymentReference,
+              success: pdfResult.success,
+              pdfGenerated: pdfResult.pdfGenerated,
+              whatsappSent: pdfResult.whatsappSent,
+              fallbackUsed: pdfResult.fallbackUsed,
+              error: pdfResult.error
+            });
+
+            console.log(`Convention PDF processed for ${conventionRecord.paymentReference}:`, {
+              success: pdfResult.success,
+              pdfGenerated: pdfResult.pdfGenerated,
+              whatsappSent: pdfResult.whatsappSent
+            });
+
+          } catch (recordError: any) {
+            console.error(`Error processing convention record ${conventionRecord._id}:`, recordError);
+            pdfResults.push({
+              registrationId: conventionRecord._id,
+              paymentReference: conventionRecord.paymentReference,
+              success: false,
+              error: recordError.message
+            });
+          }
+        }
+
+        const successfulDeliveries = pdfResults.filter(result => result.success).length;
+        const failedDeliveries = pdfResults.filter(result => !result.success).length;
+
+        if (failedDeliveries > 0) {
+          console.error("Some convention PDF deliveries failed:", pdfResults.filter(r => !r.success));
         }
 
         return NextResponse.json({
-          message: "Convention registration completed successfully",
-          success: true,
+          message: `Convention registration processed. ${successfulDeliveries} out of ${pdfResults.length} PDF confirmations sent successfully.`,
+          success: successfulDeliveries > 0,
           serviceType: 'convention',
           reference: paymentReference,
-          processed: qrResults.length,
-          details: qrResults,
+          processed: pdfResults.length,
+          successful: successfulDeliveries,
+          failed: failedDeliveries,
+          details: pdfResults,
         });
+
       } catch (error: any) {
         console.error("Error processing convention registration:", error);
         return NextResponse.json({
