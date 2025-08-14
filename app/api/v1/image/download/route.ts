@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const paymentReference = searchParams.get('ref');
-    const format = searchParams.get('format') || 'svg';
+    const format = searchParams.get('format') || 'png';
 
     if (!paymentReference) {
       return NextResponse.json(
@@ -94,14 +94,14 @@ export async function GET(request: NextRequest) {
       qrCodeData
     };
 
-    if (format === 'svg' || format === 'image') {
-      // Generate and return image
+    if (format === 'png' || format === 'image') {
+      // Generate and return PNG image
       const imageBuffer = await ImageGeneratorService.generateImageBuffer(imageData);
 
       return new NextResponse(imageBuffer, {
         headers: {
-          'Content-Type': 'image/svg+xml',
-          'Content-Disposition': `attachment; filename="gosa-2025-${serviceType}-${userDetails.name.replace(/[^a-z0-9]/gi, '-')}.svg"`,
+          'Content-Type': 'image/png',
+          'Content-Disposition': `attachment; filename="gosa-2025-${serviceType}-${userDetails.name.replace(/[^a-z0-9]/gi, '-')}.png"`,
           'Cache-Control': 'public, max-age=3600'
         }
       });

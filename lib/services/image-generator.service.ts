@@ -1,24 +1,31 @@
 import { PDFData } from '@/lib/types';
 import * as QRCode from 'qrcode';
+import sharp from 'sharp';
 
 export interface ImageData extends PDFData { }
 
 export class ImageGeneratorService {
   /**
-   * Generate image buffer using Canvas (runtime only)
+   * Generate PNG image buffer with embedded QR code
    */
   static async generateImageBuffer(data: ImageData): Promise<Buffer> {
     try {
-      // For now, use a simple SVG-based approach that's more build-friendly
+      // Generate SVG content first
       const svgContent = await this.generateSVGContent(data);
 
-      // Convert SVG to buffer (in production, you might want to convert to PNG)
-      const buffer = Buffer.from(svgContent, 'utf-8');
-      console.log(`[IMAGE-GENERATOR] Successfully generated image for ${data.operationDetails.paymentReference}`);
-      return buffer;
+      // Convert SVG to PNG using Sharp
+      const pngBuffer = await sharp(Buffer.from(svgContent))
+        .png({
+          quality: 90,
+          compressionLevel: 6
+        })
+        .toBuffer();
+
+      console.log(`[IMAGE-GENERATOR] Successfully generated PNG image for ${data.operationDetails.paymentReference}`);
+      return pngBuffer;
 
     } catch (error) {
-      console.error('[IMAGE-GENERATOR] Failed to generate image:', error);
+      console.error('[IMAGE-GENERATOR] Failed to generate PNG image:', error);
       // Fall back to simple text-based image
       return this.generateImageBufferFallback(data);
     }
@@ -30,17 +37,18 @@ export class ImageGeneratorService {
   private static async generateSVGContent(data: ImageData): Promise<string> {
     const serviceTitle = this.getServiceTitle(data.operationDetails.type);
 
-    // Generate QR code as data URL
+    // Generate QR code as data URL with high quality settings
     let qrCodeDataURL = '';
     try {
       qrCodeDataURL = await QRCode.toDataURL(data.qrCodeData, {
         width: 200,
-        margin: 2,
+        margin: 1,
+        errorCorrectionLevel: 'M',
         color: {
           dark: '#16A34A',
           light: '#ffffff'
         }
-      });
+      }) as string;
     } catch (qrError) {
       console.error('QR code generation failed:', qrError);
     }
@@ -81,10 +89,11 @@ export class ImageGeneratorService {
         <text x="50" y="455" class="text" font-size="20">Status: Confirmed ✅</text>
         <text x="50" y="490" class="text" font-size="20">Date: ${new Date(data.operationDetails.date).toLocaleDateString()}</text>
         
-        <!-- QR Code -->
-        <text x="400" y="540" text-anchor="middle" class="section-title" font-size="22">QR Code</text>
-        ${qrCodeDataURL ? `<image x="300" y="560" width="200" height="200" href="${qrCodeDataURL}"/>` : `<text x="400" y="660" text-anchor="middle" class="text" font-size="18">${data.qrCodeData}</text>`}
-        <text x="400" y="790" text-anchor="middle" class="text" font-size="16">Present this QR code at the event</text>
+        <!-- QR Code Section with Border -->
+        <rect x="250" y="520" width="300" height="280" fill="#f8f9fa" stroke="#16A34A" stroke-width="2" rx="10"/>
+        <text x="400" y="545" text-anchor="middle" class="section-title" font-size="22">QR Code</text>
+        ${qrCodeDataURL ? `<image x="300" y="560" width="200" height="200" href="${qrCodeDataURL}"/>` : `<text x="400" y="660" text-anchor="middle" class="text" font-size="16">${data.qrCodeData}</text>`}
+        <text x="400" y="785" text-anchor="middle" class="text" font-size="16">Present this QR code at the event</text>
         
         <!-- Instructions -->
         <text x="50" y="840" class="section-title" font-size="20">Important Instructions:</text>
@@ -144,7 +153,7 @@ export class ImageGeneratorService {
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '-');
 
-    return `gosa-2025-${sanitizedServiceType}-${sanitizedName}-${timestamp}.svg`;
+    return `gosa-2025-${sanitizedServiceType}-${sanitizedName}-${timestamp}.png`;
   }
 
   /**

@@ -1,5 +1,5 @@
 import { ImageGeneratorService } from './image-generator.service';
-import { Wasender, WASenderDocument, WASenderResult } from '../wasender-api';
+import { Wasender, WASenderImage, WASenderResult } from '../wasender-api';
 import { ImageData, WhatsAppImageData } from '@/lib/types';
 import {
   PDFErrorHandlerService,
@@ -149,11 +149,11 @@ export class WhatsAppImageService {
   }
 
   /**
-   * Send image document via WhatsApp using Vercel Blob URL (extracted for retry logic)
+   * Send image via WhatsApp using Vercel Blob URL (extracted for retry logic)
    */
   private static async sendImageDocumentWithBlob(data: WhatsAppImageData, blobUrl: string): Promise<{ messageId?: string | number }> {
-    const documentData = await this.createDocumentMessage(data, blobUrl);
-    const result = await Wasender.sendDocument(documentData);
+    const imageData = await this.createImageMessage(data, blobUrl);
+    const result = await Wasender.sendImage(imageData);
 
     if (!result.success) {
       throw new Error(result.error || 'WhatsApp image delivery failed');
@@ -163,25 +163,22 @@ export class WhatsAppImageService {
   }
 
   /**
-   * Create WhatsApp document message data with Vercel Blob URL
+   * Create WhatsApp image message data with Vercel Blob URL
    */
-  private static async createDocumentMessage(data: WhatsAppImageData, blobUrl: string): Promise<WASenderDocument> {
-    const { ImageBlobService } = await import('./image-blob.service');
-    const filename = ImageBlobService.generateBlobFilename(data.userDetails, data.operationDetails.type);
+  private static async createImageMessage(data: WhatsAppImageData, blobUrl: string): Promise<WASenderImage> {
     const messageText = this.createStandardizedGOSAMessage(data, blobUrl);
 
     return {
       to: data.userDetails.phone,
       text: messageText,
-      documentUrl: blobUrl,
-      fileName: filename
+      imageUrl: blobUrl
     };
   }
 
   /**
    * Create standardized GOSA WhatsApp message with personalized details
    */
-  private static createStandardizedGOSAMessage(data: WhatsAppImageData, documentUrl: string): string {
+  private static createStandardizedGOSAMessage(data: WhatsAppImageData, imageUrl: string): string {
     const { userDetails, operationDetails } = data;
     const serviceTitle = this.getServiceTitle(operationDetails.type);
 
@@ -192,17 +189,13 @@ Dear ${userDetails.name},
 
 Your ${serviceTitle} has been confirmed!
 
-📄 Download your confirmation document:
-${documentUrl}
-
 💳 Payment Details:
 • Amount: ₦${operationDetails.amount.toLocaleString()}
 • Reference: ${operationDetails.paymentReference}
 • Status: Confirmed ✅
 
 📱 Important Instructions:
-• Click the link above to download your confirmation image
-• Save the image to your device
+• Save this confirmation image to your device
 • Present the QR code when required
 • Keep this document for your records
 

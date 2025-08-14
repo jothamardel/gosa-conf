@@ -16,8 +16,8 @@ export class ImageBlobService {
         throw new Error('BLOB_READ_WRITE_TOKEN environment variable is not set');
       }
 
-      // Determine content type based on filename
-      const contentType = filename.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+      // Use PNG content type for all images
+      const contentType = 'image/png';
 
       const blob = await put(filename, imageBuffer, {
         access: 'public',
@@ -61,7 +61,7 @@ export class ImageBlobService {
           {
             filename,
             fileSize: imageBuffer.length,
-            contentType: filename.endsWith('.svg') ? 'image/svg+xml' : 'image/png',
+            contentType: 'image/png',
             fileType: 'image'
           }
         );
@@ -90,7 +90,7 @@ export class ImageBlobService {
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '-');
 
-    return `gosa-2025-${sanitizedServiceType}-${sanitizedName}-${timestamp}.svg`;
+    return `gosa-2025-${sanitizedServiceType}-${sanitizedName}-${timestamp}.png`;
   }
 
   /**
@@ -110,7 +110,7 @@ export class ImageBlobService {
 
     // Return fallback URL using the existing image download API
     const baseUrl = process.env.NEXTAUTH_URL || 'https://www.gosa.events';
-    return `${baseUrl}/api/v1/image/download?ref=${fallbackData.operationDetails.paymentReference}&format=svg`;
+    return `${baseUrl}/api/v1/image/download?ref=${fallbackData.operationDetails.paymentReference}&format=png`;
   }
 
   /**
