@@ -1,7 +1,14 @@
 import { Types } from 'mongoose';
 import { AttendeeBadge, IAttendeeBadge } from '../schema/badge.schema';
 import { VercelBlobService } from '../services/vercel-blob.service';
-import sharp from 'sharp';
+
+// Dynamic import for Sharp to handle production environment issues
+let sharp: any = null;
+try {
+  sharp = require('sharp');
+} catch (error) {
+  console.warn('[BADGE-UTILS] Sharp not available, badge generation will use fallback:', (error as Error).message);
+}
 
 export interface BadgeData {
   userId: string;
@@ -68,9 +75,9 @@ export class BadgeUtils {
         title: data.attendeeTitle,
         organization: data.organization
       };
-      
+
       const badgeImageBuffer = await this.generateBadgeImage(data.profilePhoto, userDetails);
-      
+
       // Upload badge image to Vercel Blob
       const badgeFilename = VercelBlobService.generateFilename(`badge_${data.attendeeName}.png`, data.userId);
       const badgeImageUrl = await VercelBlobService.uploadImage(badgeImageBuffer, badgeFilename);
@@ -100,65 +107,112 @@ export class BadgeUtils {
    */
   static async generateBadgeImage(userPhoto: Buffer, userDetails: UserDetails): Promise<Buffer> {
     try {
-      const template = this.DEFAULT_TEMPLATE;
-      
-      // Process user photo - resize and make circular
-      const processedPhoto = await sharp(userPhoto)
-        .resize(200, 200, { fit: 'cover' })
-        .png()
-        .toBuffer();
+      // If Sharp is available, use it for high-quality badge generation
+      if (sharp) {
+        return await this.generateBadgeImageWithSharp(userPhoto, userDetails);
+      } else {
+        // Fallback to SVG-only badge generation
+        return await this.generateBadgeImageFallback(userDetails);
+      }
+    } catch (error) {
+      console.error('Error generating badge image:', error);
+      // Ultimate fallback to simple text badge
+      return this.generateTextBadgeFallback(userDetails);
+    }
+  }
 
-      // Create circular mask
-      const circularMask = Buffer.from(
-        `<svg width="200" height="200">
-          <circle cx="100" cy="100" r="100" fill="white"/>
-        </svg>`
-      );
+  /**
+   * Generate badge image using Sharp (high quality)
+   */
+  private static async generateBadgeImageWithSharp(userPhoto: Buffer, userDetails: UserDetails): Promise<Buffer> {
+    const template = this.DEFAULT_TEMPLATE;
 
-      const circularPhoto = await sharp(processedPhoto)
-        .composite([{ input: circularMask, blend: 'dest-in' }])
-        .png()
-        .toBuffer();
-
-      // Create badge background
-      const badgeBackground = await sharp({
-        create: {
-          width: template.width,
-          height: template.height,
-          channels: 4,
-          background: template.backgroundColor
-        }
-      })
+    // Process user photo - resize and make circular
+    const processedPhoto = await sharp(userPhoto)
+      .resize(200, 200, { fit: 'cover' })
       .png()
       .toBuffer();
 
-      // Create SVG overlay with text
-      const svgOverlay = this.createBadgeSVG(userDetails, template);
-      
-      // Composite all elements
-      const finalBadge = await sharp(badgeBackground)
-        .composite([
-          // Add circular photo
-          {
-            input: circularPhoto,
-            top: 150,
-            left: 300
-          },
-          // Add text overlay
-          {
-            input: Buffer.from(svgOverlay),
-            top: 0,
-            left: 0
-          }
-        ])
-        .png()
-        .toBuffer();
+    // Create circular mask
+    const circularMask = Buffer.from(
+      `<svg width="200" height="200">
+        <circle cx="100" cy="100" r="100" fill="white"/>
+      </svg>`
+    );
 
-      return finalBadge;
-    } catch (error) {
-      console.error('Error generating badge image:', error);
-      throw new Error('Failed to generate badge image');
-    }
+    const circularPhoto = await sharp(processedPhoto)
+      .composite([{ input: circularMask, blend: 'dest-in' }])
+      .png()
+      .toBuffer();
+
+    // Create badge background
+    const badgeBackground = await sharp({
+      create: {
+        width: template.width,
+        height: template.height,
+        channels: 4,
+        background: template.backgroundColor
+      }
+    })
+      .png()
+      .toBuffer();
+
+    // Create SVG overlay with text
+    const svgOverlay = this.createBadgeSVG(userDetails, template);
+
+    // Composite all elements
+    const finalBadge = await sharp(badgeBackground)
+      .composite([
+        // Add circular photo
+        {
+          input: circularPhoto,
+          top: 150,
+          left: 300
+        },
+        // Add text overlay
+        {
+          input: Buffer.from(svgOverlay),
+          top: 0,
+          left: 0
+        }
+      ])
+      .png()
+      .toBuffer();
+
+    return finalBadge;
+  }
+
+  /**
+   * Generate badge image fallback (SVG only, no photo processing)
+   */
+  private static async generateBadgeImageFallback(userDetails: UserDetails): Promise<Buffer> {
+    console.log('[BADGE-UTILS] Using SVG fallback for badge generation');
+
+    const template = this.DEFAULT_TEMPLATE;
+    const svgBadge = this.createCompleteBadgeSVG(userDetails, template);
+
+    return Buffer.from(svgBadge, 'utf-8');
+  }
+
+  /**
+   * Generate simple text badge as ultimate fallback
+   */
+  private static generateTextBadgeFallback(userDetails: UserDetails): Buffer {
+    console.log('[BADGE-UTILS] Using text fallback for badge generation');
+
+    const textBadge = `
+GOSA CONVENTION 2025
+ATTENDEE BADGE
+
+Name: ${userDetails.name}
+${userDetails.title ? `Title: ${userDetails.title}` : ''}
+${userDetails.organization ? `Organization: ${userDetails.organization}` : ''}
+
+Welcome to GOSA Convention
+www.gosa.org
+    `;
+
+    return Buffer.from(textBadge, 'utf-8');
   }
 
   /**
@@ -166,13 +220,48 @@ export class BadgeUtils {
    */
   private static createBadgeSVG(userDetails: UserDetails, template: BadgeTemplate): string {
     const { name, title, organization } = userDetails;
-    
+
     return `
       <svg width="${template.width}" height="${template.height}" xmlns="http://www.w3.org/2000/svg">
         <!-- Header with logo -->
         <rect x="0" y="0" width="${template.width}" height="120" fill="${template.textColor}"/>
         <text x="400" y="40" text-anchor="middle" fill="white" font-size="24" font-weight="bold">GOSA CONVENTION 2024</text>
         <text x="400" y="70" text-anchor="middle" fill="white" font-size="16">ATTENDEE BADGE</text>
+        
+        <!-- Name -->
+        <text x="400" y="420" text-anchor="middle" fill="${template.textColor}" font-size="36" font-weight="bold">${this.escapeXml(name)}</text>
+        
+        ${title ? `<text x="400" y="460" text-anchor="middle" fill="${template.titleColor}" font-size="20">${this.escapeXml(title)}</text>` : ''}
+        
+        ${organization ? `<text x="400" y="${title ? '490' : '460'}" text-anchor="middle" fill="${template.orgColor}" font-size="18">${this.escapeXml(organization)}</text>` : ''}
+        
+        <!-- Footer -->
+        <rect x="0" y="920" width="${template.width}" height="80" fill="${template.textColor}"/>
+        <text x="400" y="950" text-anchor="middle" fill="white" font-size="14">Welcome to GOSA Convention</text>
+        <text x="400" y="975" text-anchor="middle" fill="white" font-size="12">www.gosa.org</text>
+      </svg>
+    `;
+  }
+
+  /**
+   * Create complete badge SVG (fallback when Sharp is not available)
+   */
+  private static createCompleteBadgeSVG(userDetails: UserDetails, template: BadgeTemplate): string {
+    const { name, title, organization } = userDetails;
+
+    return `
+      <svg width="${template.width}" height="${template.height}" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background -->
+        <rect x="0" y="0" width="${template.width}" height="${template.height}" fill="${template.backgroundColor}"/>
+        
+        <!-- Header with logo -->
+        <rect x="0" y="0" width="${template.width}" height="120" fill="${template.textColor}"/>
+        <text x="400" y="40" text-anchor="middle" fill="white" font-size="24" font-weight="bold">GOSA CONVENTION 2025</text>
+        <text x="400" y="70" text-anchor="middle" fill="white" font-size="16">ATTENDEE BADGE</text>
+        
+        <!-- Placeholder for photo -->
+        <circle cx="400" cy="250" r="100" fill="#E5E7EB" stroke="${template.textColor}" stroke-width="3"/>
+        <text x="400" y="260" text-anchor="middle" fill="${template.textColor}" font-size="16" font-weight="bold">PHOTO</text>
         
         <!-- Name -->
         <text x="400" y="420" text-anchor="middle" fill="${template.textColor}" font-size="36" font-weight="bold">${this.escapeXml(name)}</text>
@@ -280,7 +369,7 @@ export class BadgeUtils {
 
       // Delete badge record
       await AttendeeBadge.findByIdAndDelete(badgeId);
-      
+
       return true;
     } catch (error) {
       console.error('Error deleting badge:', error);

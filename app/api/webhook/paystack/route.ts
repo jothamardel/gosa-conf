@@ -1,12 +1,9 @@
-import { generateQrCode } from "@/lib/utils";
 import { ConventionUtils } from "@/lib/utils/convention.utils";
 import { DinnerUtils } from "@/lib/utils/dinner.utils";
 import { AccommodationUtils } from "@/lib/utils/accommodation.utils";
 import { BrochureUtils } from "@/lib/utils/brochure.utils";
 import { GoodwillUtils } from "@/lib/utils/goodwill.utils";
 import { DonationUtils } from "@/lib/utils/donation.utils";
-import { PDFWhatsAppUtils } from "@/lib/utils/pdf-whatsapp.utils";
-import { Wasender } from "@/lib/wasender-api";
 import { NextRequest, NextResponse } from "next/server";
 
 
@@ -57,55 +54,106 @@ export async function POST(req: NextRequest) {
 
         // Handle multiple convention records (array)
         const conventionRecords = Array.isArray(record) ? record : [record];
-        const pdfResults = [];
+        const pdfResults: any = [];
+
+        // Group records by unique phone numbers to avoid duplicate notifications
+        const phoneGroups = new Map<string, any[]>();
 
         for (const conventionRecord of conventionRecords) {
-          try {
-            // Use the same notification service as other service types
-            const notificationResult = await sendServiceNotification('convention', conventionRecord);
-
-            pdfResults.push({
-              registrationId: conventionRecord._id,
-              paymentReference: conventionRecord.paymentReference,
-              success: notificationResult.success,
-              pdfGenerated: notificationResult.pdfGenerated,
-              whatsappSent: notificationResult.whatsappSent,
-              fallbackUsed: notificationResult.fallbackUsed,
-              phoneNumber: notificationResult.phoneNumber,
-              error: notificationResult.error,
-              handledSeparately: notificationResult.handledSeparately
-            });
-
-            console.log(`Convention PDF processed for ${conventionRecord.paymentReference}:`, {
-              success: notificationResult.success,
-              pdfGenerated: notificationResult.pdfGenerated,
-              whatsappSent: notificationResult.whatsappSent
-            });
-
-          } catch (recordError: any) {
-            console.error(`Error processing convention record ${conventionRecord._id}:`, recordError);
-            pdfResults.push({
-              registrationId: conventionRecord._id,
-              paymentReference: conventionRecord.paymentReference,
-              success: false,
-              error: recordError.message
-            });
+          const phoneNumber = conventionRecord.userId?.phoneNumber || conventionRecord.paymentReference?.split('_')[1];
+          if (phoneNumber) {
+            if (!phoneGroups.has(phoneNumber)) {
+              phoneGroups.set(phoneNumber, []);
+            }
+            phoneGroups.get(phoneNumber)!.push(conventionRecord);
           }
         }
 
-        const successfulDeliveries = pdfResults.filter(result => result.success).length;
-        const failedDeliveries = pdfResults.filter(result => !result.success).length;
+        console.log(`Found ${phoneGroups.size} unique phone numbers for ${conventionRecords.length} convention records`);
 
-        if (failedDeliveries > 0) {
-          console.error("Some convention PDF deliveries failed:", pdfResults.filter(r => !r.success));
+        // Log the grouping for debugging
+        for (const [phone, records] of phoneGroups) {
+          console.log(`Phone ${phone}: ${records.length} registrations`);
         }
 
+        // Send one notification per unique phone number
+        for (const [phoneNumber, records] of phoneGroups) {
+          try {
+            // Use the first record for notification (they all have the same user info)
+            const primaryRecord = records[0];
+
+            // Calculate total quantity for this phone number
+            const totalQuantity = records.length;
+
+            // Add quantity info to the record for better messaging
+            const recordWithQuantity = {
+              ...primaryRecord,
+              totalQuantity,
+              allRecords: records
+            };
+
+            // Use the same notification service as other service types
+            const notificationResult = await sendServiceNotification('convention', recordWithQuantity);
+
+            // Add results for all records under this phone number
+            for (const conventionRecord of records) {
+              pdfResults.push({
+                registrationId: conventionRecord._id,
+                paymentReference: conventionRecord.paymentReference,
+                success: notificationResult.success,
+                pdfGenerated: notificationResult.pdfGenerated,
+                whatsappSent: notificationResult.whatsappSent,
+                fallbackUsed: notificationResult.fallbackUsed,
+                phoneNumber: notificationResult.phoneNumber,
+                error: notificationResult.error,
+                groupedDelivery: true,
+                totalQuantity
+              });
+            }
+
+            console.log(`Convention PDF processed for phone ${phoneNumber} (${totalQuantity} registrations):`, {
+              success: notificationResult.success,
+              pdfGenerated: notificationResult.pdfGenerated,
+              whatsappSent: notificationResult.whatsappSent,
+              totalQuantity
+            });
+
+          } catch (recordError: any) {
+            console.error(`Error processing convention records for phone ${phoneNumber}:`, recordError);
+
+            // Add error results for all records under this phone number
+            for (const conventionRecord of records) {
+              pdfResults.push({
+                registrationId: conventionRecord._id,
+                paymentReference: conventionRecord.paymentReference,
+                success: false,
+                error: recordError.message,
+                phoneNumber
+              });
+            }
+          }
+        }
+
+        const successfulDeliveries = pdfResults.filter((result: any) => result.success).length;
+        const failedDeliveries = pdfResults.filter((result: any) => !result.success).length;
+
+        if (failedDeliveries > 0) {
+          console.error("Some convention PDF deliveries failed:", pdfResults.filter((r: any) => !r.success));
+        }
+
+        const uniquePhoneNumbers = phoneGroups.size;
+        const successfulPhoneNumbers = [...phoneGroups.keys()].filter(phone =>
+          pdfResults.some((result: any) => result.phoneNumber?.includes(phone) && result.success)
+        ).length;
+
         return NextResponse.json({
-          message: `Convention registration processed. ${successfulDeliveries} out of ${pdfResults.length} PDF confirmations sent successfully.`,
+          message: `Convention registration processed. ${successfulPhoneNumbers} out of ${uniquePhoneNumbers} unique phone numbers received confirmations (${successfulDeliveries} total registrations).`,
           success: successfulDeliveries > 0,
           serviceType: 'convention',
           reference: paymentReference,
-          processed: pdfResults.length,
+          totalRegistrations: pdfResults.length,
+          uniquePhoneNumbers,
+          successfulPhoneNumbers,
           successful: successfulDeliveries,
           failed: failedDeliveries,
           details: pdfResults,
@@ -276,12 +324,7 @@ async function findAndConfirmPaymentByReference(reference: string): Promise<{
   }
 }
 
-// Helper function to check if a query result contains valid data
-// function hasValidResult(result: any): boolean {
-//   if (!result) return false;
-//   if (Array.isArray(result)) return result.length > 0;
-//   return true;
-// }
+
 
 // Enhanced notification service for different payment types with PDF generation
 async function sendServiceNotification(serviceType: string, record: any): Promise<any> {
@@ -344,11 +387,15 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
         paymentReference: record.paymentReference,
         date: new Date(),
         status: 'confirmed' as const,
-        description: `${serviceType.charAt(0).toUpperCase() + serviceType.slice(1)} confirmation`,
+        description: record.totalQuantity > 1
+          ? `${serviceType.charAt(0).toUpperCase() + serviceType.slice(1)} confirmation (${record.totalQuantity} registrations)`
+          : `${serviceType.charAt(0).toUpperCase() + serviceType.slice(1)} confirmation`,
         additionalInfo: JSON.stringify({
           serviceType,
           recordId: record._id,
-          confirmed: true
+          confirmed: true,
+          totalQuantity: record.totalQuantity || 1,
+          groupedRecords: record.allRecords?.length || 1
         })
       },
       qrCodeData
@@ -421,67 +468,3 @@ function convertToInternationalFormat(phoneNumber: string) {
 }
 
 
-async function determinePaymentTypeByReference(reference: string): Promise<any> {
-  console.log(`Running parallel queries for reference: ${reference}`);
-
-  // Execute all queries simultaneously
-  const [
-    dinnerResult,
-    accommodationResult,
-    brochureResult,
-    goodwillResult,
-    donationResult,
-    conventionResult
-  ] = await Promise.allSettled([
-    DinnerUtils.findAndConfirmMany(reference),
-    AccommodationUtils.findAndConfirmMany(reference),
-    BrochureUtils.findAndConfirmMany(reference),
-    GoodwillUtils.findAndConfirmMany(reference),
-    DonationUtils.findAndConfirmMany(reference),
-    ConventionUtils.findAndConfirmMany(reference)
-  ]);
-
-
-  console.log({
-    dinnerResult,
-    accommodationResult,
-    brochureResult,
-    goodwillResult,
-    donationResult,
-    conventionResult
-  })
-
-  // Check results and return the first match found
-  if (dinnerResult.status === 'fulfilled' && dinnerResult.value.modifiedCount) {
-    const data = await DinnerUtils.findMany(reference)
-    return data;
-  }
-
-  if (accommodationResult.status === 'fulfilled' && accommodationResult.value.modifiedCount) {
-    const data = await AccommodationUtils.findMany(reference)
-    return data;
-  }
-
-  if (brochureResult.status === 'fulfilled' && brochureResult.value.modifiedCount) {
-    const data = await BrochureUtils.findMany(reference)
-    return data;
-  }
-
-  if (goodwillResult.status === 'fulfilled' && goodwillResult.value.modifiedCount) {
-    const data = await GoodwillUtils.findMany(reference)
-    return data;
-  }
-
-  if (donationResult.status === 'fulfilled' && donationResult.value.modifiedCount) {
-    const data = await DonationUtils.findMany(reference)
-    return data;
-  }
-
-  if (conventionResult.status === 'fulfilled' && conventionResult.value.modifiedCount) {
-    const data = await ConventionUtils.findMany(reference)
-    return data;
-  }
-
-  // console.log('Reference not found in any collection');
-  return null;
-}
