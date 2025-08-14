@@ -244,14 +244,14 @@ export class PDFErrorHandlerService {
   }
 
   /**
-   * Handle blob upload failure with local PDF serving fallback
+   * Handle blob upload failure with local image serving fallback
    */
   static async handleBlobUploadFailure(
     data: WhatsAppPDFData,
     context: ErrorContext,
     blobError: Error
   ): Promise<string> {
-    console.log('Blob upload failed, falling back to local PDF serving:', {
+    console.log('Blob upload failed, falling back to local image serving:', {
       paymentReference: context.paymentReference,
       error: blobError.message
     });
@@ -277,12 +277,20 @@ export class PDFErrorHandlerService {
       console.error('Failed to record blob failure:', monitoringError);
     }
 
-    // Return local PDF download URL as fallback
-    return this.generatePDFDownloadUrl(data.operationDetails.paymentReference);
+    // Return local image download URL as fallback
+    return this.generateImageDownloadUrl(data.operationDetails.paymentReference);
   }
 
   /**
-   * Execute fallback delivery mechanism (text message with PDF link)
+   * Generate image download URL using www.gosa.events domain
+   */
+  private static generateImageDownloadUrl(paymentReference: string): string {
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://www.gosa.events';
+    return `${baseUrl}/api/v1/image/download?ref=${encodeURIComponent(paymentReference)}&format=png`;
+  }
+
+  /**
+   * Execute fallback delivery mechanism (text message with image link)
    */
   static async executeFallbackDelivery(
     data: WhatsAppPDFData,
@@ -328,10 +336,10 @@ export class PDFErrorHandlerService {
   }
 
   /**
-   * Send fallback text message with PDF download link
+   * Send fallback text message with image download link
    */
   private static async sendFallbackTextMessage(data: WhatsAppPDFData): Promise<{ messageId?: string | number }> {
-    const pdfDownloadUrl = this.generatePDFDownloadUrl(data.operationDetails.paymentReference);
+    const imageDownloadUrl = this.generateImageDownloadUrl(data.operationDetails.paymentReference);
     const serviceTitle = this.getServiceTitle(data.operationDetails.type);
 
     const fallbackMessage = `🎉 *GOSA 2025 Convention*
@@ -342,7 +350,7 @@ Dear ${data.userDetails.name},
 Your ${serviceTitle} has been confirmed!
 
 📄 *Download your confirmation document:*
-${pdfDownloadUrl}
+${imageDownloadUrl}
 
 💳 *Payment Details:*
 • Amount: ₦${data.operationDetails.amount.toLocaleString()}
@@ -350,8 +358,8 @@ ${pdfDownloadUrl}
 • Status: Confirmed ✅
 
 📱 *Important Instructions:*
-• Click the link above to download your PDF
-• Save the document to your device
+• Click the link above to download your confirmation image
+• Save the image to your device
 • Present the QR code when required
 • Keep this document for your records
 

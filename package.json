@@ -53,6 +53,7 @@
     "@vercel/blob": "^1.1.1",
     "autoprefixer": "10.4.15",
     "axios": "^1.11.0",
+    "canvas": "^3.1.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",

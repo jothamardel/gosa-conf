@@ -22,6 +22,17 @@ export interface PDFData {
   qrCodeData: string;
 }
 
+export interface ImageData extends PDFData { }
+
+export interface WhatsAppImageData extends ImageData {
+  userDetails: {
+    name: string;
+    email: string;
+    phone: string;
+    registrationId: string;
+  };
+}
+
 // Database Types
 export interface User {
   id: string;

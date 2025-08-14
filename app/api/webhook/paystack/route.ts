@@ -201,10 +201,10 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
   let internationalPhone: string = '';
 
   try {
-    // Only send PDF for confirmed payments
+    // Only send image for confirmed payments
     const isConfirmed = record.confirmed || record.confirm || false;
     if (!isConfirmed) {
-      console.log(`Skipping PDF delivery for unconfirmed ${serviceType} payment:`, record.paymentReference);
+      console.log(`Skipping image delivery for unconfirmed ${serviceType} payment:`, record.paymentReference);
       return {
         success: false,
         serviceType,
@@ -222,7 +222,7 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
     internationalPhone = convertToInternationalFormat(phoneNumber);
     console.log({ internationalPhone });
 
-    // Prepare user details for PDF generation
+    // Prepare user details for image generation
     const userDetails = {
       name: record.userId?.fullName || record.fullName || 'Unknown User',
       email: record.userId?.email || record.email || 'unknown@email.com',
@@ -238,16 +238,19 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
       qrCodeData = `GOSA2025-${serviceType.toUpperCase()}-${record._id}`;
     }
 
-    let pdfResult: any = null;
+    let imageResult: any = null;
 
-    console.log(`Generating PDF with Vercel Blob for ${serviceType} payment:`, record.paymentReference);
+    console.log(`Generating image with Vercel Blob for ${serviceType} payment:`, record.paymentReference);
 
-    // Use the new WhatsApp PDF Service with Vercel Blob integration
-    const { WhatsAppPDFService } = await import('@/lib/services/whatsapp-pdf.service');
+    // Use the new WhatsApp Image Service with Vercel Blob integration
+    const { WhatsAppImageService } = await import('@/lib/services/whatsapp-image.service');
 
-    // Prepare WhatsApp PDF data
-    const whatsappPDFData = {
-      userDetails,
+    // Prepare WhatsApp image data
+    const whatsappImageData = {
+      userDetails: {
+        ...userDetails,
+        registrationId: userDetails.registrationId || record._id?.toString() || ''
+      },
       operationDetails: {
         type: serviceType as 'convention' | 'dinner' | 'accommodation' | 'brochure' | 'goodwill' | 'donation',
         amount: record.totalAmount || record.amount || record.donationAmount || 0,
@@ -264,21 +267,20 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
       qrCodeData
     };
 
-    // Generate PDF and send via WhatsApp using Vercel Blob
-    pdfResult = await WhatsAppPDFService.generateAndSendPDF(whatsappPDFData);
+    // Generate image and send via WhatsApp using Vercel Blob
+    imageResult = await WhatsAppImageService.generateAndSendImage(whatsappImageData);
 
     const result = {
-      success: pdfResult?.success || false,
+      success: imageResult?.success || false,
       serviceType,
       phoneNumber: internationalPhone,
-      pdfGenerated: pdfResult?.pdfGenerated || false,
-      whatsappSent: pdfResult?.whatsappSent || false,
-      fallbackUsed: pdfResult?.fallbackUsed || false,
-
-      error: pdfResult?.error
+      imageGenerated: imageResult?.imageGenerated || false,
+      whatsappSent: imageResult?.whatsappSent || false,
+      fallbackUsed: imageResult?.fallbackUsed || false,
+      error: imageResult?.error
     };
 
-    console.log(`PDF delivery result for ${serviceType}:`, result);
+    console.log(`Image delivery result for ${serviceType}:`, result);
     return result;
 
   } catch (error: any) {
