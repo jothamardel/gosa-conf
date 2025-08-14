@@ -9,6 +9,27 @@ import { GoodwillMessage } from '@/lib/schema/goodwill.schema';
 import { Donation } from '@/lib/schema/donation.schema';
 import connectDB from '@/lib/mongodb';
 
+/**
+ * Detect content type from buffer
+ */
+function detectImageContentType(buffer: Buffer): string {
+  // Check buffer magic bytes for PNG
+  if (buffer.length >= 8 &&
+    buffer[0] === 0x89 && buffer[1] === 0x50 &&
+    buffer[2] === 0x4E && buffer[3] === 0x47) {
+    return 'image/png';
+  }
+
+  // Check for SVG content
+  const bufferStart = buffer.toString('utf8', 0, Math.min(100, buffer.length));
+  if (bufferStart.includes('<svg') || bufferStart.includes('<?xml')) {
+    return 'image/svg+xml';
+  }
+
+  // Default to PNG
+  return 'image/png';
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -95,13 +116,17 @@ export async function GET(request: NextRequest) {
     };
 
     if (format === 'png' || format === 'image') {
-      // Generate and return PNG image
+      // Generate and return image (PNG or SVG depending on what's available)
       const imageBuffer = await ImageGeneratorService.generateImageBuffer(imageData);
+
+      // Detect content type from buffer
+      const contentType = detectImageContentType(imageBuffer);
+      const extension = contentType === 'image/svg+xml' ? 'svg' : 'png';
 
       return new NextResponse(imageBuffer, {
         headers: {
-          'Content-Type': 'image/png',
-          'Content-Disposition': `attachment; filename="gosa-2025-${serviceType}-${userDetails.name.replace(/[^a-z0-9]/gi, '-')}.png"`,
+          'Content-Type': contentType,
+          'Content-Disposition': `attachment; filename="gosa-2025-${serviceType}-${userDetails.name.replace(/[^a-z0-9]/gi, '-')}.${extension}"`,
           'Cache-Control': 'public, max-age=3600'
         }
       });

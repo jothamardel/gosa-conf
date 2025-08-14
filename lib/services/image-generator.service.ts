@@ -13,19 +13,27 @@ export class ImageGeneratorService {
       // Generate SVG content first
       const svgContent = await this.generateSVGContent(data);
 
-      // Convert SVG to PNG using Sharp
-      const pngBuffer = await sharp(Buffer.from(svgContent))
-        .png({
-          quality: 90,
-          compressionLevel: 6
-        })
-        .toBuffer();
+      try {
+        // Try to convert SVG to PNG using Sharp
+        const pngBuffer = await sharp(Buffer.from(svgContent))
+          .png({
+            quality: 90,
+            compressionLevel: 6
+          })
+          .toBuffer();
 
-      console.log(`[IMAGE-GENERATOR] Successfully generated PNG image for ${data.operationDetails.paymentReference}`);
-      return pngBuffer;
+        console.log(`[IMAGE-GENERATOR] Successfully generated PNG image using Sharp for ${data.operationDetails.paymentReference}`);
+        return pngBuffer;
+      } catch (sharpError) {
+        console.warn('[IMAGE-GENERATOR] Sharp conversion failed, falling back to SVG:', sharpError);
+        // Return SVG as fallback (still works in most browsers and WhatsApp)
+        const svgBuffer = Buffer.from(svgContent, 'utf-8');
+        console.log(`[IMAGE-GENERATOR] Successfully generated SVG image for ${data.operationDetails.paymentReference}`);
+        return svgBuffer;
+      }
 
     } catch (error) {
-      console.error('[IMAGE-GENERATOR] Failed to generate PNG image:', error);
+      console.error('[IMAGE-GENERATOR] Failed to generate image:', error);
       // Fall back to simple text-based image
       return this.generateImageBufferFallback(data);
     }
@@ -153,6 +161,7 @@ export class ImageGeneratorService {
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '-');
 
+    // Use .png as default, but actual format depends on generation success
     return `gosa-2025-${sanitizedServiceType}-${sanitizedName}-${timestamp}.png`;
   }
 

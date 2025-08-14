@@ -16,8 +16,8 @@ export class ImageBlobService {
         throw new Error('BLOB_READ_WRITE_TOKEN environment variable is not set');
       }
 
-      // Use PNG content type for all images
-      const contentType = 'image/png';
+      // Detect content type based on buffer content
+      const contentType = this.detectContentType(imageBuffer, filename);
 
       const blob = await put(filename, imageBuffer, {
         access: 'public',
@@ -90,6 +90,7 @@ export class ImageBlobService {
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '-');
 
+    // Use .png as default, but this will be adjusted based on actual content type
     return `gosa-2025-${sanitizedServiceType}-${sanitizedName}-${timestamp}.png`;
   }
 
@@ -110,7 +111,35 @@ export class ImageBlobService {
 
     // Return fallback URL using the existing image download API
     const baseUrl = process.env.NEXTAUTH_URL || 'https://www.gosa.events';
-    return `${baseUrl}/api/v1/image/download?ref=${fallbackData.operationDetails.paymentReference}&format=png`;
+    return `${baseUrl}/api/v1/image/download?ref=${fallbackData.operationDetails.paymentReference}&format=image`;
+  }
+
+  /**
+   * Detect content type based on buffer content and filename
+   */
+  private static detectContentType(buffer: Buffer, filename: string): string {
+    // Check buffer magic bytes for PNG
+    if (buffer.length >= 8 &&
+      buffer[0] === 0x89 && buffer[1] === 0x50 &&
+      buffer[2] === 0x4E && buffer[3] === 0x47) {
+      return 'image/png';
+    }
+
+    // Check for SVG content
+    const bufferStart = buffer.toString('utf8', 0, Math.min(100, buffer.length));
+    if (bufferStart.includes('<svg') || bufferStart.includes('<?xml')) {
+      return 'image/svg+xml';
+    }
+
+    // Fallback based on filename
+    if (filename.endsWith('.png')) {
+      return 'image/png';
+    } else if (filename.endsWith('.svg')) {
+      return 'image/svg+xml';
+    }
+
+    // Default to PNG
+    return 'image/png';
   }
 
   /**
