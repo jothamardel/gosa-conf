@@ -1,6 +1,7 @@
 import connectDB from "../mongodb";
 import { ConventionBrochure, IConventionBrochure, IBrochureRecipient } from "../schema/brochure.schema";
 import { Types } from "mongoose";
+import { PhoneUtils } from "./phone.utils";
 import { QRCodeService } from "../services/qr-code.service";
 
 // Type assertion to bypass Mongoose typing issues
@@ -344,7 +345,78 @@ export class BrochureUtils {
   }
 
   /**
-   * Validate recipient details
+   * Validate and format recipient details
+   */
+  static validateAndFormatRecipientDetails(recipients: IBrochureRecipient[]): {
+    valid: boolean;
+    message?: string;
+    formattedRecipients?: IBrochureRecipient[];
+  } {
+    if (!Array.isArray(recipients) || recipients.length === 0) {
+      return {
+        valid: false,
+        message: "At least one recipient is required"
+      };
+    }
+
+    const formattedRecipients: IBrochureRecipient[] = [];
+
+    for (let i = 0; i < recipients.length; i++) {
+      const recipient = recipients[i];
+      const formattedRecipient: IBrochureRecipient = { ...recipient };
+
+      // Validate name
+      if (!recipient.name || recipient.name.trim().length === 0) {
+        return {
+          valid: false,
+          message: `Recipient ${i + 1} name is required`
+        };
+      }
+
+      if (recipient.name.trim().length > 100) {
+        return {
+          valid: false,
+          message: `Recipient ${i + 1} name must be less than 100 characters`
+        };
+      }
+
+      // Validate email format if provided
+      if (recipient.email && recipient.email.trim().length > 0) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(recipient.email)) {
+          return {
+            valid: false,
+            message: `Recipient ${i + 1} has invalid email format`
+          };
+        }
+      }
+
+      // Format and validate phone number if provided
+      if (recipient.phone && recipient.phone.trim().length > 0) {
+        const formattedPhone = PhoneUtils.formatPhoneNumber(recipient.phone);
+        const validation = PhoneUtils.validatePhoneNumber(recipient.phone);
+
+        if (!validation.valid) {
+          return {
+            valid: false,
+            message: `Recipient ${i + 1}: ${validation.message}`
+          };
+        } else {
+          formattedRecipient.phone = formattedPhone;
+        }
+      }
+
+      formattedRecipients.push(formattedRecipient);
+    }
+
+    return {
+      valid: true,
+      formattedRecipients
+    };
+  }
+
+  /**
+   * Validate recipient details (legacy method for backward compatibility)
    */
   static validateRecipientDetails(recipients: IBrochureRecipient[]): {
     valid: boolean;
@@ -387,12 +459,11 @@ export class BrochureUtils {
 
       // Validate phone format if provided
       if (recipient.phone && recipient.phone.trim().length > 0) {
-        // Updated regex to accept Nigerian phone formats: +234xxxxxxxxxx, 0xxxxxxxxxx, or international formats
-        const phoneRegex = /^(\+?234[789]\d{8}|0[789]\d{8}|\+?[1-9]\d{7,14})$/;
-        if (!phoneRegex.test(recipient.phone.replace(/[\s\-\(\)]/g, ''))) {
+        const validation = PhoneUtils.validatePhoneNumber(recipient.phone);
+        if (!validation.valid) {
           return {
             valid: false,
-            message: `Recipient ${i + 1} has invalid phone format`
+            message: `Recipient ${i + 1}: ${validation.message}`
           };
         }
       }

@@ -74,8 +74,8 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Validate guest details
-    const guestValidation = AccommodationUtils.validateGuestDetails(body.guestDetails);
+    // Validate and format guest details
+    const guestValidation = AccommodationUtils.validateAndFormatGuestDetails(body.guestDetails);
     if (!guestValidation.valid) {
       return NextResponse.json({
         success: false,
@@ -83,6 +83,9 @@ export async function POST(req: NextRequest) {
         errors: guestValidation.errors,
       }, { status: 400 });
     }
+
+    // Use the formatted guest details
+    const formattedGuestDetails = guestValidation.formattedGuests || body.guestDetails;
 
     // Check availability
     const availability = await AccommodationUtils.checkAvailability(
@@ -148,7 +151,7 @@ export async function POST(req: NextRequest) {
       checkInDate,
       checkOutDate,
       numberOfGuests: body.numberOfGuests,
-      guestDetails: body.guestDetails,
+      guestDetails: formattedGuestDetails,
       specialRequests: body.specialRequests,
       totalAmount,
     });

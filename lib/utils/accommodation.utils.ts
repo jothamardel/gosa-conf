@@ -1,6 +1,7 @@
 import connectDB from "../mongodb";
 import { Accommodation, IAccommodation, IAccommodationGuest } from "../schema/accommodation.schema";
 import { Types } from "mongoose";
+import { PhoneUtils } from "./phone.utils";
 
 // Type assertion to bypass Mongoose typing issues
 const AccommodationModel = Accommodation as any;
@@ -445,14 +446,18 @@ export class AccommodationUtils {
     return requests.trim().length <= maxLength;
   }
 
+
+
   /**
-   * Validate guest details
+   * Validate and format guest details
    */
-  static validateGuestDetails(guestDetails: IAccommodationGuest[]): {
+  static validateAndFormatGuestDetails(guestDetails: IAccommodationGuest[]): {
     valid: boolean;
     errors?: string[];
+    formattedGuests?: IAccommodationGuest[];
   } {
     const errors: string[] = [];
+    const formattedGuests: IAccommodationGuest[] = [];
 
     if (!Array.isArray(guestDetails)) {
       return {
@@ -469,6 +474,8 @@ export class AccommodationUtils {
     }
 
     guestDetails.forEach((guest, index) => {
+      const formattedGuest: IAccommodationGuest = { ...guest };
+
       if (!guest.name || guest.name.trim().length === 0) {
         errors.push(`Guest ${index + 1}: Name is required`);
       }
@@ -485,18 +492,39 @@ export class AccommodationUtils {
         }
       }
 
-      // Validate phone format if provided
+      // Format and validate phone number if provided
       if (guest.phone && guest.phone.trim().length > 0) {
-        const phoneRegex = /^(\+?234[789]\d{8}|0[789]\d{8}|\+?[1-9]\d{7,14})$/;
-        if (!phoneRegex.test(guest.phone.replace(/[\s\-\(\)]/g, ''))) {
-          errors.push(`Guest ${index + 1}: Invalid phone format`);
+        const formattedPhone = PhoneUtils.formatPhoneNumber(guest.phone);
+        const validation = PhoneUtils.validatePhoneNumber(guest.phone);
+
+        if (!validation.valid) {
+          errors.push(`Guest ${index + 1}: ${validation.message}`);
+        } else {
+          formattedGuest.phone = formattedPhone;
         }
       }
+
+      formattedGuests.push(formattedGuest);
     });
 
     return {
       valid: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined
+      errors: errors.length > 0 ? errors : undefined,
+      formattedGuests: errors.length === 0 ? formattedGuests : undefined
+    };
+  }
+
+  /**
+   * Validate guest details (legacy method for backward compatibility)
+   */
+  static validateGuestDetails(guestDetails: IAccommodationGuest[]): {
+    valid: boolean;
+    errors?: string[];
+  } {
+    const result = this.validateAndFormatGuestDetails(guestDetails);
+    return {
+      valid: result.valid,
+      errors: result.errors
     };
   }
 

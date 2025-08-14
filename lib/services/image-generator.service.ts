@@ -6,6 +6,18 @@ export interface ImageData extends PDFData { }
 
 export class ImageGeneratorService {
   /**
+   * Escape XML/SVG special characters
+   */
+  private static escapeXML(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /**
    * Generate PNG image buffer with embedded QR code
    */
   static async generateImageBuffer(data: ImageData): Promise<Buffer> {
@@ -14,22 +26,33 @@ export class ImageGeneratorService {
       const svgContent = await this.generateSVGContent(data);
 
       try {
-        // Try to convert SVG to PNG using Sharp
+        // Try to convert SVG to PNG using Sharp with better settings
         const pngBuffer = await sharp(Buffer.from(svgContent))
           .png({
-            quality: 90,
-            compressionLevel: 6
+            quality: 95,
+            compressionLevel: 6,
+            progressive: false
+          })
+          .resize(800, 1000, {
+            fit: 'contain',
+            background: { r: 255, g: 255, b: 255, alpha: 1 }
           })
           .toBuffer();
 
         console.log(`[IMAGE-GENERATOR] Successfully generated PNG image using Sharp for ${data.operationDetails.paymentReference}`);
         return pngBuffer;
       } catch (sharpError) {
-        console.warn('[IMAGE-GENERATOR] Sharp conversion failed, falling back to SVG:', sharpError);
-        // Return SVG as fallback (still works in most browsers and WhatsApp)
-        const svgBuffer = Buffer.from(svgContent, 'utf-8');
-        console.log(`[IMAGE-GENERATOR] Successfully generated SVG image for ${data.operationDetails.paymentReference}`);
-        return svgBuffer;
+        console.warn('[IMAGE-GENERATOR] Sharp conversion failed, trying alternative approach:', sharpError);
+
+        // Try a simpler approach - create a basic image
+        try {
+          const simpleImageBuffer = await this.generateSimpleImageBuffer(data);
+          console.log(`[IMAGE-GENERATOR] Successfully generated simple image for ${data.operationDetails.paymentReference}`);
+          return simpleImageBuffer;
+        } catch (simpleError) {
+          console.warn('[IMAGE-GENERATOR] Simple image generation failed, using text fallback:', simpleError);
+          return this.generateImageBufferFallback(data);
+        }
       }
 
     } catch (error) {
@@ -37,6 +60,105 @@ export class ImageGeneratorService {
       // Fall back to simple text-based image
       return this.generateImageBufferFallback(data);
     }
+  }
+
+  /**
+   * Generate a simple image buffer using Sharp directly
+   */
+  private static async generateSimpleImageBuffer(data: ImageData): Promise<Buffer> {
+    const serviceTitle = this.getServiceTitle(data.operationDetails.type);
+
+    // Create a simple image with text overlay
+    const width = 800;
+    const height = 1000;
+
+    // Create base image
+    const baseImage = sharp({
+      create: {
+        width,
+        height,
+        channels: 3,
+        background: { r: 255, g: 255, b: 255 }
+      }
+    });
+
+    // Generate QR code as PNG buffer
+    let qrBuffer: Buffer | null = null;
+    try {
+      qrBuffer = await QRCode.toBuffer(data.qrCodeData, {
+        type: 'png',
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#16A34A',
+          light: '#FFFFFF'
+        }
+      });
+    } catch (qrError) {
+      console.error('QR code buffer generation failed:', qrError);
+    }
+
+    // Create SVG overlay with text
+    const textOverlay = `
+      <svg width="${width}" height="${height}">
+        <!-- Header background -->
+        <rect width="${width}" height="100" fill="#16A34A"/>
+        
+        <!-- Header text -->
+        <text x="50" y="40" font-family="Arial" font-size="24" font-weight="bold" fill="white">GOSA 2025 Convention</text>
+        <text x="50" y="70" font-family="Arial" font-size="18" fill="white">${this.escapeXML(serviceTitle)} Confirmation</text>
+        
+        <!-- User details -->
+        <text x="50" y="150" font-family="Arial" font-size="16" font-weight="bold" fill="#16A34A">Personal Information</text>
+        <text x="50" y="180" font-family="Arial" font-size="14" fill="#333">Name: ${this.escapeXML(data.userDetails.name)}</text>
+        <text x="50" y="200" font-family="Arial" font-size="14" fill="#333">Email: ${this.escapeXML(data.userDetails.email)}</text>
+        <text x="50" y="220" font-family="Arial" font-size="14" fill="#333">Phone: ${this.escapeXML(data.userDetails.phone)}</text>
+        
+        <!-- Transaction details -->
+        <text x="50" y="280" font-family="Arial" font-size="16" font-weight="bold" fill="#16A34A">Transaction Details</text>
+        <text x="50" y="310" font-family="Arial" font-size="24" font-weight="bold" fill="#16A34A">₦${data.operationDetails.amount.toLocaleString()}</text>
+        <text x="50" y="340" font-family="Arial" font-size="14" fill="#333">Reference: ${this.escapeXML(data.operationDetails.paymentReference)}</text>
+        <text x="50" y="360" font-family="Arial" font-size="14" fill="#333">Status: Confirmed ✅</text>
+        <text x="50" y="380" font-family="Arial" font-size="14" fill="#333">Date: ${new Date(data.operationDetails.date).toLocaleDateString()}</text>
+        
+        <!-- QR Code section -->
+        <text x="50" y="450" font-family="Arial" font-size="16" font-weight="bold" fill="#16A34A">Your Digital Pass</text>
+        <rect x="300" y="470" width="200" height="200" fill="none" stroke="#16A34A" stroke-width="2" stroke-dasharray="5,5"/>
+        <text x="400" y="580" text-anchor="middle" font-family="Arial" font-size="12" fill="#666">QR Code will appear here</text>
+        
+        <!-- Instructions -->
+        <text x="50" y="720" font-family="Arial" font-size="16" font-weight="bold" fill="#16A34A">Instructions</text>
+        <text x="50" y="750" font-family="Arial" font-size="14" fill="#333">• Save this image to your device</text>
+        <text x="50" y="770" font-family="Arial" font-size="14" fill="#333">• Present the QR code when required</text>
+        <text x="50" y="790" font-family="Arial" font-size="14" fill="#333">• Contact support@gosa.events for help</text>
+        
+        <!-- Footer -->
+        <text x="400" y="900" text-anchor="middle" font-family="Arial" font-size="16" font-weight="bold" fill="#16A34A">GOSA 2025 Convention Team</text>
+        <text x="400" y="920" text-anchor="middle" font-family="Arial" font-size="14" fill="#666">www.gosa.events</text>
+      </svg>
+    `;
+
+    const compositeOperations: any[] = [
+      {
+        input: Buffer.from(textOverlay),
+        top: 0,
+        left: 0
+      }
+    ];
+
+    // Add QR code if available
+    if (qrBuffer) {
+      compositeOperations.push({
+        input: qrBuffer,
+        top: 470,
+        left: 300
+      });
+    }
+
+    return baseImage
+      .composite(compositeOperations)
+      .png({ quality: 95 })
+      .toBuffer();
   }
 
   /**
@@ -50,7 +172,7 @@ export class ImageGeneratorService {
     try {
       qrCodeDataURL = await QRCode.toDataURL(data.qrCodeData, {
         width: 200,
-        margin: 1,
+        margin: 2,
         errorCorrectionLevel: 'M',
         color: {
           dark: '#16A34A',
@@ -61,60 +183,78 @@ export class ImageGeneratorService {
       console.error('QR code generation failed:', qrError);
     }
 
-    const svg = `
-      <svg width="800" height="1200" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <style>
-            .header { font-family: Arial, sans-serif; font-weight: bold; fill: #16A34A; }
-            .title { font-family: Arial, sans-serif; font-weight: bold; fill: #1f2937; }
-            .text { font-family: Arial, sans-serif; fill: #1f2937; }
-            .section-title { font-family: Arial, sans-serif; font-weight: bold; fill: #16A34A; }
-          </style>
-        </defs>
-        
-        <!-- Background -->
-        <rect width="800" height="1200" fill="#ffffff"/>
-        
-        <!-- Header -->
-        <text x="400" y="60" text-anchor="middle" class="header" font-size="36">🎉 GOSA 2025 Convention</text>
-        <text x="400" y="100" text-anchor="middle" class="header" font-size="24">For Light and Truth</text>
-        
-        <!-- Divider line -->
-        <line x1="50" y1="130" x2="750" y2="130" stroke="#16A34A" stroke-width="3"/>
-        
-        <!-- Service title -->
-        <text x="400" y="180" text-anchor="middle" class="title" font-size="28">${serviceTitle} Confirmation</text>
-        
-        <!-- User details -->
-        <text x="50" y="230" class="text" font-size="20">Name: ${data.userDetails.name}</text>
-        <text x="50" y="265" class="text" font-size="20">Email: ${data.userDetails.email}</text>
-        <text x="50" y="300" class="text" font-size="20">Phone: ${data.userDetails.phone}</text>
-        
-        <!-- Payment details -->
-        <text x="50" y="350" class="section-title" font-size="22">Payment Details</text>
-        <text x="50" y="385" class="text" font-size="20">Amount: ₦${data.operationDetails.amount.toLocaleString()}</text>
-        <text x="50" y="420" class="text" font-size="20">Reference: ${data.operationDetails.paymentReference}</text>
-        <text x="50" y="455" class="text" font-size="20">Status: Confirmed ✅</text>
-        <text x="50" y="490" class="text" font-size="20">Date: ${new Date(data.operationDetails.date).toLocaleDateString()}</text>
-        
-        <!-- QR Code Section with Border -->
-        <rect x="250" y="520" width="300" height="280" fill="#f8f9fa" stroke="#16A34A" stroke-width="2" rx="10"/>
-        <text x="400" y="545" text-anchor="middle" class="section-title" font-size="22">QR Code</text>
-        ${qrCodeDataURL ? `<image x="300" y="560" width="200" height="200" href="${qrCodeDataURL}"/>` : `<text x="400" y="660" text-anchor="middle" class="text" font-size="16">${data.qrCodeData}</text>`}
-        <text x="400" y="785" text-anchor="middle" class="text" font-size="16">Present this QR code at the event</text>
-        
-        <!-- Instructions -->
-        <text x="50" y="840" class="section-title" font-size="20">Important Instructions:</text>
-        <text x="50" y="870" class="text" font-size="18">• Save this image to your device</text>
-        <text x="50" y="895" class="text" font-size="18">• Present the QR code when required</text>
-        <text x="50" y="920" class="text" font-size="18">• Keep this document for your records</text>
-        <text x="50" y="945" class="text" font-size="18">• Contact support@gosa.org for help</text>
-        
-        <!-- Footer -->
-        <text x="400" y="1000" text-anchor="middle" class="section-title" font-size="18">GOSA 2025 Convention Team</text>
-        <text x="400" y="1025" text-anchor="middle" class="section-title" font-size="18">www.gosa.events</text>
-      </svg>
-    `;
+    // Simplified SVG structure for better compatibility
+    const svg = `<svg width="800" height="1000" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#16A34A"/>
+      <stop offset="100%" style="stop-color:#F59E0B"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="1000" fill="#ffffff"/>
+  
+  <!-- Header -->
+  <rect width="800" height="100" fill="url(#headerGrad)"/>
+  <circle cx="70" cy="50" r="20" fill="white"/>
+  <text x="70" y="57" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#16A34A">GOSA</text>
+  <text x="110" y="57" font-family="Arial" font-size="18" font-weight="600" fill="white">GOSA 2025 Convention</text>
+  <text x="750" y="57" text-anchor="end" font-family="Arial" font-size="20" font-weight="600" fill="white">${this.escapeXML(serviceTitle)} Details</text>
+  
+  <!-- Personal Info Card -->
+  <rect x="30" y="130" width="740" height="140" fill="white" stroke="#E5E7EB" stroke-width="1" rx="8"/>
+  <rect x="30" y="130" width="4" height="140" fill="#16A34A"/>
+  <text x="50" y="155" font-family="Arial" font-size="12" font-weight="600" fill="#6B7280">PERSONAL INFORMATION</text>
+  
+  <text x="50" y="180" font-family="Arial" font-size="10" font-weight="600" fill="#6B7280">FULL NAME</text>
+  <text x="50" y="200" font-family="Arial" font-size="16" font-weight="600" fill="#1F2937">${this.escapeXML(data.userDetails.name)}</text>
+  
+  <text x="420" y="180" font-family="Arial" font-size="10" font-weight="600" fill="#6B7280">EMAIL</text>
+  <text x="420" y="200" font-family="Arial" font-size="14" font-weight="600" fill="#1F2937">${this.escapeXML(data.userDetails.email)}</text>
+  
+  <text x="50" y="230" font-family="Arial" font-size="10" font-weight="600" fill="#6B7280">PHONE</text>
+  <text x="50" y="250" font-family="Arial" font-size="16" font-weight="600" fill="#1F2937">${this.escapeXML(data.userDetails.phone)}</text>
+  
+  <!-- Transaction Details Card -->
+  <rect x="30" y="290" width="740" height="160" fill="white" stroke="#E5E7EB" stroke-width="1" rx="8"/>
+  <rect x="30" y="290" width="4" height="160" fill="#16A34A"/>
+  <text x="50" y="315" font-family="Arial" font-size="12" font-weight="600" fill="#6B7280">TRANSACTION DETAILS</text>
+  
+  <text x="50" y="340" font-family="Arial" font-size="10" font-weight="600" fill="#6B7280">AMOUNT</text>
+  <text x="50" y="365" font-family="Arial" font-size="28" font-weight="700" fill="#16A34A">₦${data.operationDetails.amount.toLocaleString()}</text>
+  
+  <!-- Status Badge -->
+  <rect x="50" y="380" width="100" height="25" fill="#DCFCE7" rx="12"/>
+  <text x="100" y="397" text-anchor="middle" font-family="Arial" font-size="12" font-weight="600" fill="#166534">✓ Successful</text>
+  
+  <text x="420" y="340" font-family="Arial" font-size="10" font-weight="600" fill="#6B7280">REFERENCE</text>
+  <text x="420" y="360" font-family="Arial" font-size="12" font-weight="600" fill="#1F2937">${this.escapeXML(data.operationDetails.paymentReference)}</text>
+  
+  <text x="420" y="385" font-family="Arial" font-size="10" font-weight="600" fill="#6B7280">DATE</text>
+  <text x="420" y="405" font-family="Arial" font-size="14" font-weight="600" fill="#1F2937">${new Date(data.operationDetails.date).toLocaleDateString()}</text>
+  
+  <!-- QR Code Section -->
+  <rect x="30" y="470" width="740" height="220" fill="white" stroke="#16A34A" stroke-width="2" stroke-dasharray="8,4" rx="8"/>
+  <text x="400" y="495" text-anchor="middle" font-family="Arial" font-size="12" font-weight="600" fill="#6B7280">YOUR DIGITAL PASS</text>
+  
+  ${qrCodeDataURL ? `<image x="300" y="510" width="200" height="200" href="${qrCodeDataURL}"/>` : `<text x="400" y="620" text-anchor="middle" font-family="Arial" font-size="14" fill="#1F2937">${this.escapeXML(data.qrCodeData.substring(0, 50))}...</text>`}
+  
+  <!-- Instructions -->
+  <rect x="30" y="710" width="740" height="120" fill="white" stroke="#E5E7EB" stroke-width="1" rx="8"/>
+  <rect x="30" y="710" width="4" height="120" fill="#16A34A"/>
+  <text x="50" y="735" font-family="Arial" font-size="12" font-weight="600" fill="#6B7280">INSTRUCTIONS</text>
+  <text x="50" y="755" font-family="Arial" font-size="14" fill="#1F2937">• Save this image to your device</text>
+  <text x="50" y="775" font-family="Arial" font-size="14" fill="#1F2937">• Present QR code when required</text>
+  <text x="50" y="795" font-family="Arial" font-size="14" fill="#1F2937">• Contact support@gosa.events for help</text>
+  
+  <!-- Footer -->
+  <rect x="0" y="850" width="800" height="150" fill="#F9FAFB"/>
+  <line x1="0" y1="850" x2="800" y2="850" stroke="#E5E7EB"/>
+  <text x="400" y="875" text-anchor="middle" font-family="Arial" font-size="16" font-weight="600" fill="#16A34A">GOSA 2025 Convention - For Light and Truth</text>
+  <text x="400" y="895" text-anchor="middle" font-family="Arial" font-size="12" fill="#6B7280">support@gosa.events | www.gosa.events</text>
+  <text x="400" y="915" text-anchor="middle" font-family="Arial" font-size="10" fill="#9CA3AF">Generated: ${new Date().toLocaleDateString()}</text>
+</svg>`;
 
     return svg;
   }
@@ -161,7 +301,7 @@ export class ImageGeneratorService {
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '-');
 
-    // Use .png as default, but actual format depends on generation success
+    // Always use PNG format for better WhatsApp compatibility
     return `gosa-2025-${sanitizedServiceType}-${sanitizedName}-${timestamp}.png`;
   }
 
@@ -174,7 +314,7 @@ export class ImageGeneratorService {
       'dinner': 'Dinner Reservation',
       'accommodation': 'Accommodation Booking',
       'brochure': 'Brochure Order',
-      'goodwill': 'Goodwill Message & Donation',
+      'goodwill': 'Goodwill Message &amp; Donation',
       'donation': 'Donation'
     };
     return titles[type] || type.charAt(0).toUpperCase() + type.slice(1);
@@ -206,7 +346,7 @@ QR Code: ${data.qrCodeData}
 Important Instructions:
 • Save this confirmation for your records
 • Present the QR code when required
-• Contact support@gosa.org for help
+• Contact support@gosa.events for help
 
 GOSA 2025 Convention Team
 www.gosa.events

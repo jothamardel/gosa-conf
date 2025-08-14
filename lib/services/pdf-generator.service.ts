@@ -107,65 +107,55 @@ export class PDFGeneratorService {
             .header {
               background: linear-gradient(135deg, ${template.primaryColor} 0%, ${template.secondaryColor} 100%);
               color: white;
-              padding: 40px 30px;
-              text-align: center;
+              padding: 30px 40px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
               position: relative;
-            }
-            
-            .header::before {
-              content: '';
-              position: absolute;
-              top: 0;
-              left: 0;
-              right: 0;
-              bottom: 0;
-              background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-              opacity: 0.3;
             }
             
             .logo-section {
-              margin-bottom: 20px;
-              position: relative;
-              z-index: 1;
-            }
-            
-            .logo-placeholder {
-              width: 80px;
-              height: 80px;
-              background: white;
-              border-radius: 50%;
-              margin: 0 auto 15px;
               display: flex;
               align-items: center;
-              justify-content: center;
-              font-size: 24px;
-              color: ${template.primaryColor};
-              font-weight: bold;
-              box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+              position: relative;
+              z-index: 1;
             }
             
             .logo-image {
-              width: 80px;
-              height: 80px;
-              border-radius: 50%;
+              width: 60px;
+              height: 60px;
+              border-radius: 8px;
               object-fit: cover;
-              margin: 0 auto 15px;
-              box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+              margin-right: 12px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             }
             
-            .title {
-              font-size: 32px;
-              font-weight: bold;
-              margin-bottom: 8px;
-              text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-              position: relative;
-              z-index: 1;
-            }
-            
-            .subtitle {
+            .logo-placeholder {
+              width: 60px;
+              height: 60px;
+              background: white;
+              border-radius: 8px;
+              margin-right: 12px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
               font-size: 18px;
-              opacity: 0.9;
-              font-style: italic;
+              color: ${template.primaryColor};
+              font-weight: bold;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            }
+            
+            .brand-text {
+              font-size: 20px;
+              font-weight: 600;
+              color: white;
+            }
+            
+            .service-title {
+              font-size: 24px;
+              font-weight: 600;
+              text-align: right;
+              color: white;
               position: relative;
               z-index: 1;
             }
@@ -175,30 +165,21 @@ export class PDFGeneratorService {
             }
             
             .section {
-              margin-bottom: 35px;
-              background: #f8f9fa;
+              margin-bottom: 24px;
+              background: white;
               border-radius: 12px;
-              padding: 25px;
-              border-left: 5px solid ${template.primaryColor};
-              box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+              padding: 24px;
+              border-left: 4px solid ${template.primaryColor};
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             }
             
             .section-title {
-              font-size: 20px;
-              font-weight: bold;
-              color: ${template.primaryColor};
-              margin-bottom: 15px;
-              display: flex;
-              align-items: center;
-            }
-            
-            .section-title::before {
-              content: '';
-              width: 4px;
-              height: 20px;
-              background: ${template.secondaryColor};
-              margin-right: 10px;
-              border-radius: 2px;
+              font-size: 14px;
+              font-weight: 600;
+              color: #6B7280;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 16px;
             }
             
             .info-grid {
@@ -209,51 +190,61 @@ export class PDFGeneratorService {
             }
             
             .info-item {
-              background: white;
-              padding: 15px;
+              background: #F9FAFB;
+              padding: 16px;
               border-radius: 8px;
-              border: 1px solid #e5e7eb;
+              border: 1px solid #E5E7EB;
+              margin-bottom: 12px;
             }
             
             .info-label {
               font-size: 12px;
-              color: #6b7280;
+              color: #6B7280;
               text-transform: uppercase;
               letter-spacing: 0.5px;
-              margin-bottom: 5px;
+              margin-bottom: 6px;
               font-weight: 600;
             }
             
             .info-value {
               font-size: 16px;
               font-weight: 600;
-              color: #1f2937;
+              color: #1F2937;
+              line-height: 1.4;
             }
             
             .amount {
               color: ${template.primaryColor};
-              font-size: 24px;
-              font-weight: bold;
+              font-size: 32px;
+              font-weight: 700;
             }
             
             .status {
-              display: inline-block;
+              display: inline-flex;
+              align-items: center;
               padding: 6px 12px;
               border-radius: 20px;
-              font-size: 12px;
-              font-weight: bold;
-              text-transform: uppercase;
+              font-size: 14px;
+              font-weight: 600;
+              text-transform: capitalize;
               letter-spacing: 0.5px;
             }
             
             .status.confirmed {
-              background: #dcfce7;
+              background: #DCFCE7;
               color: #166534;
             }
             
+            .status.confirmed::before {
+              content: "✓";
+              margin-right: 6px;
+              color: ${template.primaryColor};
+              font-weight: bold;
+            }
+            
             .status.pending {
-              background: #fef3c7;
-              color: #92400e;
+              background: #FEF3C7;
+              color: #92400E;
             }
             
             .qr-section {
@@ -263,6 +254,7 @@ export class PDFGeneratorService {
               border-radius: 12px;
               padding: 30px;
               margin: 20px 0;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             }
             
             .qr-code {
@@ -279,22 +271,31 @@ export class PDFGeneratorService {
             }
             
             .footer {
-              background: #f3f4f6;
-              padding: 30px;
+              background: #F9FAFB;
+              padding: 24px 40px;
               text-align: center;
-              border-top: 1px solid #e5e7eb;
+              border-top: 1px solid #E5E7EB;
               margin-top: 40px;
             }
             
-            .footer-text {
-              font-size: 14px;
-              color: #6b7280;
-              margin-bottom: 10px;
+            .footer-brand {
+              font-size: 16px;
+              font-weight: 600;
+              color: ${template.primaryColor};
+              margin-bottom: 8px;
             }
             
-            .contact-info {
+            .footer-contact {
+              font-size: 14px;
+              color: #6B7280;
+              line-height: 1.5;
+              margin-bottom: 8px;
+            }
+            
+            .footer-timestamp {
               font-size: 12px;
-              color: #9ca3af;
+              color: #9CA3AF;
+              margin-top: 12px;
             }
             
             .decorative-border {
@@ -310,6 +311,57 @@ export class PDFGeneratorService {
               .container {
                 box-shadow: none;
               }
+              .header {
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+              }
+            }
+            
+            /* Performance optimizations */
+            * {
+              -webkit-font-smoothing: antialiased;
+              -moz-osx-font-smoothing: grayscale;
+            }
+            
+            /* Fallback styles for basic compatibility */
+            .fallback-header {
+              background: #16A34A;
+              color: white;
+              padding: 20px;
+              text-align: center;
+            }
+            
+            .fallback-section {
+              margin: 20px 0;
+              padding: 15px;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+            }
+            
+            /* Responsive design for different screen sizes */
+            @media (max-width: 600px) {
+              .header {
+                flex-direction: column;
+                text-align: center;
+                padding: 20px;
+              }
+              
+              .logo-section {
+                margin-bottom: 16px;
+              }
+              
+              .service-title {
+                text-align: center;
+                font-size: 20px;
+              }
+              
+              .info-grid {
+                grid-template-columns: 1fr;
+              }
+              
+              .content {
+                padding: 20px;
+              }
             }
           </style>
         </head>
@@ -317,11 +369,11 @@ export class PDFGeneratorService {
           <div class="container">
             <div class="header">
               <div class="logo-section">
-                <img src="${process.env.NEXTAUTH_URL || 'https://www.gosa.events'}${template.logoUrl}" alt="GOSA Logo" class="logo-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                <img src="${process.env.NEXTAUTH_URL || 'https://www.gosa.events'}${template.logoUrl}" alt="GOSA Logo" class="logo-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'; console.warn('GOSA logo failed to load, using text fallback');" />
                 <div class="logo-placeholder" style="display: none;">GOSA</div>
+                <div class="brand-text">${template.title}</div>
               </div>
-              <h1 class="title">${template.title}</h1>
-              <p class="subtitle">${template.subtitle}</p>
+              <div class="service-title">${this.getOperationTypeTitle(operationDetails.type)} Details</div>
             </div>
             
             <div class="content">
@@ -415,11 +467,14 @@ export class PDFGeneratorService {
             </div>
             
             <div class="footer">
-              <div class="footer-text">
-                <strong>GOSA 2025 Convention - For Light and Truth</strong>
+              <div class="footer-brand">
+                GOSA 2025 Convention - For Light and Truth
               </div>
-              <div class="contact-info">
-                For support, contact us at support@gosa.org | www.gosa.org<br>
+              <div class="footer-contact">
+                For support, contact us at support@gosa.org | www.gosa.events<br>
+                Nigerian banking services offered by GOSA Technologies Ltd (RC8597626).
+              </div>
+              <div class="footer-timestamp">
                 Generated on ${new Date().toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',

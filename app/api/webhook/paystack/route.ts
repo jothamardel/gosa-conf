@@ -9,80 +9,167 @@ import { PDFWhatsAppUtils } from "@/lib/utils/pdf-whatsapp.utils";
 import { Wasender } from "@/lib/wasender-api";
 import { NextRequest, NextResponse } from "next/server";
 
-// Payment type detection from reference patterns
-// function determinePaymentType(reference: string): string {
-//   if (reference.includes('DINNER_')) return 'dinner';
-//   if (reference.includes('ACCOM_')) return 'accommodation';
-//   if (reference.includes('BROCH_')) return 'brochure';
-//   if (reference.includes('GOOD_')) return 'goodwill';
-//   if (reference.includes('DONA_')) return 'donation';
-//   return 'convention'; // Default to convention registration
-// }
-
-async function determinePaymentTypeByReference(reference: string): Promise<any> {
-  console.log(`Running parallel queries for reference: ${reference}`);
-
-  // Execute all queries simultaneously
-  const [
-    dinnerResult,
-    accommodationResult,
-    brochureResult,
-    goodwillResult,
-    donationResult,
-    conventionResult
-  ] = await Promise.allSettled([
-    DinnerUtils.findAndConfirmMany(reference),
-    AccommodationUtils.findAndConfirmMany(reference),
-    BrochureUtils.findAndConfirmMany(reference),
-    GoodwillUtils.findAndConfirmMany(reference),
-    DonationUtils.findAndConfirmMany(reference),
-    ConventionUtils.findAndConfirmMany(reference)
-  ]);
 
 
-  console.log({
-    dinnerResult,
-    accommodationResult,
-    brochureResult,
-    goodwillResult,
-    donationResult,
-    conventionResult
-  })
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    console.log("Webhook received:", body?.data?.reference);
 
-  // Check results and return the first match found
-  if (dinnerResult.status === 'fulfilled' && dinnerResult.value.modifiedCount) {
-    const data = await DinnerUtils.findMany(reference)
-    return data;
+    if (!body?.data?.reference) {
+      return NextResponse.json({
+        message: "Failed! No reference provided",
+        success: false,
+      });
+    }
+
+    const paymentReference = body.data.reference;
+
+    // Find and confirm the payment using the new brute force approach
+    const paymentResult = await findAndConfirmPaymentByReference(paymentReference);
+
+    if (!paymentResult) {
+      return NextResponse.json({
+        message: "No payment record found for the given reference",
+        success: false,
+        reference: paymentReference,
+      });
+    }
+
+    const { serviceType, record, success } = paymentResult;
+
+    if (!success) {
+      return NextResponse.json({
+        message: `Failed to confirm ${serviceType} payment`,
+        success: false,
+        serviceType,
+        reference: paymentReference,
+      });
+    }
+
+    console.log(`Successfully processed ${serviceType} payment:`, paymentReference);
+    console.log({ paymentResult })
+
+    // Handle convention registration with PDF delivery (same as other services)
+    if (serviceType === 'convention') {
+      try {
+        console.log('Processing convention registration with PDF delivery...');
+
+        // Handle multiple convention records (array)
+        const conventionRecords = Array.isArray(record) ? record : [record];
+        const pdfResults = [];
+
+        for (const conventionRecord of conventionRecords) {
+          try {
+            // Use the same notification service as other service types
+            const notificationResult = await sendServiceNotification('convention', conventionRecord);
+
+            pdfResults.push({
+              registrationId: conventionRecord._id,
+              paymentReference: conventionRecord.paymentReference,
+              success: notificationResult.success,
+              pdfGenerated: notificationResult.pdfGenerated,
+              whatsappSent: notificationResult.whatsappSent,
+              fallbackUsed: notificationResult.fallbackUsed,
+              phoneNumber: notificationResult.phoneNumber,
+              error: notificationResult.error,
+              handledSeparately: notificationResult.handledSeparately
+            });
+
+            console.log(`Convention PDF processed for ${conventionRecord.paymentReference}:`, {
+              success: notificationResult.success,
+              pdfGenerated: notificationResult.pdfGenerated,
+              whatsappSent: notificationResult.whatsappSent
+            });
+
+          } catch (recordError: any) {
+            console.error(`Error processing convention record ${conventionRecord._id}:`, recordError);
+            pdfResults.push({
+              registrationId: conventionRecord._id,
+              paymentReference: conventionRecord.paymentReference,
+              success: false,
+              error: recordError.message
+            });
+          }
+        }
+
+        const successfulDeliveries = pdfResults.filter(result => result.success).length;
+        const failedDeliveries = pdfResults.filter(result => !result.success).length;
+
+        if (failedDeliveries > 0) {
+          console.error("Some convention PDF deliveries failed:", pdfResults.filter(r => !r.success));
+        }
+
+        return NextResponse.json({
+          message: `Convention registration processed. ${successfulDeliveries} out of ${pdfResults.length} PDF confirmations sent successfully.`,
+          success: successfulDeliveries > 0,
+          serviceType: 'convention',
+          reference: paymentReference,
+          processed: pdfResults.length,
+          successful: successfulDeliveries,
+          failed: failedDeliveries,
+          details: pdfResults,
+        });
+
+      } catch (error: any) {
+        console.error("Error processing convention registration:", error);
+        return NextResponse.json({
+          message: "Failed to process convention registration",
+          success: false,
+          serviceType: 'convention',
+          reference: paymentReference,
+          error: error.message,
+        }, { status: 500 });
+      }
+    }
+
+    // Handle other service types with notifications
+    let notificationResult = null;
+    try {
+      notificationResult = await sendServiceNotification(serviceType, record);
+    } catch (notificationError: any) {
+      console.error(`Error sending ${serviceType} notification:`, notificationError);
+      // Don't fail the webhook if notification fails
+    }
+
+    return NextResponse.json({
+      message: `${serviceType.charAt(0).toUpperCase() + serviceType.slice(1)} payment processed successfully`,
+      success: true,
+      serviceType,
+      reference: paymentReference,
+      record: {
+        id: record._id,
+        paymentReference: record.paymentReference,
+        confirmed: record.confirmed,
+        totalAmount: record.totalAmount || record.amount || record.donationAmount,
+      },
+      notification: notificationResult,
+    });
+
+    // return NextResponse.json(
+    //   {
+    //     message: "Success",
+    //     success: true,
+
+    //   },
+
+    // );
+  } catch (error: any) {
+    console.error("Webhook handler error:", error);
+    return NextResponse.json(
+      {
+        message: "Internal server error",
+        success: false,
+        error: error.message,
+      },
+      { status: 500 },
+    );
   }
-
-  if (accommodationResult.status === 'fulfilled' && accommodationResult.value.modifiedCount) {
-    const data = await AccommodationUtils.findMany(reference)
-    return data;
-  }
-
-  if (brochureResult.status === 'fulfilled' && brochureResult.value.modifiedCount) {
-    const data = await BrochureUtils.findMany(reference)
-    return data;
-  }
-
-  if (goodwillResult.status === 'fulfilled' && goodwillResult.value.modifiedCount) {
-    const data = await GoodwillUtils.findMany(reference)
-    return data;
-  }
-
-  if (donationResult.status === 'fulfilled' && donationResult.value.modifiedCount) {
-    const data = await DonationUtils.findMany(reference)
-    return data;
-  }
-
-  if (conventionResult.status === 'fulfilled' && conventionResult.value.modifiedCount) {
-    const data = await ConventionUtils.findMany(reference)
-    return data;
-  }
-
-  // console.log('Reference not found in any collection');
-  return null;
 }
+
+
+
+
 async function findAndConfirmPaymentByReference(reference: string): Promise<{
   serviceType: string;
   record: any;
@@ -190,11 +277,11 @@ async function findAndConfirmPaymentByReference(reference: string): Promise<{
 }
 
 // Helper function to check if a query result contains valid data
-function hasValidResult(result: any): boolean {
-  if (!result) return false;
-  if (Array.isArray(result)) return result.length > 0;
-  return true;
-}
+// function hasValidResult(result: any): boolean {
+//   if (!result) return false;
+//   if (Array.isArray(result)) return result.length > 0;
+//   return true;
+// }
 
 // Enhanced notification service for different payment types with PDF generation
 async function sendServiceNotification(serviceType: string, record: any): Promise<any> {
@@ -333,157 +420,68 @@ function convertToInternationalFormat(phoneNumber: string) {
   throw new Error("Invalid Nigerian phone number format");
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    console.log("Webhook received:", body?.data?.reference);
 
-    if (!body?.data?.reference) {
-      return NextResponse.json({
-        message: "Failed! No reference provided",
-        success: false,
-      });
-    }
+async function determinePaymentTypeByReference(reference: string): Promise<any> {
+  console.log(`Running parallel queries for reference: ${reference}`);
 
-    const paymentReference = body.data.reference;
+  // Execute all queries simultaneously
+  const [
+    dinnerResult,
+    accommodationResult,
+    brochureResult,
+    goodwillResult,
+    donationResult,
+    conventionResult
+  ] = await Promise.allSettled([
+    DinnerUtils.findAndConfirmMany(reference),
+    AccommodationUtils.findAndConfirmMany(reference),
+    BrochureUtils.findAndConfirmMany(reference),
+    GoodwillUtils.findAndConfirmMany(reference),
+    DonationUtils.findAndConfirmMany(reference),
+    ConventionUtils.findAndConfirmMany(reference)
+  ]);
 
-    // Find and confirm the payment using the new brute force approach
-    const paymentResult = await findAndConfirmPaymentByReference(paymentReference);
 
-    if (!paymentResult) {
-      return NextResponse.json({
-        message: "No payment record found for the given reference",
-        success: false,
-        reference: paymentReference,
-      });
-    }
+  console.log({
+    dinnerResult,
+    accommodationResult,
+    brochureResult,
+    goodwillResult,
+    donationResult,
+    conventionResult
+  })
 
-    const { serviceType, record, success } = paymentResult;
-
-    if (!success) {
-      return NextResponse.json({
-        message: `Failed to confirm ${serviceType} payment`,
-        success: false,
-        serviceType,
-        reference: paymentReference,
-      });
-    }
-
-    console.log(`Successfully processed ${serviceType} payment:`, paymentReference);
-
-    // Handle convention registration with PDF delivery (same as other services)
-    if (serviceType === 'convention') {
-      try {
-        console.log('Processing convention registration with PDF delivery...');
-
-        // Handle multiple convention records (array)
-        const conventionRecords = Array.isArray(record) ? record : [record];
-        const pdfResults = [];
-
-        for (const conventionRecord of conventionRecords) {
-          try {
-            // Use the same notification service as other service types
-            const notificationResult = await sendServiceNotification('convention', conventionRecord);
-
-            pdfResults.push({
-              registrationId: conventionRecord._id,
-              paymentReference: conventionRecord.paymentReference,
-              success: notificationResult.success,
-              pdfGenerated: notificationResult.pdfGenerated,
-              whatsappSent: notificationResult.whatsappSent,
-              fallbackUsed: notificationResult.fallbackUsed,
-              phoneNumber: notificationResult.phoneNumber,
-              error: notificationResult.error,
-              handledSeparately: notificationResult.handledSeparately
-            });
-
-            console.log(`Convention PDF processed for ${conventionRecord.paymentReference}:`, {
-              success: notificationResult.success,
-              pdfGenerated: notificationResult.pdfGenerated,
-              whatsappSent: notificationResult.whatsappSent
-            });
-
-          } catch (recordError: any) {
-            console.error(`Error processing convention record ${conventionRecord._id}:`, recordError);
-            pdfResults.push({
-              registrationId: conventionRecord._id,
-              paymentReference: conventionRecord.paymentReference,
-              success: false,
-              error: recordError.message
-            });
-          }
-        }
-
-        const successfulDeliveries = pdfResults.filter(result => result.success).length;
-        const failedDeliveries = pdfResults.filter(result => !result.success).length;
-
-        if (failedDeliveries > 0) {
-          console.error("Some convention PDF deliveries failed:", pdfResults.filter(r => !r.success));
-        }
-
-        return NextResponse.json({
-          message: `Convention registration processed. ${successfulDeliveries} out of ${pdfResults.length} PDF confirmations sent successfully.`,
-          success: successfulDeliveries > 0,
-          serviceType: 'convention',
-          reference: paymentReference,
-          processed: pdfResults.length,
-          successful: successfulDeliveries,
-          failed: failedDeliveries,
-          details: pdfResults,
-        });
-
-      } catch (error: any) {
-        console.error("Error processing convention registration:", error);
-        return NextResponse.json({
-          message: "Failed to process convention registration",
-          success: false,
-          serviceType: 'convention',
-          reference: paymentReference,
-          error: error.message,
-        }, { status: 500 });
-      }
-    }
-
-    // Handle other service types with notifications
-    let notificationResult = null;
-    try {
-      notificationResult = await sendServiceNotification(serviceType, record);
-    } catch (notificationError: any) {
-      console.error(`Error sending ${serviceType} notification:`, notificationError);
-      // Don't fail the webhook if notification fails
-    }
-
-    return NextResponse.json({
-      message: `${serviceType.charAt(0).toUpperCase() + serviceType.slice(1)} payment processed successfully`,
-      success: true,
-      serviceType,
-      reference: paymentReference,
-      record: {
-        id: record._id,
-        paymentReference: record.paymentReference,
-        confirmed: record.confirmed,
-        totalAmount: record.totalAmount || record.amount || record.donationAmount,
-      },
-      notification: notificationResult,
-    });
-
-    // return NextResponse.json(
-    //   {
-    //     message: "Success",
-    //     success: true,
-
-    //   },
-
-    // );
-  } catch (error: any) {
-    console.error("Webhook handler error:", error);
-    return NextResponse.json(
-      {
-        message: "Internal server error",
-        success: false,
-        error: error.message,
-      },
-      { status: 500 },
-    );
+  // Check results and return the first match found
+  if (dinnerResult.status === 'fulfilled' && dinnerResult.value.modifiedCount) {
+    const data = await DinnerUtils.findMany(reference)
+    return data;
   }
+
+  if (accommodationResult.status === 'fulfilled' && accommodationResult.value.modifiedCount) {
+    const data = await AccommodationUtils.findMany(reference)
+    return data;
+  }
+
+  if (brochureResult.status === 'fulfilled' && brochureResult.value.modifiedCount) {
+    const data = await BrochureUtils.findMany(reference)
+    return data;
+  }
+
+  if (goodwillResult.status === 'fulfilled' && goodwillResult.value.modifiedCount) {
+    const data = await GoodwillUtils.findMany(reference)
+    return data;
+  }
+
+  if (donationResult.status === 'fulfilled' && donationResult.value.modifiedCount) {
+    const data = await DonationUtils.findMany(reference)
+    return data;
+  }
+
+  if (conventionResult.status === 'fulfilled' && conventionResult.value.modifiedCount) {
+    const data = await ConventionUtils.findMany(reference)
+    return data;
+  }
+
+  // console.log('Reference not found in any collection');
+  return null;
 }

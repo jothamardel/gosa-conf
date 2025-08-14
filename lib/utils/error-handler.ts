@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { PhoneUtils } from './phone.utils';
 
 export enum ErrorCode {
   // Validation Errors
@@ -8,37 +9,37 @@ export enum ErrorCode {
   INVALID_EMAIL = 'INVALID_EMAIL',
   INVALID_PHONE = 'INVALID_PHONE',
   INVALID_AMOUNT = 'INVALID_AMOUNT',
-  
+
   // Authentication Errors
   UNAUTHORIZED = 'UNAUTHORIZED',
   FORBIDDEN = 'FORBIDDEN',
   INVALID_TOKEN = 'INVALID_TOKEN',
-  
+
   // Payment Errors
   PAYMENT_FAILED = 'PAYMENT_FAILED',
   PAYMENT_CANCELLED = 'PAYMENT_CANCELLED',
   INVALID_PAYMENT_REFERENCE = 'INVALID_PAYMENT_REFERENCE',
   DUPLICATE_PAYMENT = 'DUPLICATE_PAYMENT',
   INSUFFICIENT_FUNDS = 'INSUFFICIENT_FUNDS',
-  
+
   // Database Errors
   DATABASE_ERROR = 'DATABASE_ERROR',
   RECORD_NOT_FOUND = 'RECORD_NOT_FOUND',
   DUPLICATE_RECORD = 'DUPLICATE_RECORD',
   CONSTRAINT_VIOLATION = 'CONSTRAINT_VIOLATION',
-  
+
   // External Service Errors
   EXTERNAL_SERVICE_ERROR = 'EXTERNAL_SERVICE_ERROR',
   PAYSTACK_ERROR = 'PAYSTACK_ERROR',
   WASENDER_ERROR = 'WASENDER_ERROR',
   VERCEL_BLOB_ERROR = 'VERCEL_BLOB_ERROR',
-  
+
   // Business Logic Errors
   BUSINESS_RULE_VIOLATION = 'BUSINESS_RULE_VIOLATION',
   INVALID_STATE = 'INVALID_STATE',
   OPERATION_NOT_ALLOWED = 'OPERATION_NOT_ALLOWED',
   QUOTA_EXCEEDED = 'QUOTA_EXCEEDED',
-  
+
   // System Errors
   INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
   SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
@@ -71,14 +72,14 @@ export class AppError extends Error {
     context?: Record<string, any>
   ) {
     super(message);
-    
+
     this.code = code;
     this.statusCode = statusCode;
     this.field = field;
     this.value = value;
     this.context = context;
     this.isOperational = true;
-    
+
     Error.captureStackTrace(this, this.constructor);
   }
 }
@@ -104,11 +105,11 @@ export class DatabaseError extends AppError {
 export class ExternalServiceError extends AppError {
   constructor(service: string, message: string, context?: Record<string, any>) {
     super(
-      ErrorCode.EXTERNAL_SERVICE_ERROR, 
-      `${service} service error: ${message}`, 
-      503, 
-      undefined, 
-      undefined, 
+      ErrorCode.EXTERNAL_SERVICE_ERROR,
+      `${service} service error: ${message}`,
+      503,
+      undefined,
+      undefined,
       { service, ...context }
     );
   }
@@ -208,9 +209,9 @@ export class ErrorHandler {
    * Validate phone number format
    */
   static validatePhone(phone: string, fieldName: string = 'phone'): void {
-    const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/;
-    if (!phoneRegex.test(phone)) {
-      throw new ValidationError('Invalid phone number format', fieldName, phone);
+    const validation = PhoneUtils.validatePhoneNumber(phone);
+    if (!validation.valid) {
+      throw new ValidationError(validation.message || 'Invalid phone number format', fieldName, phone);
     }
   }
 
@@ -246,7 +247,7 @@ export class ErrorHandler {
    */
   static validateFutureDate(date: string | Date, fieldName: string = 'date'): void {
     this.validateDate(date, fieldName);
-    
+
     const dateObj = new Date(date);
     const now = new Date();
     now.setHours(0, 0, 0, 0);
@@ -260,9 +261,9 @@ export class ErrorHandler {
    * Validate string length
    */
   static validateStringLength(
-    value: string, 
-    minLength: number = 0, 
-    maxLength: number = Infinity, 
+    value: string,
+    minLength: number = 0,
+    maxLength: number = Infinity,
     fieldName: string = 'field'
   ): void {
     if (typeof value !== 'string') {
@@ -290,8 +291,8 @@ export class ErrorHandler {
    * Validate enum value
    */
   static validateEnum<T>(
-    value: T, 
-    allowedValues: T[], 
+    value: T,
+    allowedValues: T[],
     fieldName: string = 'field'
   ): void {
     if (!allowedValues.includes(value)) {
@@ -307,9 +308,9 @@ export class ErrorHandler {
    * Validate array
    */
   static validateArray(
-    value: any[], 
-    minLength: number = 0, 
-    maxLength: number = Infinity, 
+    value: any[],
+    minLength: number = 0,
+    maxLength: number = Infinity,
     fieldName: string = 'field'
   ): void {
     if (!Array.isArray(value)) {
