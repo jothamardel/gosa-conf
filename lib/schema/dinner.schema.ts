@@ -56,7 +56,7 @@ const QRCodeSchema = new Schema<IQRCode>({
   qrCode: {
     type: String,
     required: false, // Make optional
-    sparse: true,    // Only index non-null values
+    // Remove sparse: true to avoid duplicate index with explicit index below
   },
   used: {
     type: Boolean,

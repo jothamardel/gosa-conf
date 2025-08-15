@@ -47,14 +47,14 @@ export async function POST(req: NextRequest) {
     console.log(`Successfully processed ${serviceType} payment:`, paymentReference);
     console.log({ paymentResult })
 
-    // Handle convention registration with PDF delivery (same as other services)
+    // Handle convention registration with image delivery (same as other services)
     if (serviceType === 'convention') {
       try {
-        console.log('Processing convention registration with PDF delivery...');
+        console.log('Processing convention registration with image delivery...');
 
         // Handle multiple convention records (array)
         const conventionRecords = Array.isArray(record) ? record : [record];
-        const pdfResults: any = [];
+        const imageResults: any = [];
 
         // Group records by unique phone numbers to avoid duplicate notifications
         const phoneGroups = new Map<string, any[]>();
@@ -97,11 +97,11 @@ export async function POST(req: NextRequest) {
 
             // Add results for all records under this phone number
             for (const conventionRecord of records) {
-              pdfResults.push({
+              imageResults.push({
                 registrationId: conventionRecord._id,
                 paymentReference: conventionRecord.paymentReference,
                 success: notificationResult.success,
-                pdfGenerated: notificationResult.pdfGenerated,
+                imageGenerated: notificationResult.imageGenerated,
                 whatsappSent: notificationResult.whatsappSent,
                 fallbackUsed: notificationResult.fallbackUsed,
                 phoneNumber: notificationResult.phoneNumber,
@@ -111,9 +111,9 @@ export async function POST(req: NextRequest) {
               });
             }
 
-            console.log(`Convention PDF processed for phone ${phoneNumber} (${totalQuantity} registrations):`, {
+            console.log(`Convention image processed for phone ${phoneNumber} (${totalQuantity} registrations):`, {
               success: notificationResult.success,
-              pdfGenerated: notificationResult.pdfGenerated,
+              imageGenerated: notificationResult.imageGenerated,
               whatsappSent: notificationResult.whatsappSent,
               totalQuantity
             });
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
 
             // Add error results for all records under this phone number
             for (const conventionRecord of records) {
-              pdfResults.push({
+              imageResults.push({
                 registrationId: conventionRecord._id,
                 paymentReference: conventionRecord.paymentReference,
                 success: false,
@@ -134,16 +134,16 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        const successfulDeliveries = pdfResults.filter((result: any) => result.success).length;
-        const failedDeliveries = pdfResults.filter((result: any) => !result.success).length;
+        const successfulDeliveries = imageResults.filter((result: any) => result.success).length;
+        const failedDeliveries = imageResults.filter((result: any) => !result.success).length;
 
         if (failedDeliveries > 0) {
-          console.error("Some convention PDF deliveries failed:", pdfResults.filter((r: any) => !r.success));
+          console.error("Some convention image deliveries failed:", imageResults.filter((r: any) => !r.success));
         }
 
         const uniquePhoneNumbers = phoneGroups.size;
         const successfulPhoneNumbers = [...phoneGroups.keys()].filter(phone =>
-          pdfResults.some((result: any) => result.phoneNumber?.includes(phone) && result.success)
+          imageResults.some((result: any) => result.phoneNumber?.includes(phone) && result.success)
         ).length;
 
         return NextResponse.json({
@@ -151,12 +151,12 @@ export async function POST(req: NextRequest) {
           success: successfulDeliveries > 0,
           serviceType: 'convention',
           reference: paymentReference,
-          totalRegistrations: pdfResults.length,
+          totalRegistrations: imageResults.length,
           uniquePhoneNumbers,
           successfulPhoneNumbers,
           successful: successfulDeliveries,
           failed: failedDeliveries,
-          details: pdfResults,
+          details: imageResults,
         });
 
       } catch (error: any) {
@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
       record: {
         id: record._id,
         paymentReference: record.paymentReference,
-        confirmed: record.confirmed,
+        confirmed: record.confirm || record.confirmed,
         totalAmount: record.totalAmount || record.amount || record.donationAmount,
       },
       notification: notificationResult,
@@ -326,13 +326,22 @@ async function findAndConfirmPaymentByReference(reference: string): Promise<{
 
 
 
-// Enhanced notification service for different payment types with PDF generation
+// Enhanced notification service for different payment types with image generation
 async function sendServiceNotification(serviceType: string, record: any): Promise<any> {
   let internationalPhone: string = '';
 
   try {
-    // Only send image for confirmed payments
-    const isConfirmed = record.confirmed || record.confirm || false;
+    // Check if payment is confirmed - use the correct field name from schema (confirm is primary)
+    const isConfirmed = record.confirm || record.confirmed || record.status === 'confirmed' || record.paymentStatus === 'confirmed';
+
+    console.log(`Payment confirmation check for ${record.paymentReference}:`, {
+      confirm: record.confirm,
+      confirmed: record.confirmed,
+      status: record.status,
+      paymentStatus: record.paymentStatus,
+      isConfirmed
+    });
+
     if (!isConfirmed) {
       console.log(`Skipping image delivery for unconfirmed ${serviceType} payment:`, record.paymentReference);
       return {
@@ -418,16 +427,16 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
     return result;
 
   } catch (error: any) {
-    console.error(`Error sending ${serviceType} notification with PDF:`, error);
+    console.error(`Error sending ${serviceType} notification with image:`, error);
 
     // Record error for monitoring
     try {
       const { PDFMonitoringService } = await import('@/lib/services/pdf-monitoring.service');
       await PDFMonitoringService.recordError(
         'error',
-        'WEBHOOK_PDF_DELIVERY',
-        'PDF_DELIVERY_EXCEPTION',
-        `PDF delivery failed in webhook for ${serviceType}: ${error.message}`,
+        'WEBHOOK_IMAGE_DELIVERY',
+        'IMAGE_DELIVERY_EXCEPTION',
+        `Image delivery failed in webhook for ${serviceType}: ${error.message}`,
         {
           serviceType,
           paymentReference: record?.paymentReference,
@@ -438,7 +447,7 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
         true // Requires immediate action
       );
     } catch (monitoringError) {
-      console.error('Failed to record webhook PDF error:', monitoringError);
+      console.error('Failed to record webhook image error:', monitoringError);
     }
 
     return {
