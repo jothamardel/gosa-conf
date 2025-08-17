@@ -425,6 +425,8 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
       qrCodeData
     };
 
+    console.log({ whatsappImageData })
+
     // Generate image and send via WhatsApp using Vercel Blob
     console.log(`[WEBHOOK] Starting image generation and WhatsApp delivery for ${serviceType}:`, {
       user: whatsappImageData.userDetails.name,

@@ -45,6 +45,8 @@ export class WhatsAppImageService {
   static async generateAndSendImage(data: WhatsAppImageData): Promise<DeliveryResult> {
     const startTime = Date.now();
 
+    console.log("Generate and send image: ", data)
+
     // Log delivery start
     PDFLoggerService.logDeliveryStart(
       data.operationDetails.paymentReference,
