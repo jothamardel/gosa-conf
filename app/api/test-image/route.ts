@@ -83,6 +83,22 @@ export async function POST(req: NextRequest) {
               return false;
             }
           })(),
+          hasCanvas: (() => {
+            try {
+              require('canvas');
+              return true;
+            } catch {
+              return false;
+            }
+          })(),
+          hasQRCode: (() => {
+            try {
+              require('qrcode');
+              return true;
+            } catch {
+              return false;
+            }
+          })(),
           hasBlobToken: !!process.env.BLOB_READ_WRITE_TOKEN
         },
         testData: {
