@@ -17,17 +17,50 @@ export class ImageGeneratorService {
   }
 
   /**
-   * Generate image buffer - returns SVG as buffer for production compatibility
+   * Generate image buffer - converts SVG to PNG for WhatsApp compatibility
    */
   static async generateImageBuffer(data: ImageData): Promise<Buffer> {
     try {
-      console.log(`[IMAGE-GENERATOR] Generating SVG image for ${data.operationDetails.paymentReference}`);
+      console.log(`[IMAGE-GENERATOR] Generating image for ${data.operationDetails.paymentReference}`);
 
-      // Generate SVG content (no Sharp dependency)
+      // Generate SVG content first
       const svgContent = await this.generateSVGContent(data);
 
-      // Return SVG as buffer - most systems can handle SVG images
-      return Buffer.from(svgContent, 'utf-8');
+      // Try to convert SVG to PNG for better WhatsApp compatibility
+      try {
+        // Dynamic import for Sharp to handle production environment issues
+        let sharp: any = null;
+        try {
+          sharp = require('sharp');
+        } catch (sharpError) {
+          console.warn('[IMAGE-GENERATOR] Sharp not available, using SVG fallback');
+        }
+
+        if (sharp) {
+          console.log('[IMAGE-GENERATOR] Converting SVG to PNG using Sharp');
+          const pngBuffer = await sharp(Buffer.from(svgContent))
+            .png({
+              quality: 95,
+              compressionLevel: 6,
+              progressive: false
+            })
+            .resize(800, 1200, {
+              fit: 'contain',
+              background: { r: 255, g: 255, b: 255, alpha: 1 }
+            })
+            .toBuffer();
+
+          console.log(`[IMAGE-GENERATOR] Successfully converted to PNG (${pngBuffer.length} bytes)`);
+          return pngBuffer;
+        } else {
+          // Fallback to SVG if Sharp is not available
+          console.log('[IMAGE-GENERATOR] Using SVG format (Sharp not available)');
+          return Buffer.from(svgContent, 'utf-8');
+        }
+      } catch (conversionError) {
+        console.warn('[IMAGE-GENERATOR] PNG conversion failed, using SVG:', conversionError);
+        return Buffer.from(svgContent, 'utf-8');
+      }
 
     } catch (error) {
       console.error('[IMAGE-GENERATOR] Failed to generate image:', error);
@@ -305,7 +338,7 @@ www.gosa.events
   }
 
   /**
-   * Generate filename for image
+   * Generate filename for image (PNG preferred for WhatsApp compatibility)
    */
   static generateFilename(userDetails: { name: string }, serviceType: string): string {
     const timestamp = Date.now();
@@ -319,7 +352,8 @@ www.gosa.events
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '-');
 
-    return `gosa-2025-${sanitizedServiceType}-${sanitizedName}-${timestamp}.svg`;
+    // Use PNG extension for better WhatsApp compatibility
+    return `gosa-2025-${sanitizedServiceType}-${sanitizedName}-${timestamp}.png`;
   }
 
   /**

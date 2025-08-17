@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`Successfully processed ${serviceType} payment:`, paymentReference);
-    console.log({ paymentResult })
+    console.log({ paymentResult, record, serviceType, success })
 
     // Handle convention registration with image delivery (same as other services)
     if (serviceType === 'convention') {
@@ -75,6 +75,9 @@ export async function POST(req: NextRequest) {
         for (const [phone, records] of phoneGroups) {
           console.log(`Phone ${phone}: ${records.length} registrations`);
         }
+        console.log({
+          phoneGroups
+        })
 
         // Send one notification per unique phone number
         for (const [phoneNumber, records] of phoneGroups) {
@@ -88,12 +91,19 @@ export async function POST(req: NextRequest) {
             // Add quantity info to the record for better messaging
             const recordWithQuantity = {
               ...primaryRecord,
+              ...primaryRecord._doc,
               totalQuantity,
               allRecords: records
             };
 
+            console.log({
+              recordWithQuantity
+            })
+
             // Use the same notification service as other service types
             const notificationResult = await sendServiceNotification('convention', recordWithQuantity);
+
+            console.log({ notificationResult })
 
             // Add results for all records under this phone number
             for (const conventionRecord of records) {
@@ -328,12 +338,17 @@ async function findAndConfirmPaymentByReference(reference: string): Promise<{
 
 // Enhanced notification service for different payment types with image generation
 async function sendServiceNotification(serviceType: string, record: any): Promise<any> {
+  console.log({
+    serviceType,
+    record
+  })
   let internationalPhone: string = '';
 
   try {
     // Check if payment is confirmed - use the correct field name from schema (confirm is primary)
     const isConfirmed = record.confirm || record.confirmed || record.status === 'confirmed' || record.paymentStatus === 'confirmed';
 
+    // paymentReference
     console.log(`Payment confirmation check for ${record.paymentReference}:`, {
       confirm: record.confirm,
       confirmed: record.confirmed,
@@ -411,6 +426,13 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
     };
 
     // Generate image and send via WhatsApp using Vercel Blob
+    console.log(`[WEBHOOK] Starting image generation and WhatsApp delivery for ${serviceType}:`, {
+      user: whatsappImageData.userDetails.name,
+      phone: whatsappImageData.userDetails.phone,
+      amount: whatsappImageData.operationDetails.amount,
+      reference: whatsappImageData.operationDetails.paymentReference
+    });
+
     imageResult = await WhatsAppImageService.generateAndSendImage(whatsappImageData);
 
     const result = {
@@ -420,10 +442,27 @@ async function sendServiceNotification(serviceType: string, record: any): Promis
       imageGenerated: imageResult?.imageGenerated || false,
       whatsappSent: imageResult?.whatsappSent || false,
       fallbackUsed: imageResult?.fallbackUsed || false,
-      error: imageResult?.error
+      error: imageResult?.error,
+      messageId: imageResult?.messageId
     };
 
-    console.log(`Image delivery result for ${serviceType}:`, result);
+    console.log(`[WEBHOOK] Image delivery result for ${serviceType}:`, result);
+
+    if (!result.success) {
+      console.error(`[WEBHOOK] Image delivery failed for ${serviceType}:`, {
+        error: result.error,
+        imageGenerated: result.imageGenerated,
+        whatsappSent: result.whatsappSent,
+        fallbackUsed: result.fallbackUsed
+      });
+    } else {
+      console.log(`[WEBHOOK] Image delivery successful for ${serviceType}:`, {
+        messageId: result.messageId,
+        imageGenerated: result.imageGenerated,
+        whatsappSent: result.whatsappSent
+      });
+    }
+
     return result;
 
   } catch (error: any) {

@@ -122,23 +122,38 @@ export class ImageBlobService {
     if (buffer.length >= 8 &&
       buffer[0] === 0x89 && buffer[1] === 0x50 &&
       buffer[2] === 0x4E && buffer[3] === 0x47) {
+      console.log('[IMAGE-BLOB] Detected PNG format from magic bytes');
       return 'image/png';
     }
 
+    // Check for JPEG magic bytes
+    if (buffer.length >= 3 &&
+      buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+      console.log('[IMAGE-BLOB] Detected JPEG format from magic bytes');
+      return 'image/jpeg';
+    }
+
     // Check for SVG content
-    const bufferStart = buffer.toString('utf8', 0, Math.min(100, buffer.length));
+    const bufferStart = buffer.toString('utf8', 0, Math.min(200, buffer.length));
     if (bufferStart.includes('<svg') || bufferStart.includes('<?xml')) {
+      console.log('[IMAGE-BLOB] Detected SVG format from content');
       return 'image/svg+xml';
     }
 
     // Fallback based on filename
     if (filename.endsWith('.png')) {
+      console.log('[IMAGE-BLOB] Using PNG content type from filename');
       return 'image/png';
+    } else if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) {
+      console.log('[IMAGE-BLOB] Using JPEG content type from filename');
+      return 'image/jpeg';
     } else if (filename.endsWith('.svg')) {
+      console.log('[IMAGE-BLOB] Using SVG content type from filename');
       return 'image/svg+xml';
     }
 
-    // Default to PNG
+    // Default to PNG for WhatsApp compatibility
+    console.log('[IMAGE-BLOB] Using default PNG content type');
     return 'image/png';
   }
 

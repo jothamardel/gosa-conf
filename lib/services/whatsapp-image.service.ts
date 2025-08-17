@@ -96,7 +96,20 @@ export class WhatsAppImageService {
         return result;
       }
 
-      // Step 2: Send image via WhatsApp using Vercel Blob URL
+      // Step 2: Validate blob URL accessibility
+      try {
+        console.log('[WHATSAPP-IMAGE] Validating blob URL accessibility:', blobUrl);
+        const response = await fetch(blobUrl, { method: 'HEAD' });
+        if (!response.ok) {
+          throw new Error(`Blob URL not accessible: ${response.status} ${response.statusText}`);
+        }
+        console.log('[WHATSAPP-IMAGE] Blob URL is accessible, content-type:', response.headers.get('content-type'));
+      } catch (urlError) {
+        console.error('[WHATSAPP-IMAGE] Blob URL validation failed:', urlError);
+        throw new Error(`Blob URL validation failed: ${urlError instanceof Error ? urlError.message : 'Unknown error'}`);
+      }
+
+      // Step 3: Send image via WhatsApp using Vercel Blob URL
       try {
         const whatsappResult = await PDFErrorHandlerService.executeWithRetry(
           () => this.sendImageDocumentWithBlob(data, blobUrl),
@@ -117,7 +130,7 @@ export class WhatsAppImageService {
           error: whatsappError instanceof Error ? whatsappError.message : 'Unknown error'
         });
 
-        // Step 3: Execute fallback delivery with error handling
+        // Step 4: Execute fallback delivery with error handling
         const fallbackResult = await PDFErrorHandlerService.executeFallbackDelivery(data, context);
 
         result.success = fallbackResult.success;
@@ -152,8 +165,27 @@ export class WhatsAppImageService {
    * Send image via WhatsApp using Vercel Blob URL (extracted for retry logic)
    */
   private static async sendImageDocumentWithBlob(data: WhatsAppImageData, blobUrl: string): Promise<{ messageId?: string | number }> {
+    console.log('[WHATSAPP-IMAGE] Preparing to send image via WhatsApp:', {
+      phone: data.userDetails.phone,
+      blobUrl,
+      reference: data.operationDetails.paymentReference
+    });
+
     const imageData = await this.createImageMessage(data, blobUrl);
+
+    console.log('[WHATSAPP-IMAGE] Sending image with payload:', {
+      to: imageData.to,
+      imageUrl: imageData.imageUrl,
+      textLength: imageData.text.length
+    });
+
     const result = await Wasender.sendImage(imageData);
+
+    console.log('[WHATSAPP-IMAGE] WhatsApp API response:', {
+      success: result.success,
+      messageId: result.data?.msgId,
+      error: result.error
+    });
 
     if (!result.success) {
       throw new Error(result.error || 'WhatsApp image delivery failed');
