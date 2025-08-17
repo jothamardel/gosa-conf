@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "FONTCONFIG_PATH": "/dev/null",
+    "FC_CONFIG_FILE": "/dev/null"
+  }
+}

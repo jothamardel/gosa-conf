@@ -17,7 +17,6 @@ export class ImageGeneratorService {
   // }
 
 
-
   /**
  * Generate image buffer - optimized for Vercel serverless deployment
  */
@@ -63,11 +62,59 @@ export class ImageGeneratorService {
     try {
       const { createCanvas, loadImage, registerFont } = require('canvas');
 
+      // Set environment variables to avoid fontconfig errors
+      process.env.FONTCONFIG_PATH = process.env.FONTCONFIG_PATH || '/dev/null';
+      process.env.FC_CONFIG_FILE = process.env.FC_CONFIG_FILE || '/dev/null';
+
+      // Register fonts more safely for serverless environments
+      try {
+        // Only try font registration in non-serverless environments
+        if (!process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+          const fs = require('fs');
+          const path = require('path');
+
+          const fontPaths = [
+            '/System/Library/Fonts/Arial.ttf', // macOS
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', // Common Linux
+            '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf', // Linux
+            path.join(process.cwd(), 'fonts', 'arial.ttf'), // Project fonts
+          ];
+
+          for (const fontPath of fontPaths) {
+            try {
+              if (fs.existsSync(fontPath)) {
+                registerFont(fontPath, { family: 'CustomFont' });
+                console.log(`[IMAGE-GENERATOR] Registered font: ${fontPath}`);
+                break;
+              }
+            } catch (fontError) {
+              continue;
+            }
+          }
+        }
+      } catch (fontRegError) {
+        // Silently continue - we'll use system defaults
+      }
+
       // Create canvas
       const width = 800;
       const height = 1200;
       const canvas = createCanvas(width, height);
       const ctx = canvas.getContext('2d');
+
+      // Use simpler font specifications for serverless
+      const getFontString = (size = "14", weight = 'normal') => {
+        // Use generic font families that work in serverless environments
+        return `${weight} ${size}px sans-serif`;
+      };
+
+      // Set text rendering properties for better quality
+      try {
+        ctx.textRenderingOptimization = 'optimizeQuality';
+        ctx.antialias = 'default';
+      } catch (renderError) {
+        // These properties might not be available in all environments
+      }
 
       // Set background
       ctx.fillStyle = '#F9FAFB';
@@ -97,110 +144,154 @@ export class ImageGeneratorService {
           const logoImage = await loadImage(logoBuffer);
           ctx.drawImage(logoImage, 95, 85, 50, 50);
         } else {
-          // Fallback logo text
+          // Fallback logo text with serverless-safe font
           ctx.fillStyle = '#16A34A';
-          ctx.font = 'bold 14px Arial';
+          ctx.font = getFontString('14', 'bold');
           ctx.textAlign = 'center';
-          ctx.fillText('GOSA', 120, 118);
+          ctx.textBaseline = 'middle';
+          ctx.fillText('GOSA', 120, 110);
         }
       } catch (logoError) {
         console.warn('[IMAGE-GENERATOR] Logo loading failed:', logoError);
-        // Draw fallback
+        // Draw fallback with serverless-safe font
         ctx.fillStyle = '#16A34A';
-        ctx.font = 'bold 14px Arial';
+        ctx.font = getFontString('14', 'bold');
         ctx.textAlign = 'center';
-        ctx.fillText('GOSA', 120, 118);
+        ctx.textBaseline = 'middle';
+        ctx.fillText('GOSA', 120, 110);
       }
 
-      // Header text
+      // Header text with serverless-safe fonts
       ctx.fillStyle = 'white';
       ctx.textAlign = 'left';
-      ctx.font = 'bold 24px Arial';
-      ctx.fillText('GOSA 2025 Convention', 170, 95);
-      ctx.font = '16px Arial';
-      ctx.fillText('Payment Receipt', 170, 115);
-      ctx.font = '14px Arial';
-      ctx.fillText(this.getServiceTitle(data.operationDetails.type), 170, 135);
+      ctx.textBaseline = 'top';
+      ctx.font = getFontString('24', 'bold');
+      ctx.fillText('GOSA 2025 Convention', 170, 80);
 
-      // Amount section
+      ctx.font = getFontString('16');
+      ctx.fillText('Payment Receipt', 170, 105);
+
+      ctx.font = getFontString('14');
+      ctx.fillText(this.getServiceTitle(data.operationDetails.type), 170, 125);
+
+      // Amount section with serverless-safe fonts
       ctx.fillStyle = '#F0FDF4';
       ctx.fillRect(80, 200, 640, 80);
       ctx.strokeStyle = '#16A34A';
       ctx.strokeRect(80, 200, 640, 80);
 
       ctx.fillStyle = '#6B7280';
-      ctx.font = '11px Arial';
+      ctx.font = getFontString('11', 'bold');
       ctx.textAlign = 'center';
-      ctx.fillText('AMOUNT PAID', 400, 225);
+      ctx.textBaseline = 'top';
+      ctx.fillText('AMOUNT PAID', 400, 215);
 
       ctx.fillStyle = '#16A34A';
-      ctx.font = 'bold 36px Arial';
-      ctx.fillText(`₦${data.operationDetails.amount.toLocaleString()}`, 400, 260);
+      ctx.font = getFontString('32', 'bold');
+      ctx.textAlign = 'center';
+      ctx.fillText(`₦${data.operationDetails.amount.toLocaleString()}`, 400, 240);
 
-      // Success indicator
+      // Success indicator with serverless-safe fonts
       ctx.fillStyle = '#DCFCE7';
       ctx.fillRect(350, 275, 100, 25);
       ctx.fillStyle = '#16A34A';
       ctx.beginPath();
       ctx.arc(365, 287, 4, 0, 2 * Math.PI);
       ctx.fill();
-      ctx.font = '14px Arial';
+      ctx.font = getFontString('14', 'bold');
       ctx.textAlign = 'left';
-      ctx.fillText('Successful', 375, 292);
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Successful', 375, 287);
 
-      // Personal details section
+      // Personal details section with serverless-safe fonts
       ctx.fillStyle = '#FAFAFA';
       ctx.fillRect(80, 320, 640, 120);
       ctx.strokeStyle = '#E5E7EB';
       ctx.strokeRect(80, 320, 640, 120);
 
       ctx.fillStyle = '#6B7280';
-      ctx.font = 'bold 11px Arial';
-      ctx.fillText('PERSONAL INFORMATION', 100, 345);
+      ctx.font = getFontString('11', 'bold');
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('PERSONAL INFORMATION', 100, 335);
 
+      // Personal details with consistent spacing
+      const personalDetails = [
+        { label: 'Name:', value: this.truncateText(data.userDetails.name, 35), y: 355 },
+        { label: 'Email:', value: this.truncateText(data.userDetails.email, 35), y: 390 }
+      ];
+
+      personalDetails.forEach(detail => {
+        ctx.fillStyle = '#6B7280';
+        ctx.font = getFontString('11');
+        ctx.fillText(detail.label, 100, detail.y);
+
+        ctx.fillStyle = '#374151';
+        ctx.font = getFontString('13');
+        ctx.fillText(detail.value, 100, detail.y + 15);
+      });
+
+      // Phone number on the right
+      ctx.fillStyle = '#6B7280';
+      ctx.font = getFontString('11');
+      ctx.fillText('Phone:', 420, 355);
       ctx.fillStyle = '#374151';
-      ctx.font = '11px Arial';
-      ctx.fillText('Name:', 100, 365);
-      ctx.font = '14px Arial';
-      ctx.fillText(this.truncateText(data.userDetails.name, 35), 100, 380);
+      ctx.font = getFontString('13');
+      ctx.fillText(data.userDetails.phone, 420, 370);
 
-      ctx.font = '11px Arial';
-      ctx.fillText('Email:', 100, 400);
-      ctx.font = '12px Arial';
-      ctx.fillText(this.truncateText(data.userDetails.email, 40), 100, 415);
-
-      ctx.font = '11px Arial';
-      ctx.fillText('Phone:', 420, 365);
-      ctx.font = '14px Arial';
-      ctx.fillText(data.userDetails.phone, 420, 380);
-
-      // Transaction details
+      // Transaction details with serverless-safe fonts
       ctx.fillStyle = '#FAFAFA';
       ctx.fillRect(80, 460, 640, 140);
       ctx.strokeStyle = '#E5E7EB';
       ctx.strokeRect(80, 460, 640, 140);
 
       ctx.fillStyle = '#6B7280';
-      ctx.font = 'bold 11px Arial';
-      ctx.fillText('TRANSACTION DETAILS', 100, 485);
+      ctx.font = getFontString('11', 'bold');
+      ctx.textAlign = 'left';
+      ctx.fillText('TRANSACTION DETAILS', 100, 480);
 
       const details = [
-        { label: 'Reference:', value: this.truncateText(data.operationDetails.paymentReference, 25), x: 100, y: 510 },
-        { label: 'Date:', value: new Date(data.operationDetails.date).toLocaleDateString(), x: 100, y: 545 },
-        { label: 'Service:', value: this.truncateText(this.getServiceTitle(data.operationDetails.type), 25), x: 420, y: 510 },
-        { label: 'Method:', value: 'Online Payment', x: 420, y: 545 }
+        {
+          label: 'Reference:',
+          value: this.truncateText(data.operationDetails.paymentReference, 30),
+          x: 100,
+          y: 500
+        },
+        {
+          label: 'Date:',
+          value: new Date(data.operationDetails.date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          }),
+          x: 100,
+          y: 535
+        },
+        {
+          label: 'Service:',
+          value: this.truncateText(this.getServiceTitle(data.operationDetails.type), 25),
+          x: 420,
+          y: 500
+        },
+        {
+          label: 'Method:',
+          value: 'Online Payment',
+          x: 420,
+          y: 535
+        }
       ];
 
       details.forEach(detail => {
         ctx.fillStyle = '#6B7280';
-        ctx.font = '11px Arial';
+        ctx.font = getFontString('11');
         ctx.fillText(detail.label, detail.x, detail.y);
+
         ctx.fillStyle = '#374151';
-        ctx.font = '12px Arial';
+        ctx.font = getFontString('12');
         ctx.fillText(detail.value, detail.x, detail.y + 15);
       });
 
-      // QR Code section
+      // QR Code section with serverless-safe fonts
       ctx.fillStyle = 'white';
       ctx.fillRect(80, 620, 640, 200);
       ctx.strokeStyle = '#16A34A';
@@ -208,13 +299,14 @@ export class ImageGeneratorService {
       ctx.strokeRect(80, 620, 640, 200);
 
       ctx.fillStyle = '#16A34A';
-      ctx.font = 'bold 18px Arial';
+      ctx.font = getFontString('18', 'bold');
       ctx.textAlign = 'center';
-      ctx.fillText('Event Access QR Code', 400, 645);
+      ctx.textBaseline = 'top';
+      ctx.fillText('Event Access QR Code', 400, 635);
 
       ctx.fillStyle = '#374151';
-      ctx.font = '12px Arial';
-      ctx.fillText('Present this at the event', 400, 665);
+      ctx.font = getFontString('12');
+      ctx.fillText('Present this at the event', 400, 655);
 
       // Generate and draw QR code
       try {
@@ -229,9 +321,10 @@ export class ImageGeneratorService {
           ctx.strokeStyle = '#D1D5DB';
           ctx.strokeRect(320, 680, 160, 160);
           ctx.fillStyle = '#6B7280';
-          ctx.font = '12px Arial';
+          ctx.font = getFontString('12');
           ctx.textAlign = 'center';
-          ctx.fillText('QR Code', 400, 770);
+          ctx.textBaseline = 'middle';
+          ctx.fillText('QR Code', 400, 760);
         }
       } catch (qrError) {
         console.warn('[IMAGE-GENERATOR] QR code generation failed:', qrError);
@@ -241,12 +334,13 @@ export class ImageGeneratorService {
         ctx.strokeStyle = '#D1D5DB';
         ctx.strokeRect(320, 680, 160, 160);
         ctx.fillStyle = '#6B7280';
-        ctx.font = '12px Arial';
+        ctx.font = getFontString('12');
         ctx.textAlign = 'center';
-        ctx.fillText('QR Code', 400, 770);
+        ctx.textBaseline = 'middle';
+        ctx.fillText('QR Code', 400, 760);
       }
 
-      // Instructions
+      // Instructions with serverless-safe fonts
       ctx.fillStyle = '#F8FAFC';
       ctx.fillRect(80, 840, 640, 100);
       ctx.strokeStyle = '#E2E8F0';
@@ -254,9 +348,10 @@ export class ImageGeneratorService {
       ctx.strokeRect(80, 840, 640, 100);
 
       ctx.fillStyle = '#6B7280';
-      ctx.font = 'bold 11px Arial';
+      ctx.font = getFontString('11', 'bold');
       ctx.textAlign = 'left';
-      ctx.fillText('IMPORTANT NOTES:', 100, 865);
+      ctx.textBaseline = 'top';
+      ctx.fillText('IMPORTANT NOTES:', 100, 855);
 
       const instructions = [
         '• Save this receipt for your records',
@@ -265,24 +360,25 @@ export class ImageGeneratorService {
       ];
 
       ctx.fillStyle = '#374151';
-      ctx.font = '12px Arial';
+      ctx.font = getFontString('12');
       instructions.forEach((instruction, index) => {
-        ctx.fillText(instruction, 100, 885 + (index * 20));
+        ctx.fillText(instruction, 100, 875 + (index * 18));
       });
 
-      // Footer
+      // Footer with serverless-safe fonts
       ctx.fillStyle = '#F1F5F9';
       ctx.fillRect(60, 960, 680, 80);
 
       ctx.fillStyle = '#16A34A';
-      ctx.font = 'bold 14px Arial';
+      ctx.font = getFontString('14', 'bold');
       ctx.textAlign = 'center';
-      ctx.fillText('GOSA 2025 Convention', 400, 985);
+      ctx.textBaseline = 'top';
+      ctx.fillText('GOSA 2025 Convention', 400, 975);
 
       ctx.fillStyle = '#374151';
-      ctx.font = '12px Arial';
-      ctx.fillText('www.gosa.events', 400, 1005);
-      ctx.fillText(`Generated on ${new Date().toLocaleDateString()}`, 400, 1020);
+      ctx.font = getFontString('12');
+      ctx.fillText('www.gosa.events', 400, 995);
+      ctx.fillText(`Generated on ${new Date().toLocaleDateString()}`, 400, 1010);
 
       // Convert to PNG buffer
       return canvas.toBuffer('image/png');
@@ -315,8 +411,43 @@ export class ImageGeneratorService {
   }
 
   /**
-   * Load logo buffer with proper error handling
+   * Add this method to copy system fonts to your project if needed
    */
+  private static async ensureFontsAvailable(): Promise<void> {
+    try {
+      // For Vercel deployment, create a vercel.json with:
+      /*
+      {
+        "functions": {
+          "api/*.js": {
+            "maxDuration": 30
+          }
+        },
+        "env": {
+          "FONTCONFIG_PATH": "/dev/null",
+          "FC_CONFIG_FILE": "/dev/null"
+        }
+      }
+      */
+
+      // And add to package.json:
+      /*
+      {
+        "dependencies": {
+          "canvas": "^2.11.2",
+          "qrcode": "^1.5.3"
+        },
+        "engines": {
+          "node": ">=18"
+        }
+      }
+      */
+
+      console.log('[IMAGE-GENERATOR] Font configuration set for serverless environment');
+    } catch (error) {
+      console.warn('[IMAGE-GENERATOR] Font setup failed:', error);
+    }
+  }
   private static async loadLogoBuffer(): Promise<Buffer | null> {
     try {
       const fs = require('fs').promises;
@@ -414,6 +545,404 @@ export class ImageGeneratorService {
     const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ₦${data.operationDetails.amount.toLocaleString()}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: support@gosa.org`;
     return Buffer.from(fallbackText, 'utf-8');
   }
+
+
+  /**
+ * Generate image buffer - optimized for Vercel serverless deployment
+ */
+  //   static async generateImageBuffer(data: ImageData): Promise<Buffer> {
+  //     try {
+  //       console.log(`[IMAGE-GENERATOR] Generating image for ${data.operationDetails.paymentReference}`);
+
+  //       // Check if we're on Vercel
+  //       const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+
+  //       if (isVercel) {
+  //         console.log('[IMAGE-GENERATOR] Running on Vercel, using canvas-based generation');
+  //         return await this.generateCanvasImage(data);
+  //       } else {
+  //         // Try Sharp for local development
+  //         try {
+  //           const sharp = require('sharp');
+  //           const svgContent = await this.generateSVGContent(data);
+
+  //           const pngBuffer = await sharp(Buffer.from(svgContent))
+  //             .png({ quality: 90, compressionLevel: 6 })
+  //             .resize(800, 1200, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+  //             .toBuffer();
+
+  //           console.log(`[IMAGE-GENERATOR] Sharp conversion successful (${pngBuffer.length} bytes)`);
+  //           return pngBuffer;
+  //         } catch (sharpError) {
+  //           console.warn('[IMAGE-GENERATOR] Sharp failed, falling back to canvas:', sharpError);
+  //           return await this.generateCanvasImage(data);
+  //         }
+  //       }
+
+  //     } catch (error) {
+  //       console.error('[IMAGE-GENERATOR] Critical error:', error);
+  //       return this.generateTextFallback(data);
+  //     }
+  //   }
+
+  //   /**
+  //    * Generate image using Canvas API - works reliably on Vercel
+  //    */
+  //   private static async generateCanvasImage(data: ImageData): Promise<Buffer> {
+  //     try {
+  //       const { createCanvas, loadImage, registerFont } = require('canvas');
+
+  //       // Create canvas
+  //       const width = 800;
+  //       const height = 1200;
+  //       const canvas = createCanvas(width, height);
+  //       const ctx = canvas.getContext('2d');
+
+  //       // Set background
+  //       ctx.fillStyle = '#F9FAFB';
+  //       ctx.fillRect(0, 0, width, height);
+
+  //       // Main container
+  //       ctx.fillStyle = 'white';
+  //       ctx.fillRect(40, 40, 720, 1120);
+  //       ctx.strokeStyle = '#E5E7EB';
+  //       ctx.lineWidth = 1;
+  //       ctx.strokeRect(40, 40, 720, 1120);
+
+  //       // Header background
+  //       ctx.fillStyle = '#16A34A';
+  //       ctx.fillRect(60, 60, 680, 100);
+
+  //       // Logo circle
+  //       ctx.fillStyle = 'white';
+  //       ctx.beginPath();
+  //       ctx.arc(120, 110, 30, 0, 2 * Math.PI);
+  //       ctx.fill();
+
+  //       // Load and draw logo if available
+  //       try {
+  //         const logoBuffer = await this.loadLogoBuffer();
+  //         if (logoBuffer) {
+  //           const logoImage = await loadImage(logoBuffer);
+  //           ctx.drawImage(logoImage, 95, 85, 50, 50);
+  //         } else {
+  //           // Fallback logo text
+  //           ctx.fillStyle = '#16A34A';
+  //           ctx.font = 'bold 14px Arial';
+  //           ctx.textAlign = 'center';
+  //           ctx.fillText('GOSA', 120, 118);
+  //         }
+  //       } catch (logoError) {
+  //         console.warn('[IMAGE-GENERATOR] Logo loading failed:', logoError);
+  //         // Draw fallback
+  //         ctx.fillStyle = '#16A34A';
+  //         ctx.font = 'bold 14px Arial';
+  //         ctx.textAlign = 'center';
+  //         ctx.fillText('GOSA', 120, 118);
+  //       }
+
+  //       // Header text
+  //       ctx.fillStyle = 'white';
+  //       ctx.textAlign = 'left';
+  //       ctx.font = 'bold 24px Arial';
+  //       ctx.fillText('GOSA 2025 Convention', 170, 95);
+  //       ctx.font = '16px Arial';
+  //       ctx.fillText('Payment Receipt', 170, 115);
+  //       ctx.font = '14px Arial';
+  //       ctx.fillText(this.getServiceTitle(data.operationDetails.type), 170, 135);
+
+  //       // Amount section
+  //       ctx.fillStyle = '#F0FDF4';
+  //       ctx.fillRect(80, 200, 640, 80);
+  //       ctx.strokeStyle = '#16A34A';
+  //       ctx.strokeRect(80, 200, 640, 80);
+
+  //       ctx.fillStyle = '#6B7280';
+  //       ctx.font = '11px Arial';
+  //       ctx.textAlign = 'center';
+  //       ctx.fillText('AMOUNT PAID', 400, 225);
+
+  //       ctx.fillStyle = '#16A34A';
+  //       ctx.font = 'bold 36px Arial';
+  //       ctx.fillText(`₦${data.operationDetails.amount.toLocaleString()}`, 400, 260);
+
+  //       // Success indicator
+  //       ctx.fillStyle = '#DCFCE7';
+  //       ctx.fillRect(350, 275, 100, 25);
+  //       ctx.fillStyle = '#16A34A';
+  //       ctx.beginPath();
+  //       ctx.arc(365, 287, 4, 0, 2 * Math.PI);
+  //       ctx.fill();
+  //       ctx.font = '14px Arial';
+  //       ctx.textAlign = 'left';
+  //       ctx.fillText('Successful', 375, 292);
+
+  //       // Personal details section
+  //       ctx.fillStyle = '#FAFAFA';
+  //       ctx.fillRect(80, 320, 640, 120);
+  //       ctx.strokeStyle = '#E5E7EB';
+  //       ctx.strokeRect(80, 320, 640, 120);
+
+  //       ctx.fillStyle = '#6B7280';
+  //       ctx.font = 'bold 11px Arial';
+  //       ctx.fillText('PERSONAL INFORMATION', 100, 345);
+
+  //       ctx.fillStyle = '#374151';
+  //       ctx.font = '11px Arial';
+  //       ctx.fillText('Name:', 100, 365);
+  //       ctx.font = '14px Arial';
+  //       ctx.fillText(this.truncateText(data.userDetails.name, 35), 100, 380);
+
+  //       ctx.font = '11px Arial';
+  //       ctx.fillText('Email:', 100, 400);
+  //       ctx.font = '12px Arial';
+  //       ctx.fillText(this.truncateText(data.userDetails.email, 40), 100, 415);
+
+  //       ctx.font = '11px Arial';
+  //       ctx.fillText('Phone:', 420, 365);
+  //       ctx.font = '14px Arial';
+  //       ctx.fillText(data.userDetails.phone, 420, 380);
+
+  //       // Transaction details
+  //       ctx.fillStyle = '#FAFAFA';
+  //       ctx.fillRect(80, 460, 640, 140);
+  //       ctx.strokeStyle = '#E5E7EB';
+  //       ctx.strokeRect(80, 460, 640, 140);
+
+  //       ctx.fillStyle = '#6B7280';
+  //       ctx.font = 'bold 11px Arial';
+  //       ctx.fillText('TRANSACTION DETAILS', 100, 485);
+
+  //       const details = [
+  //         { label: 'Reference:', value: this.truncateText(data.operationDetails.paymentReference, 25), x: 100, y: 510 },
+  //         { label: 'Date:', value: new Date(data.operationDetails.date).toLocaleDateString(), x: 100, y: 545 },
+  //         { label: 'Service:', value: this.truncateText(this.getServiceTitle(data.operationDetails.type), 25), x: 420, y: 510 },
+  //         { label: 'Method:', value: 'Online Payment', x: 420, y: 545 }
+  //       ];
+
+  //       details.forEach(detail => {
+  //         ctx.fillStyle = '#6B7280';
+  //         ctx.font = '11px Arial';
+  //         ctx.fillText(detail.label, detail.x, detail.y);
+  //         ctx.fillStyle = '#374151';
+  //         ctx.font = '12px Arial';
+  //         ctx.fillText(detail.value, detail.x, detail.y + 15);
+  //       });
+
+  //       // QR Code section
+  //       ctx.fillStyle = 'white';
+  //       ctx.fillRect(80, 620, 640, 200);
+  //       ctx.strokeStyle = '#16A34A';
+  //       ctx.lineWidth = 2;
+  //       ctx.strokeRect(80, 620, 640, 200);
+
+  //       ctx.fillStyle = '#16A34A';
+  //       ctx.font = 'bold 18px Arial';
+  //       ctx.textAlign = 'center';
+  //       ctx.fillText('Event Access QR Code', 400, 645);
+
+  //       ctx.fillStyle = '#374151';
+  //       ctx.font = '12px Arial';
+  //       ctx.fillText('Present this at the event', 400, 665);
+
+  //       // Generate and draw QR code
+  //       try {
+  //         const qrCodeBuffer = await this.generateQRCodeBuffer(data.qrCodeData);
+  //         if (qrCodeBuffer) {
+  //           const qrImage = await loadImage(qrCodeBuffer);
+  //           ctx.drawImage(qrImage, 320, 680, 160, 160);
+  //         } else {
+  //           // QR code fallback
+  //           ctx.fillStyle = '#F3F4F6';
+  //           ctx.fillRect(320, 680, 160, 160);
+  //           ctx.strokeStyle = '#D1D5DB';
+  //           ctx.strokeRect(320, 680, 160, 160);
+  //           ctx.fillStyle = '#6B7280';
+  //           ctx.font = '12px Arial';
+  //           ctx.textAlign = 'center';
+  //           ctx.fillText('QR Code', 400, 770);
+  //         }
+  //       } catch (qrError) {
+  //         console.warn('[IMAGE-GENERATOR] QR code generation failed:', qrError);
+  //         // Draw QR placeholder
+  //         ctx.fillStyle = '#F3F4F6';
+  //         ctx.fillRect(320, 680, 160, 160);
+  //         ctx.strokeStyle = '#D1D5DB';
+  //         ctx.strokeRect(320, 680, 160, 160);
+  //         ctx.fillStyle = '#6B7280';
+  //         ctx.font = '12px Arial';
+  //         ctx.textAlign = 'center';
+  //         ctx.fillText('QR Code', 400, 770);
+  //       }
+
+  //       // Instructions
+  //       ctx.fillStyle = '#F8FAFC';
+  //       ctx.fillRect(80, 840, 640, 100);
+  //       ctx.strokeStyle = '#E2E8F0';
+  //       ctx.lineWidth = 1;
+  //       ctx.strokeRect(80, 840, 640, 100);
+
+  //       ctx.fillStyle = '#6B7280';
+  //       ctx.font = 'bold 11px Arial';
+  //       ctx.textAlign = 'left';
+  //       ctx.fillText('IMPORTANT NOTES:', 100, 865);
+
+  //       const instructions = [
+  //         '• Save this receipt for your records',
+  //         '• Show QR code at event registration',
+  //         '• Contact support@gosa.org for help'
+  //       ];
+
+  //       ctx.fillStyle = '#374151';
+  //       ctx.font = '12px Arial';
+  //       instructions.forEach((instruction, index) => {
+  //         ctx.fillText(instruction, 100, 885 + (index * 20));
+  //       });
+
+  //       // Footer
+  //       ctx.fillStyle = '#F1F5F9';
+  //       ctx.fillRect(60, 960, 680, 80);
+
+  //       ctx.fillStyle = '#16A34A';
+  //       ctx.font = 'bold 14px Arial';
+  //       ctx.textAlign = 'center';
+  //       ctx.fillText('GOSA 2025 Convention', 400, 985);
+
+  //       ctx.fillStyle = '#374151';
+  //       ctx.font = '12px Arial';
+  //       ctx.fillText('www.gosa.events', 400, 1005);
+  //       ctx.fillText(`Generated on ${new Date().toLocaleDateString()}`, 400, 1020);
+
+  //       // Convert to PNG buffer
+  //       return canvas.toBuffer('image/png');
+
+  //     } catch (canvasError) {
+  //       console.error('[IMAGE-GENERATOR] Canvas generation failed:', canvasError);
+  //       throw canvasError;
+  //     }
+  //   }
+
+  //   /**
+  //    * Generate QR code as buffer for canvas
+  //    */
+  //   private static async generateQRCodeBuffer(qrData: string): Promise<Buffer | null> {
+  //     try {
+  //       const QRCode = require('qrcode');
+  //       return await QRCode.toBuffer(qrData, {
+  //         width: 160,
+  //         margin: 1,
+  //         errorCorrectionLevel: 'M',
+  //         color: {
+  //           dark: '#16A34A',
+  //           light: '#ffffff'
+  //         }
+  //       });
+  //     } catch (error) {
+  //       console.error('[IMAGE-GENERATOR] QR code buffer generation failed:', error);
+  //       return null;
+  //     }
+  //   }
+
+  //   /**
+  //    * Load logo buffer with proper error handling
+  //    */
+  //   private static async loadLogoBuffer(): Promise<Buffer | null> {
+  //     try {
+  //       const fs = require('fs').promises;
+  //       const path = require('path');
+
+  //       // Try multiple possible logo locations
+  //       const possiblePaths = [
+  //         path.join(process.cwd(), 'public', 'logo.png'),
+  //         path.join(process.cwd(), 'assets', 'logo.png'),
+  //         path.join(process.cwd(), 'public', 'images', 'logo.png'),
+  //         path.join(__dirname, '..', 'assets', 'logo.png')
+  //       ];
+
+  //       for (const logoPath of possiblePaths) {
+  //         try {
+  //           const buffer = await fs.readFile(logoPath);
+  //           console.log(`[IMAGE-GENERATOR] Logo loaded from: ${logoPath}`);
+  //           return buffer;
+  //         } catch (error) {
+  //           continue; // Try next path
+  //         }
+  //       }
+
+  //       console.warn('[IMAGE-GENERATOR] No logo found in any expected location');
+  //       return null;
+  //     } catch (error) {
+  //       console.error('[IMAGE-GENERATOR] Logo loading error:', error);
+  //       return null;
+  //     }
+  //   }
+
+  //   /**
+  //    * Generate fallback SVG for environments where Canvas fails
+  //    */
+  //   private static async generateSVGContent(data: ImageData): Promise<string> {
+  //     const serviceTitle = this.getServiceTitle(data.operationDetails.type);
+  //     const formattedDate = new Date(data.operationDetails.date).toLocaleDateString();
+
+  //     return `<svg width="800" height="1200" xmlns="http://www.w3.org/2000/svg">
+  //   <rect width="800" height="1200" fill="#F9FAFB"/>
+  //   <rect x="40" y="40" width="720" height="1120" rx="20" fill="white" stroke="#E5E7EB"/>
+  //   <rect x="60" y="60" width="680" height="100" rx="15" fill="#16A34A"/>
+
+  //   <circle cx="120" cy="110" r="30" fill="white"/>
+  //   <text x="120" y="118" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#16A34A">GOSA</text>
+
+  //   <text x="170" y="95" font-family="Arial" font-size="24" font-weight="bold" fill="white">GOSA 2025 Convention</text>
+  //   <text x="170" y="115" font-family="Arial" font-size="16" fill="white">Payment Receipt</text>
+  //   <text x="170" y="135" font-family="Arial" font-size="14" fill="white">${this.escapeXML(serviceTitle)}</text>
+
+  //   <rect x="80" y="200" width="640" height="80" rx="10" fill="#F0FDF4" stroke="#16A34A"/>
+  //   <text x="400" y="225" text-anchor="middle" font-family="Arial" font-size="11" fill="#6B7280">AMOUNT PAID</text>
+  //   <text x="400" y="260" text-anchor="middle" font-family="Arial" font-size="36" font-weight="bold" fill="#16A34A">₦${data.operationDetails.amount.toLocaleString()}</text>
+
+  //   <rect x="350" y="275" width="100" height="25" rx="12" fill="#DCFCE7"/>
+  //   <circle cx="365" cy="287" r="4" fill="#16A34A"/>
+  //   <text x="375" y="292" font-family="Arial" font-size="14" font-weight="bold" fill="#16A34A">Successful</text>
+
+  //   <rect x="80" y="320" width="640" height="120" rx="10" fill="#FAFAFA" stroke="#E5E7EB"/>
+  //   <text x="100" y="345" font-family="Arial" font-size="11" font-weight="bold" fill="#6B7280">PERSONAL INFORMATION</text>
+  //   <text x="100" y="365" font-family="Arial" font-size="11" fill="#6B7280">Name:</text>
+  //   <text x="100" y="380" font-family="Arial" font-size="14" fill="#374151">${this.escapeXML(this.truncateText(data.userDetails.name, 35))}</text>
+  //   <text x="100" y="400" font-family="Arial" font-size="11" fill="#6B7280">Email:</text>
+  //   <text x="100" y="415" font-family="Arial" font-size="12" fill="#374151">${this.escapeXML(this.truncateText(data.userDetails.email, 40))}</text>
+  //   <text x="420" y="365" font-family="Arial" font-size="11" fill="#6B7280">Phone:</text>
+  //   <text x="420" y="380" font-family="Arial" font-size="14" fill="#374151">${this.escapeXML(data.userDetails.phone)}</text>
+
+  //   <rect x="80" y="620" width="640" height="200" rx="10" fill="white" stroke="#16A34A" stroke-width="2"/>
+  //   <text x="400" y="645" text-anchor="middle" font-family="Arial" font-size="18" font-weight="bold" fill="#16A34A">Event Access QR Code</text>
+  //   <text x="400" y="665" text-anchor="middle" font-family="Arial" font-size="12" fill="#374151">Present this at the event</text>
+  //   <rect x="320" y="680" width="160" height="160" rx="8" fill="#F3F4F6" stroke="#D1D5DB"/>
+  //   <text x="400" y="770" text-anchor="middle" font-family="Arial" font-size="12" fill="#6B7280">QR Code Available in PNG version</text>
+  // </svg>`;
+  //   }
+
+  //   /**
+  //    * Helper methods
+  //    */
+  //   private static truncateText(text: string, maxLength: number): string {
+  //     if (!text) return '';
+  //     return text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text;
+  //   }
+
+  //   private static escapeXML(text: string): string {
+  //     if (!text) return '';
+  //     return text
+  //       .replace(/&/g, '&amp;')
+  //       .replace(/</g, '&lt;')
+  //       .replace(/>/g, '&gt;')
+  //       .replace(/"/g, '&quot;')
+  //       .replace(/'/g, '&#39;');
+  //   }
+
+  //   private static generateTextFallback(data: ImageData): Buffer {
+  //     const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ₦${data.operationDetails.amount.toLocaleString()}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: support@gosa.org`;
+  //     return Buffer.from(fallbackText, 'utf-8');
+  //   }
 
   //   /**
   //    * Generate image buffer - converts SVG to PNG for WhatsApp compatibility
