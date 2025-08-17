@@ -38,9 +38,20 @@ export async function POST(req: NextRequest) {
     // Generate image buffer
     const imageBuffer = await ImageGeneratorService.generateImageBuffer(testData);
 
+    // Detect image type more accurately
+    const isPNG = imageBuffer.length >= 8 &&
+      imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50 &&
+      imageBuffer[2] === 0x4E && imageBuffer[3] === 0x47;
+
+    const isSVG = imageBuffer.toString('utf8', 0, Math.min(100, imageBuffer.length)).includes('<svg');
+
+    const imageType = isPNG ? 'PNG' : isSVG ? 'SVG' : 'Unknown';
+
     console.log('[TEST-IMAGE] Generated image buffer:', {
       size: imageBuffer.length,
-      type: imageBuffer.toString('utf8', 0, 10).includes('<svg') ? 'SVG' : 'Binary'
+      type: imageType,
+      isPNG,
+      isSVG
     });
 
     // Try to upload to blob
@@ -57,8 +68,23 @@ export async function POST(req: NextRequest) {
       message: "Test image generated successfully",
       data: {
         imageSize: imageBuffer.length,
-        imageType: imageBuffer.toString('utf8', 0, 10).includes('<svg') ? 'SVG' : 'Binary',
+        imageType,
+        isPNG,
+        isSVG,
         blobUrl,
+        environment: {
+          nodeEnv: process.env.NODE_ENV,
+          isVercel: !!process.env.VERCEL,
+          hasSharp: (() => {
+            try {
+              require('sharp');
+              return true;
+            } catch {
+              return false;
+            }
+          })(),
+          hasBlobToken: !!process.env.BLOB_READ_WRITE_TOKEN
+        },
         testData: {
           user: testData.userDetails.name,
           type: testData.operationDetails.type,

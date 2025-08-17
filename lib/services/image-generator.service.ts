@@ -28,15 +28,32 @@ export class ImageGeneratorService {
 
       // Try to convert SVG to PNG for better WhatsApp compatibility
       try {
+        // Check if we're in a production environment where Sharp might not be available
+        const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+
         // Dynamic import for Sharp to handle production environment issues
         let sharp: any = null;
+        let sharpAvailable = false;
+
         try {
           sharp = require('sharp');
+          // Test if Sharp actually works by creating a simple buffer
+          await sharp({
+            create: {
+              width: 1,
+              height: 1,
+              channels: 4,
+              background: { r: 255, g: 255, b: 255, alpha: 1 }
+            }
+          }).png().toBuffer();
+          sharpAvailable = true;
+          console.log('[IMAGE-GENERATOR] Sharp is available and working');
         } catch (sharpError) {
-          console.warn('[IMAGE-GENERATOR] Sharp not available, using SVG fallback');
+          console.warn('[IMAGE-GENERATOR] Sharp not available or not working:', sharpError.message);
+          sharpAvailable = false;
         }
 
-        if (sharp) {
+        if (sharpAvailable && sharp) {
           console.log('[IMAGE-GENERATOR] Converting SVG to PNG using Sharp');
           const pngBuffer = await sharp(Buffer.from(svgContent))
             .png({
@@ -53,9 +70,12 @@ export class ImageGeneratorService {
           console.log(`[IMAGE-GENERATOR] Successfully converted to PNG (${pngBuffer.length} bytes)`);
           return pngBuffer;
         } else {
-          // Fallback to SVG if Sharp is not available
-          console.log('[IMAGE-GENERATOR] Using SVG format (Sharp not available)');
-          return Buffer.from(svgContent, 'utf-8');
+          // Fallback to optimized SVG if Sharp is not available
+          console.log('[IMAGE-GENERATOR] Using optimized SVG format (Sharp not available)');
+
+          // Create a more WhatsApp-compatible SVG
+          const optimizedSvg = this.optimizeSVGForWhatsApp(svgContent);
+          return Buffer.from(optimizedSvg, 'utf-8');
         }
       } catch (conversionError) {
         console.warn('[IMAGE-GENERATOR] PNG conversion failed, using SVG:', conversionError);
@@ -70,21 +90,45 @@ export class ImageGeneratorService {
   }
 
   /**
-   * Load GOSA logo as buffer
+   * Load GOSA logo as buffer with multiple fallback paths
    */
   private static async loadLogoBuffer(): Promise<Buffer | null> {
     try {
       const fs = await import('fs');
       const path = await import('path');
 
-      const logoPath = path.join(process.cwd(), 'public', 'images', 'gosa.png');
+      // Try multiple possible logo paths for different environments
+      const possiblePaths = [
+        path.join(process.cwd(), 'public', 'images', 'gosa.png'),
+        path.join(process.cwd(), 'public', 'gosa.png'),
+        path.join(__dirname, '..', '..', 'public', 'images', 'gosa.png'),
+        path.join(__dirname, '..', '..', 'public', 'gosa.png'),
+        './public/images/gosa.png',
+        './public/gosa.png'
+      ];
 
-      if (fs.existsSync(logoPath)) {
-        return fs.readFileSync(logoPath);
-      } else {
-        console.warn('[IMAGE-GENERATOR] GOSA logo not found at:', logoPath);
-        return null;
+      for (const logoPath of possiblePaths) {
+        try {
+          if (fs.existsSync(logoPath)) {
+            console.log('[IMAGE-GENERATOR] Found GOSA logo at:', logoPath);
+            return fs.readFileSync(logoPath);
+          }
+        } catch (pathError) {
+          // Continue to next path
+          continue;
+        }
       }
+
+      console.warn('[IMAGE-GENERATOR] GOSA logo not found in any of the expected paths, using fallback');
+
+      // Return a simple base64 encoded placeholder logo
+      // This is a minimal 50x50 green circle with "GOSA" text as fallback
+      const fallbackLogoSvg = `<svg width="50" height="50" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="25" cy="25" r="24" fill="#16A34A" stroke="#15803D" stroke-width="2"/>
+        <text x="25" y="30" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="white">GOSA</text>
+      </svg>`;
+
+      return Buffer.from(fallbackLogoSvg, 'utf-8');
     } catch (error) {
       console.error('[IMAGE-GENERATOR] Error loading GOSA logo:', error);
       return null;
@@ -156,10 +200,21 @@ www.gosa.events
 
     // Load GOSA logo as base64 (no Sharp resizing)
     let logoDataURL = '';
+    let logoIsSVG = false;
     try {
       const logoBuffer = await this.loadLogoBuffer();
       if (logoBuffer) {
-        logoDataURL = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+        // Check if the logo buffer is SVG or PNG
+        const bufferStart = logoBuffer.toString('utf8', 0, Math.min(100, logoBuffer.length));
+        logoIsSVG = bufferStart.includes('<svg');
+
+        if (logoIsSVG) {
+          logoDataURL = `data:image/svg+xml;base64,${logoBuffer.toString('base64')}`;
+          console.log('[IMAGE-GENERATOR] Using SVG fallback logo');
+        } else {
+          logoDataURL = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+          console.log('[IMAGE-GENERATOR] Using PNG logo');
+        }
       }
     } catch (logoError) {
       console.error('[IMAGE-GENERATOR] Error processing logo:', logoError);
@@ -316,8 +371,20 @@ www.gosa.events
       // Generate image buffer
       const imageBuffer = await this.generateImageBuffer(data);
 
-      // Generate blob filename
-      const filename = ImageBlobService.generateBlobFilename(data.userDetails, data.operationDetails.type);
+      // Determine the correct file extension based on content
+      const isPNG = imageBuffer.length >= 8 &&
+        imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50 &&
+        imageBuffer[2] === 0x4E && imageBuffer[3] === 0x47;
+
+      const isSVG = imageBuffer.toString('utf8', 0, Math.min(100, imageBuffer.length)).includes('<svg');
+
+      // Generate blob filename with correct extension
+      const baseFilename = ImageBlobService.generateBlobFilename(data.userDetails, data.operationDetails.type);
+      const filename = isPNG ? baseFilename.replace(/\.(svg|png)$/, '.png') :
+        isSVG ? baseFilename.replace(/\.(svg|png)$/, '.svg') :
+          baseFilename;
+
+      console.log(`[IMAGE-GENERATOR] Generated ${isPNG ? 'PNG' : isSVG ? 'SVG' : 'unknown'} image (${imageBuffer.length} bytes)`);
 
       // Upload to Vercel Blob storage
       const blobUrl = await ImageBlobService.uploadImageToBlob(imageBuffer, filename);
@@ -369,6 +436,37 @@ www.gosa.events
       'donation': 'Donation'
     };
     return titles[type] || type.charAt(0).toUpperCase() + type.slice(1);
+  }
+
+  /**
+   * Optimize SVG for better WhatsApp compatibility
+   */
+  private static optimizeSVGForWhatsApp(svgContent: string): string {
+    // Add XML declaration and ensure proper encoding
+    let optimizedSvg = svgContent;
+
+    if (!optimizedSvg.startsWith('<?xml')) {
+      optimizedSvg = '<?xml version="1.0" encoding="UTF-8"?>\n' + optimizedSvg;
+    }
+
+    // Ensure proper namespace declarations
+    if (!optimizedSvg.includes('xmlns="http://www.w3.org/2000/svg"')) {
+      optimizedSvg = optimizedSvg.replace(
+        '<svg',
+        '<svg xmlns="http://www.w3.org/2000/svg"'
+      );
+    }
+
+    // Add viewBox if not present for better scaling
+    if (!optimizedSvg.includes('viewBox=')) {
+      optimizedSvg = optimizedSvg.replace(
+        'width="800" height="1200"',
+        'width="800" height="1200" viewBox="0 0 800 1200"'
+      );
+    }
+
+    console.log('[IMAGE-GENERATOR] Optimized SVG for WhatsApp compatibility');
+    return optimizedSvg;
   }
 
   /**
