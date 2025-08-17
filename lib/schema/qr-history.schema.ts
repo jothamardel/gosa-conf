@@ -15,19 +15,19 @@ const QRCodeHistorySchema = new Schema<IQRCodeHistory>({
   userId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
+    // Remove index: true - covered by compound index { userId: 1, serviceType: 1 }
   },
   serviceType: {
     type: String,
     enum: ['convention', 'dinner', 'accommodation', 'brochure'],
-    required: true,
-    index: true
+    required: true
+    // Remove index: true - covered by compound indexes
   },
   serviceId: {
     type: Schema.Types.ObjectId,
-    required: true,
-    index: true
+    required: true
+    // Remove index: true - covered by compound index { serviceId: 1, serviceType: 1 }
   },
   oldQRCode: {
     type: String,
@@ -42,8 +42,8 @@ const QRCodeHistorySchema = new Schema<IQRCodeHistory>({
   regeneratedBy: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
+    // Remove index: true - individual indexes not needed for this field
   },
   reason: {
     type: String,

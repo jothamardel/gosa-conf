@@ -49,7 +49,7 @@ export class ImageGeneratorService {
           sharpAvailable = true;
           console.log('[IMAGE-GENERATOR] Sharp is available and working');
         } catch (sharpError) {
-          console.warn('[IMAGE-GENERATOR] Sharp not available or not working:', sharpError.message);
+          console.warn('[IMAGE-GENERATOR] Sharp not available or not working:', sharpError instanceof Error ? sharpError.message : 'Unknown error');
           sharpAvailable = false;
         }
 

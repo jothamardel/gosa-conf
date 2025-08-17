@@ -17,8 +17,8 @@ const AttendeeBadgeSchema = new Schema<IAttendeeBadge>({
   userId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
+    // Remove index: true to avoid duplicate with explicit index below
   },
   badgeImageUrl: {
     type: String,
