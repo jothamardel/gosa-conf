@@ -130,7 +130,7 @@ export class ImageGeneratorService {
       const canvas = createCanvas(width, height);
       const ctx = canvas.getContext('2d');
 
-      console.o
+      console.log({ fontRegistered })
 
       // Improved font string function
       const getFontString = (size = "14", weight = 'normal') => {
