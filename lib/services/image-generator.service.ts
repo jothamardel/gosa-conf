@@ -65,46 +65,54 @@ export class ImageGeneratorService {
       process.env.FONTCONFIG_PATH = process.env.FONTCONFIG_PATH || '/dev/null';
       process.env.FC_CONFIG_FILE = process.env.FC_CONFIG_FILE || '/dev/null';
 
+      let fontRegistered = false;
+
       // Register fonts more safely for serverless environments
       try {
-        // Only try font registration in non-serverless environments
-        if (!process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
-          const fs = require('fs');
-          const path = require('path');
+        const fs = require('fs');
+        const path = require('path');
 
-          // Option 1: Include fonts in your project (recommended for Vercel)
-          const projectFontPaths = [
-            path.join(process.cwd(), 'public', 'fonts', 'Inter-Regular.ttf'),
-            path.join(process.cwd(), 'public', 'fonts', 'inter-regular.ttf'),
-            path.join(process.cwd(), 'public', 'fonts', 'Inter-Bold.ttf'),
-            path.join(process.cwd(), 'assets', 'fonts', 'Inter-Regular.ttf'),
-            path.join(process.cwd(), 'fonts', 'Inter-Regular.ttf'),
-          ];
+        // Updated font paths to match your actual file
+        const projectFontPaths = [
+          path.join(process.cwd(), 'public', 'fonts', 'inter-regular.ttf'), // Your actual file
+          path.join(process.cwd(), 'public', 'fonts', 'Inter-Regular.ttf'),
+          path.join(process.cwd(), 'public', 'fonts', 'Inter-Bold.ttf'),
+          path.join(process.cwd(), 'assets', 'fonts', 'Inter-Regular.ttf'),
+          path.join(process.cwd(), 'fonts', 'Inter-Regular.ttf'),
+        ];
 
-          // Try to register project fonts
-          for (const fontPath of projectFontPaths) {
-            try {
-              if (fs.existsSync(fontPath)) {
-                registerFont(fontPath, { family: 'Inter' });
-                console.log(`[IMAGE-GENERATOR] Registered project font: ${fontPath}`);
-                break;
-              }
-            } catch (fontError) {
-              continue;
+        // Try to register project fonts
+        for (const fontPath of projectFontPaths) {
+          try {
+            if (fs.existsSync(fontPath)) {
+              // Register multiple variants from the same file
+              registerFont(fontPath, { family: 'Inter', weight: 'normal', style: 'normal' });
+              registerFont(fontPath, { family: 'Inter', weight: 'bold', style: 'normal' });
+              console.log(`[IMAGE-GENERATOR] Registered project font: ${fontPath}`);
+              fontRegistered = true;
+              break;
             }
+          } catch (fontError) {
+            console.warn(`[IMAGE-GENERATOR] Failed to register font ${fontPath}:`, fontError);
+            continue;
           }
+        }
 
-          // Fallback to system fonts only for local development
+        // Only try system fonts if no project fonts were registered
+        if (!fontRegistered && !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
           const systemFontPaths = [
             '/System/Library/Fonts/Arial.ttf', // macOS
             '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', // Linux
+            '/Windows/Fonts/arial.ttf', // Windows
           ];
 
           for (const fontPath of systemFontPaths) {
             try {
               if (fs.existsSync(fontPath)) {
-                registerFont(fontPath, { family: 'SystemFont' });
+                registerFont(fontPath, { family: 'SystemFont', weight: 'normal', style: 'normal' });
+                registerFont(fontPath, { family: 'SystemFont', weight: 'bold', style: 'normal' });
                 console.log(`[IMAGE-GENERATOR] Registered system font: ${fontPath}`);
+                fontRegistered = true;
                 break;
               }
             } catch (fontError) {
@@ -113,7 +121,7 @@ export class ImageGeneratorService {
           }
         }
       } catch (fontRegError) {
-        // Silently continue - we'll use system defaults
+        console.warn('[IMAGE-GENERATOR] Font registration error:', fontRegError);
       }
 
       // Create canvas
@@ -122,24 +130,26 @@ export class ImageGeneratorService {
       const canvas = createCanvas(width, height);
       const ctx = canvas.getContext('2d');
 
-      // Use better font specifications for serverless
+      // Improved font string function
       const getFontString = (size = "14", weight = 'normal') => {
-        // Try registered fonts first, fallback to web-safe fonts
-        if (process.env.VERCEL) {
-          // For Vercel, use only guaranteed web-safe fonts
-          const fontFamily = 'sans-serif';
-          return `${weight} ${size}px ${fontFamily}`;
+        let fontFamily;
+
+        if (fontRegistered) {
+          // Use registered fonts
+          fontFamily = 'Inter, SystemFont, Arial, sans-serif';
         } else {
-          // For local development, try custom fonts first
-          const fontFamily = '"Inter", "Arial", sans-serif';
-          return `${weight} ${size}px ${fontFamily}`;
+          // Fallback to basic system fonts
+          fontFamily = 'Arial, Helvetica, sans-serif';
         }
+
+        return `${weight} ${size}px ${fontFamily}`;
       };
 
       // Set text rendering properties for better quality
       try {
         ctx.textRenderingOptimization = 'optimizeQuality';
         ctx.antialias = 'default';
+        ctx.textBaseline = 'alphabetic'; // More reliable baseline
       } catch (renderError) {
         // These properties might not be available in all environments
       }
@@ -172,7 +182,7 @@ export class ImageGeneratorService {
           const logoImage = await loadImage(logoBuffer);
           ctx.drawImage(logoImage, 95, 85, 50, 50);
         } else {
-          // Fallback logo text with serverless-safe font
+          // Fallback logo text
           ctx.fillStyle = '#16A34A';
           ctx.font = getFontString('14', 'bold');
           ctx.textAlign = 'center';
@@ -181,7 +191,7 @@ export class ImageGeneratorService {
         }
       } catch (logoError) {
         console.warn('[IMAGE-GENERATOR] Logo loading failed:', logoError);
-        // Draw fallback with serverless-safe font
+        // Draw fallback
         ctx.fillStyle = '#16A34A';
         ctx.font = getFontString('14', 'bold');
         ctx.textAlign = 'center';
@@ -189,20 +199,20 @@ export class ImageGeneratorService {
         ctx.fillText('GOSA', 120, 110);
       }
 
-      // Header text with serverless-safe fonts
+      // Header text
       ctx.fillStyle = 'white';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       ctx.font = getFontString('24', 'bold');
-      ctx.fillText('GOSA 2025 Convention', 170, 80);
+      ctx.fillText('GOSA 2025 Convention', 170, 85);
 
-      ctx.font = getFontString('16');
-      ctx.fillText('Payment Receipt', 170, 105);
+      ctx.font = getFontString('16', 'normal');
+      ctx.fillText('Payment Receipt', 170, 110);
 
-      ctx.font = getFontString('14');
-      ctx.fillText(this.getServiceTitle(data.operationDetails.type), 170, 125);
+      ctx.font = getFontString('14', 'normal');
+      ctx.fillText(this.getServiceTitle(data.operationDetails.type), 170, 130);
 
-      // Amount section with serverless-safe fonts
+      // Amount section
       ctx.fillStyle = '#F0FDF4';
       ctx.fillRect(80, 200, 640, 80);
       ctx.strokeStyle = '#16A34A';
@@ -212,14 +222,14 @@ export class ImageGeneratorService {
       ctx.font = getFontString('11', 'bold');
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText('AMOUNT PAID', 400, 215);
+      ctx.fillText('AMOUNT PAID', 400, 220);
 
       ctx.fillStyle = '#16A34A';
       ctx.font = getFontString('32', 'bold');
       ctx.textAlign = 'center';
-      ctx.fillText(`₦${data.operationDetails.amount.toLocaleString()}`, 400, 240);
+      ctx.fillText(`₦${data.operationDetails.amount.toLocaleString()}`, 400, 245);
 
-      // Success indicator with serverless-safe fonts
+      // Success indicator
       ctx.fillStyle = '#DCFCE7';
       ctx.fillRect(350, 275, 100, 25);
       ctx.fillStyle = '#16A34A';
@@ -231,7 +241,7 @@ export class ImageGeneratorService {
       ctx.textBaseline = 'middle';
       ctx.fillText('Successful', 375, 287);
 
-      // Personal details section with serverless-safe fonts
+      // Personal details section
       ctx.fillStyle = '#FAFAFA';
       ctx.fillRect(80, 320, 640, 120);
       ctx.strokeStyle = '#E5E7EB';
@@ -241,33 +251,33 @@ export class ImageGeneratorService {
       ctx.font = getFontString('11', 'bold');
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillText('PERSONAL INFORMATION', 100, 335);
+      ctx.fillText('PERSONAL INFORMATION', 100, 340);
 
       // Personal details with consistent spacing
       const personalDetails = [
-        { label: 'Name:', value: this.truncateText(data.userDetails.name, 35), y: 355 },
-        { label: 'Email:', value: this.truncateText(data.userDetails.email, 35), y: 390 }
+        { label: 'Name:', value: this.truncateText(data.userDetails.name, 35), y: 360 },
+        { label: 'Email:', value: this.truncateText(data.userDetails.email, 35), y: 395 }
       ];
 
       personalDetails.forEach(detail => {
         ctx.fillStyle = '#6B7280';
-        ctx.font = getFontString('11');
+        ctx.font = getFontString('11', 'normal');
         ctx.fillText(detail.label, 100, detail.y);
 
         ctx.fillStyle = '#374151';
-        ctx.font = getFontString('13');
+        ctx.font = getFontString('13', 'normal');
         ctx.fillText(detail.value, 100, detail.y + 15);
       });
 
       // Phone number on the right
       ctx.fillStyle = '#6B7280';
-      ctx.font = getFontString('11');
-      ctx.fillText('Phone:', 420, 355);
+      ctx.font = getFontString('11', 'normal');
+      ctx.fillText('Phone:', 420, 360);
       ctx.fillStyle = '#374151';
-      ctx.font = getFontString('13');
-      ctx.fillText(data.userDetails.phone, 420, 370);
+      ctx.font = getFontString('13', 'normal');
+      ctx.fillText(data.userDetails.phone, 420, 375);
 
-      // Transaction details with serverless-safe fonts
+      // Transaction details
       ctx.fillStyle = '#FAFAFA';
       ctx.fillRect(80, 460, 640, 140);
       ctx.strokeStyle = '#E5E7EB';
@@ -276,14 +286,14 @@ export class ImageGeneratorService {
       ctx.fillStyle = '#6B7280';
       ctx.font = getFontString('11', 'bold');
       ctx.textAlign = 'left';
-      ctx.fillText('TRANSACTION DETAILS', 100, 480);
+      ctx.fillText('TRANSACTION DETAILS', 100, 485);
 
       const details = [
         {
           label: 'Reference:',
           value: this.truncateText(data.operationDetails.paymentReference, 30),
           x: 100,
-          y: 500
+          y: 505
         },
         {
           label: 'Date:',
@@ -293,33 +303,33 @@ export class ImageGeneratorService {
             day: 'numeric'
           }),
           x: 100,
-          y: 535
+          y: 540
         },
         {
           label: 'Service:',
           value: this.truncateText(this.getServiceTitle(data.operationDetails.type), 25),
           x: 420,
-          y: 500
+          y: 505
         },
         {
           label: 'Method:',
           value: 'Online Payment',
           x: 420,
-          y: 535
+          y: 540
         }
       ];
 
       details.forEach(detail => {
         ctx.fillStyle = '#6B7280';
-        ctx.font = getFontString('11');
+        ctx.font = getFontString('11', 'normal');
         ctx.fillText(detail.label, detail.x, detail.y);
 
         ctx.fillStyle = '#374151';
-        ctx.font = getFontString('12');
+        ctx.font = getFontString('12', 'normal');
         ctx.fillText(detail.value, detail.x, detail.y + 15);
       });
 
-      // QR Code section with serverless-safe fonts
+      // QR Code section
       ctx.fillStyle = 'white';
       ctx.fillRect(80, 620, 640, 200);
       ctx.strokeStyle = '#16A34A';
@@ -330,11 +340,11 @@ export class ImageGeneratorService {
       ctx.font = getFontString('18', 'bold');
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText('Event Access QR Code', 400, 635);
+      ctx.fillText('Event Access QR Code', 400, 640);
 
       ctx.fillStyle = '#374151';
-      ctx.font = getFontString('12');
-      ctx.fillText('Present this at the event', 400, 655);
+      ctx.font = getFontString('12', 'normal');
+      ctx.fillText('Present this at the event', 400, 660);
 
       // Generate and draw QR code
       try {
@@ -349,7 +359,7 @@ export class ImageGeneratorService {
           ctx.strokeStyle = '#D1D5DB';
           ctx.strokeRect(320, 680, 160, 160);
           ctx.fillStyle = '#6B7280';
-          ctx.font = getFontString('12');
+          ctx.font = getFontString('12', 'normal');
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText('QR Code', 400, 760);
@@ -362,13 +372,13 @@ export class ImageGeneratorService {
         ctx.strokeStyle = '#D1D5DB';
         ctx.strokeRect(320, 680, 160, 160);
         ctx.fillStyle = '#6B7280';
-        ctx.font = getFontString('12');
+        ctx.font = getFontString('12', 'normal');
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('QR Code', 400, 760);
       }
 
-      // Instructions with serverless-safe fonts
+      // Instructions
       ctx.fillStyle = '#F8FAFC';
       ctx.fillRect(80, 840, 640, 100);
       ctx.strokeStyle = '#E2E8F0';
@@ -379,7 +389,7 @@ export class ImageGeneratorService {
       ctx.font = getFontString('11', 'bold');
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillText('IMPORTANT NOTES:', 100, 855);
+      ctx.fillText('IMPORTANT NOTES:', 100, 860);
 
       const instructions = [
         '• Save this receipt for your records',
@@ -388,12 +398,12 @@ export class ImageGeneratorService {
       ];
 
       ctx.fillStyle = '#374151';
-      ctx.font = getFontString('12');
+      ctx.font = getFontString('12', 'normal');
       instructions.forEach((instruction, index) => {
-        ctx.fillText(instruction, 100, 875 + (index * 18));
+        ctx.fillText(instruction, 100, 880 + (index * 18));
       });
 
-      // Footer with serverless-safe fonts
+      // Footer
       ctx.fillStyle = '#F1F5F9';
       ctx.fillRect(60, 960, 680, 80);
 
@@ -401,12 +411,12 @@ export class ImageGeneratorService {
       ctx.font = getFontString('14', 'bold');
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText('GOSA 2025 Convention', 400, 975);
+      ctx.fillText('GOSA 2025 Convention', 400, 980);
 
       ctx.fillStyle = '#374151';
-      ctx.font = getFontString('12');
-      ctx.fillText('www.gosa.events', 400, 995);
-      ctx.fillText(`Generated on ${new Date().toLocaleDateString()}`, 400, 1010);
+      ctx.font = getFontString('12', 'normal');
+      ctx.fillText('www.gosa.events', 400, 1000);
+      ctx.fillText(`Generated on ${new Date().toLocaleDateString()}`, 400, 1015);
 
       // Convert to PNG buffer
       return canvas.toBuffer('image/png');
