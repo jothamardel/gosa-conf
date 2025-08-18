@@ -74,7 +74,7 @@ export class ImageGeneratorService {
 
         // Updated font paths to match your actual file
         const projectFontPaths = [
-          path.join(process.cwd(), 'public', 'fonts', 'Inter-Regular.woff2'),
+          path.join(process.cwd(), 'public', 'fonts', 'InterVariable.ttf'),
           path.join(process.cwd(), 'public', 'fonts', 'Inter-Regular.ttf'),
           path.join(process.cwd(), 'public', 'fonts', 'Inter-Bold.ttf'),
           path.join(process.cwd(), 'assets', 'fonts', 'Inter-Regular.ttf'),
@@ -129,6 +129,8 @@ export class ImageGeneratorService {
       const height = 1200;
       const canvas = createCanvas(width, height);
       const ctx = canvas.getContext('2d');
+
+      console.o
 
       // Improved font string function
       const getFontString = (size = "14", weight = 'normal') => {
