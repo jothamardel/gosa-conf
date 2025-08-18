@@ -457,31 +457,31 @@ export class ImageGeneratorService {
     try {
       /*
       RECOMMENDED APPROACH FOR VERCEL:
-      
+
       1. Download fonts and include them in your project:
-      
+
       project/
       ├── public/
       │   └── fonts/
       │       ├── Inter-Regular.ttf
       │       └── Inter-Bold.ttf
       └── ...
-      
+
       2. Download Inter font from Google Fonts:
       - Go to https://fonts.google.com/specimen/Inter
       - Download the font files
       - Place TTF files in public/fonts/
-      
+
       3. Or download via script (add to package.json scripts):
       {
         "scripts": {
           "download-fonts": "mkdir -p public/fonts && curl -o public/fonts/Inter-Regular.ttf 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2'"
         }
       }
-      
+
       4. Alternative: Use @fontsource packages:
       npm install @fontsource/inter
-      
+
       Then copy the TTF files from node_modules/@fontsource/inter/files/ to public/fonts/
       */
 
@@ -502,6 +502,7 @@ export class ImageGeneratorService {
         path.join(process.cwd(), 'public', 'logo.png'),
         path.join(process.cwd(), 'assets', 'logo.png'),
         path.join(process.cwd(), 'public', 'images', 'logo.png'),
+        path.join(process.cwd(), 'public', 'images', 'gosa.png'),
         path.join(__dirname, '..', 'assets', 'logo.png')
       ];
 
@@ -534,22 +535,22 @@ export class ImageGeneratorService {
   <rect width="800" height="1200" fill="#F9FAFB"/>
   <rect x="40" y="40" width="720" height="1120" rx="20" fill="white" stroke="#E5E7EB"/>
   <rect x="60" y="60" width="680" height="100" rx="15" fill="#16A34A"/>
-  
+
   <circle cx="120" cy="110" r="30" fill="white"/>
   <text x="120" y="118" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#16A34A">GOSA</text>
-  
+
   <text x="170" y="95" font-family="Arial" font-size="24" font-weight="bold" fill="white">GOSA 2025 Convention</text>
   <text x="170" y="115" font-family="Arial" font-size="16" fill="white">Payment Receipt</text>
   <text x="170" y="135" font-family="Arial" font-size="14" fill="white">${this.escapeXML(serviceTitle)}</text>
-  
+
   <rect x="80" y="200" width="640" height="80" rx="10" fill="#F0FDF4" stroke="#16A34A"/>
   <text x="400" y="225" text-anchor="middle" font-family="Arial" font-size="11" fill="#6B7280">AMOUNT PAID</text>
   <text x="400" y="260" text-anchor="middle" font-family="Arial" font-size="36" font-weight="bold" fill="#16A34A">₦${data.operationDetails.amount.toLocaleString()}</text>
-  
+
   <rect x="350" y="275" width="100" height="25" rx="12" fill="#DCFCE7"/>
   <circle cx="365" cy="287" r="4" fill="#16A34A"/>
   <text x="375" y="292" font-family="Arial" font-size="14" font-weight="bold" fill="#16A34A">Successful</text>
-  
+
   <rect x="80" y="320" width="640" height="120" rx="10" fill="#FAFAFA" stroke="#E5E7EB"/>
   <text x="100" y="345" font-family="Arial" font-size="11" font-weight="bold" fill="#6B7280">PERSONAL INFORMATION</text>
   <text x="100" y="365" font-family="Arial" font-size="11" fill="#6B7280">Name:</text>
@@ -558,7 +559,7 @@ export class ImageGeneratorService {
   <text x="100" y="415" font-family="Arial" font-size="12" fill="#374151">${this.escapeXML(this.truncateText(data.userDetails.email, 40))}</text>
   <text x="420" y="365" font-family="Arial" font-size="11" fill="#6B7280">Phone:</text>
   <text x="420" y="380" font-family="Arial" font-size="14" fill="#374151">${this.escapeXML(data.userDetails.phone)}</text>
-  
+
   <rect x="80" y="620" width="640" height="200" rx="10" fill="white" stroke="#16A34A" stroke-width="2"/>
   <text x="400" y="645" text-anchor="middle" font-family="Arial" font-size="18" font-weight="bold" fill="#16A34A">Event Access QR Code</text>
   <text x="400" y="665" text-anchor="middle" font-family="Arial" font-size="12" fill="#374151">Present this at the event</text>
@@ -1193,7 +1194,7 @@ export class ImageGeneratorService {
   //   <circle cx="650" cy="900" r="50" fill="#F59E0B" opacity="0.03"/>
 
   //   <!-- Main receipt container -->
-  //   <rect x="40" y="60" width="720" height="1080" rx="24" fill="url(#cardGradient)" 
+  //   <rect x="40" y="60" width="720" height="1080" rx="24" fill="url(#cardGradient)"
   //         stroke="rgba(255,255,255,0.3)" stroke-width="1" filter="url(#shadow)"/>
 
   //   <!-- Header section -->
@@ -1213,7 +1214,7 @@ export class ImageGeneratorService {
   //   <text x="180" y="175" font-family="Arial" font-size="14" font-weight="400" fill="rgba(255,255,255,0.8)">${this.escapeXML(serviceTitle)} Receipt</text>
 
   //   <!-- Transaction amount - hero section -->
-  //   <rect x="80" y="240" width="640" height="100" rx="16" fill="rgba(255,255,255,0.9)" 
+  //   <rect x="80" y="240" width="640" height="100" rx="16" fill="rgba(255,255,255,0.9)"
   //         stroke="rgba(22,163,74,0.2)" stroke-width="1"/>
   //   <text x="400" y="270" text-anchor="middle" font-family="Arial" font-size="14" font-weight="600" fill="#6B7280">TRANSACTION AMOUNT</text>
   //   <text x="400" y="310" text-anchor="middle" font-family="Arial" font-size="42" font-weight="800" fill="#16A34A">₦${data.operationDetails.amount.toLocaleString()}</text>
@@ -1224,7 +1225,7 @@ export class ImageGeneratorService {
   //   <text x="355" y="341" font-family="Arial" font-size="14" font-weight="600" fill="#166534">Successful</text>
 
   //   <!-- Personal Information Card -->
-  //   <rect x="80" y="380" width="640" height="140" rx="16" fill="rgba(255,255,255,0.9)" 
+  //   <rect x="80" y="380" width="640" height="140" rx="16" fill="rgba(255,255,255,0.9)"
   //         stroke="rgba(229,231,235,0.5)" stroke-width="1"/>
   //   <rect x="80" y="380" width="4" height="140" rx="2" fill="#16A34A"/>
   //   <text x="100" y="405" font-family="Arial" font-size="12" font-weight="700" fill="#374151" letter-spacing="1px">PERSONAL INFORMATION</text>
@@ -1240,7 +1241,7 @@ export class ImageGeneratorService {
   //   <text x="100" y="505" font-family="Arial" font-size="16" font-weight="600" fill="#1F2937">${this.escapeXML(data.userDetails.phone)}</text>
 
   //   <!-- Transaction Details Card -->
-  //   <rect x="80" y="540" width="640" height="160" rx="16" fill="rgba(255,255,255,0.9)" 
+  //   <rect x="80" y="540" width="640" height="160" rx="16" fill="rgba(255,255,255,0.9)"
   //         stroke="rgba(229,231,235,0.5)" stroke-width="1"/>
   //   <rect x="80" y="540" width="4" height="160" rx="2" fill="#F59E0B"/>
   //   <text x="100" y="565" font-family="Arial" font-size="12" font-weight="700" fill="#374151" letter-spacing="1px">TRANSACTION DETAILS</text>
@@ -1262,7 +1263,7 @@ export class ImageGeneratorService {
   //   <text x="420" y="665" font-family="Arial" font-size="14" font-weight="600" fill="#1F2937">Online Transfer</text>
 
   //   <!-- QR Code Section with modern design -->
-  //   <rect x="80" y="720" width="640" height="240" rx="16" fill="rgba(255,255,255,0.95)" 
+  //   <rect x="80" y="720" width="640" height="240" rx="16" fill="rgba(255,255,255,0.95)"
   //         stroke="rgba(22,163,74,0.3)" stroke-width="2" stroke-dasharray="8,4"/>
   //   <text x="400" y="750" text-anchor="middle" font-family="Arial" font-size="14" font-weight="700" fill="#16A34A">YOUR DIGITAL PASS</text>
   //   <text x="400" y="770" text-anchor="middle" font-family="Arial" font-size="12" font-weight="400" fill="#6B7280">Scan this QR code at the event</text>
@@ -1276,7 +1277,7 @@ export class ImageGeneratorService {
   //       }
 
   //   <!-- Instructions Card -->
-  //   <rect x="80" y="980" width="640" height="120" rx="16" fill="rgba(255,255,255,0.9)" 
+  //   <rect x="80" y="980" width="640" height="120" rx="16" fill="rgba(255,255,255,0.9)"
   //         stroke="rgba(229,231,235,0.5)" stroke-width="1"/>
   //   <rect x="80" y="980" width="4" height="120" rx="2" fill="#16A34A"/>
   //   <text x="100" y="1005" font-family="Arial" font-size="12" font-weight="700" fill="#374151" letter-spacing="1px">IMPORTANT INSTRUCTIONS</text>
