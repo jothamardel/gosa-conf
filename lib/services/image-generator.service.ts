@@ -75,6 +75,7 @@ export class ImageGeneratorService {
           // Option 1: Include fonts in your project (recommended for Vercel)
           const projectFontPaths = [
             path.join(process.cwd(), 'public', 'fonts', 'Inter-Regular.ttf'),
+            path.join(process.cwd(), 'public', 'fonts', 'inter-regular.ttf'),
             path.join(process.cwd(), 'public', 'fonts', 'Inter-Bold.ttf'),
             path.join(process.cwd(), 'assets', 'fonts', 'Inter-Regular.ttf'),
             path.join(process.cwd(), 'fonts', 'Inter-Regular.ttf'),
