@@ -16,10 +16,9 @@ export class ImageGeneratorService {
   //     .replace(/'/g, '&#39;');
   // }
 
-
   /**
- * Generate image buffer - optimized for Vercel serverless deployment
- */
+   * Generate image buffer - optimized for Vercel serverless deployment
+   */
   static async generateImageBuffer(data: ImageData): Promise<Buffer> {
     try {
       console.log(`[IMAGE-GENERATOR] Generating image for ${data.operationDetails.paymentReference}`);
@@ -73,18 +72,38 @@ export class ImageGeneratorService {
           const fs = require('fs');
           const path = require('path');
 
-          const fontPaths = [
-            '/System/Library/Fonts/Arial.ttf', // macOS
-            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', // Common Linux
-            '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf', // Linux
-            path.join(process.cwd(), 'fonts', 'arial.ttf'), // Project fonts
+          // Option 1: Include fonts in your project (recommended for Vercel)
+          const projectFontPaths = [
+            path.join(process.cwd(), 'public', 'fonts', 'Inter-Regular.ttf'),
+            path.join(process.cwd(), 'public', 'fonts', 'Inter-Bold.ttf'),
+            path.join(process.cwd(), 'assets', 'fonts', 'Inter-Regular.ttf'),
+            path.join(process.cwd(), 'fonts', 'Inter-Regular.ttf'),
           ];
 
-          for (const fontPath of fontPaths) {
+          // Try to register project fonts
+          for (const fontPath of projectFontPaths) {
             try {
               if (fs.existsSync(fontPath)) {
-                registerFont(fontPath, { family: 'CustomFont' });
-                console.log(`[IMAGE-GENERATOR] Registered font: ${fontPath}`);
+                registerFont(fontPath, { family: 'Inter' });
+                console.log(`[IMAGE-GENERATOR] Registered project font: ${fontPath}`);
+                break;
+              }
+            } catch (fontError) {
+              continue;
+            }
+          }
+
+          // Fallback to system fonts only for local development
+          const systemFontPaths = [
+            '/System/Library/Fonts/Arial.ttf', // macOS
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', // Linux
+          ];
+
+          for (const fontPath of systemFontPaths) {
+            try {
+              if (fs.existsSync(fontPath)) {
+                registerFont(fontPath, { family: 'SystemFont' });
+                console.log(`[IMAGE-GENERATOR] Registered system font: ${fontPath}`);
                 break;
               }
             } catch (fontError) {
@@ -102,10 +121,18 @@ export class ImageGeneratorService {
       const canvas = createCanvas(width, height);
       const ctx = canvas.getContext('2d');
 
-      // Use simpler font specifications for serverless
-      const getFontString = (size = "14", weight = 'normal') => {
-        // Use generic font families that work in serverless environments
-        return `${weight} ${size}px sans-serif`;
+      // Use better font specifications for serverless
+      const getFontString = (size, weight = 'normal') => {
+        // Try registered fonts first, fallback to web-safe fonts
+        if (process.env.VERCEL) {
+          // For Vercel, use only guaranteed web-safe fonts
+          const fontFamily = 'sans-serif';
+          return `${weight} ${size}px ${fontFamily}`;
+        } else {
+          // For local development, try custom fonts first
+          const fontFamily = '"Inter", "Arial", sans-serif';
+          return `${weight} ${size}px ${fontFamily}`;
+        }
       };
 
       // Set text rendering properties for better quality
@@ -411,39 +438,43 @@ export class ImageGeneratorService {
   }
 
   /**
-   * Add this method to copy system fonts to your project if needed
+   * Alternative approach: Download and include fonts in your project
    */
   private static async ensureFontsAvailable(): Promise<void> {
     try {
-      // For Vercel deployment, create a vercel.json with:
       /*
+      RECOMMENDED APPROACH FOR VERCEL:
+      
+      1. Download fonts and include them in your project:
+      
+      project/
+      ├── public/
+      │   └── fonts/
+      │       ├── Inter-Regular.ttf
+      │       └── Inter-Bold.ttf
+      └── ...
+      
+      2. Download Inter font from Google Fonts:
+      - Go to https://fonts.google.com/specimen/Inter
+      - Download the font files
+      - Place TTF files in public/fonts/
+      
+      3. Or download via script (add to package.json scripts):
       {
-        "functions": {
-          "api/*.js": {
-            "maxDuration": 30
-          }
-        },
-        "env": {
-          "FONTCONFIG_PATH": "/dev/null",
-          "FC_CONFIG_FILE": "/dev/null"
+        "scripts": {
+          "download-fonts": "mkdir -p public/fonts && curl -o public/fonts/Inter-Regular.ttf 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2'"
         }
       }
+      
+      4. Alternative: Use @fontsource packages:
+      npm install @fontsource/inter
+      
+      Then copy the TTF files from node_modules/@fontsource/inter/files/ to public/fonts/
       */
 
-      // And add to package.json:
-      /*
-      {
-        "dependencies": {
-          "canvas": "^2.11.2",
-          "qrcode": "^1.5.3"
-        },
-        "engines": {
-          "node": ">=18"
-        }
-      }
-      */
-
-      console.log('[IMAGE-GENERATOR] Font configuration set for serverless environment');
+      console.log('[IMAGE-GENERATOR] For production, include font files in your project');
+      console.log('[IMAGE-GENERATOR] Download Inter from: https://fonts.google.com/specimen/Inter');
+      console.log('[IMAGE-GENERATOR] Place TTF files in: public/fonts/');
     } catch (error) {
       console.warn('[IMAGE-GENERATOR] Font setup failed:', error);
     }
@@ -545,6 +576,50 @@ export class ImageGeneratorService {
     const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ₦${data.operationDetails.amount.toLocaleString()}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: support@gosa.org`;
     return Buffer.from(fallbackText, 'utf-8');
   }
+  //  * Helper methods
+  //  */
+  // private static truncateText(text: string, maxLength: number): string {
+  //   if (!text) return '';
+  //   return text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text;
+  // }
+
+  // private static escapeXML(text: string): string {
+  //   if (!text) return '';
+  //   return text
+  //     .replace(/&/g, '&amp;')
+  //     .replace(/</g, '&lt;')
+  //     .replace(/>/g, '&gt;')
+  //     .replace(/"/g, '&quot;')
+  //     .replace(/'/g, '&#39;');
+  // }
+
+  // private static generateTextFallback(data: ImageData): Buffer {
+  //   const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ₦${data.operationDetails.amount.toLocaleString()}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: support@gosa.org`;
+  //   return Buffer.from(fallbackText, 'utf-8');
+  // }
+
+  /**
+   * Helper methods
+   */
+  // private static truncateText(text: string, maxLength: number): string {
+  //   if (!text) return '';
+  //   return text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text;
+  // }
+
+  // private static escapeXML(text: string): string {
+  //   if (!text) return '';
+  //   return text
+  //     .replace(/&/g, '&amp;')
+  //     .replace(/</g, '&lt;')
+  //     .replace(/>/g, '&gt;')
+  //     .replace(/"/g, '&quot;')
+  //     .replace(/'/g, '&#39;');
+  // }
+
+  // private static generateTextFallback(data: ImageData): Buffer {
+  //   const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ₦${data.operationDetails.amount.toLocaleString()}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: support@gosa.org`;
+  //   return Buffer.from(fallbackText, 'utf-8');
+  // }
 
 
   /**
