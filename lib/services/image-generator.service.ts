@@ -122,7 +122,7 @@ export class ImageGeneratorService {
       const ctx = canvas.getContext('2d');
 
       // Use better font specifications for serverless
-      const getFontString = (size, weight = 'normal') => {
+      const getFontString = (size = "14", weight = 'normal') => {
         // Try registered fonts first, fallback to web-safe fonts
         if (process.env.VERCEL) {
           // For Vercel, use only guaranteed web-safe fonts
