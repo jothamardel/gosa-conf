@@ -146,6 +146,7 @@ export function BadgePreview({ badge, onShareToggle, showActions = true }: Badge
 
           {/* Attendee Info */}
           <div className="text-center text-white">
+            <h3>I WILL BE ATTENDING</h3>
             <h4 className="font-bold text-lg mb-1">{badge.attendeeName}</h4>
             {badge.attendeeTitle && (
               <p className="text-white/90 text-sm mb-1">{badge.attendeeTitle}</p>
