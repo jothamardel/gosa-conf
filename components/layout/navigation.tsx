@@ -600,7 +600,7 @@ export function Navigation() {
             {/* Sign In Button for Guests */}
             {!isAuthenticated && status !== "loading" && (
               <div className="ml-4">
-                <Link href="/signin">
+                <Link href="/donate">
                   <Button
                     size="sm"
                     className="bg-gradient-to-r from-primary-600 to-secondary-500 hover:from-primary-700 hover:to-secondary-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
