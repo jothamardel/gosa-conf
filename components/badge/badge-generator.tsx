@@ -452,7 +452,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
                       className="object-contain"
                     />    
                   </div>
-                  <p className="text-xl font-medium text-green-800">
+                  <p className="text-sm font-medium text-green-800">
                     GOSA Convention {CONVENTION_YEAR}
                   </p>
                 </div>
