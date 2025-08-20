@@ -457,7 +457,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
                   </p>
                 </div>
                 
-                <div className="h-1 bg-gradient-to-r from-green-500 to-yellow-500 w-16 mx-auto mb-4 rounded-full"></div>
+                <div className="h-1 bg-gradient-to-r from-green-500 to-yellow-500 w-48  mx-auto mb-4 rounded-full"></div>
                 <h3 className="text-sm font-semibold uppercase tracking-widest text-green-600">
                   {formData.attendeeTitle || 'ATTENDEE'}
                 </h3>
@@ -490,13 +490,13 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
 
               {/* Convention Info */}
               <div className="border-t border-green-200 pt-4 space-y-2">
-                <div className="flex items-center justify-center gap-2 text-green-800">
+                <div className="flex items-center h-4 justify-center gap-2 text-green-800">
                   <Calendar className="w-4 h-4" />
                   <p className="text-sm font-medium">
                     23rd - 25th August {CONVENTION_YEAR}
                   </p>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-green-800">
+                <div className="flex items-center h-4 justify-center gap-2 text-green-800">
                   <MapPin className="w-4 h-4" />
                   <p className="text-sm font-medium">
                     GOSA Convention Center
