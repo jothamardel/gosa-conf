@@ -24,7 +24,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
   const [formData, setFormData] = useState({
     attendeeName: '',
     attendeeTitle: 'ATTENDEE',
-    organization: ''
+   
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -146,7 +146,6 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
       formDataToSend.append('userId', userId);
       formDataToSend.append('attendeeName', formData.attendeeName.trim());
       formDataToSend.append('attendeeTitle', formData.attendeeTitle.trim());
-      formDataToSend.append('organization', formData.organization.trim());
       formDataToSend.append('profilePhoto', selectedFile);
 
       const response = await fetch('/api/v1/badge/generate', {
@@ -453,7 +452,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
                       className="object-contain"
                     />    
                   </div>
-                  <p className="text-xl font-medium text-green-800">
+                  <p className="text-sm font-medium text-green-800">
                     GOSA Convention {CONVENTION_YEAR}
                   </p>
                 </div>
@@ -555,7 +554,6 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
                 setFormData({
                   attendeeName: '',
                   attendeeTitle: 'ATTENDEE',
-                  organization: ''
                 });
                 toast.success('🔄 Ready for New Badge!', {
                   description: 'You can create another badge now',
@@ -648,16 +646,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="organization">Organization (Optional)</Label>
-              <Input
-                id="organization"
-                placeholder="Your organization or company"
-                value={formData.organization}
-                onChange={(e) => handleInputChange('organization', e.target.value)}
-                maxLength={100}
-              />
-            </div>
+           
           </div>
 
           {/* Generate Button */}

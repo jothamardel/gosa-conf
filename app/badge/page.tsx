@@ -216,7 +216,7 @@ export default function BadgePage() {
 
   const triggerDownload = () => {
     if (!previewData.imageUrl || !previewData.name) return;
-    alert(`Downloading badge for ${previewData.name}`);
+   
   };
 
   return (
