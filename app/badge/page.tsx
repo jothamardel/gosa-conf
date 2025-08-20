@@ -237,7 +237,7 @@ export default function BadgePage() {
 </Link>
               <div>
                 <h1 className="text-2xl font-bold">GOSA Convention {CONVENTION_YEAR}</h1>
-                <p className="text-yellow-100">Create Your Digital Badge</p>
+                <p className="text-yellow-800">Create Your Digital Badge</p>
               </div>
             </div>
             <Button variant="outline" className="bg-white/10 hover:bg-white/20 hidden md-flex border-green-600">
