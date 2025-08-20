@@ -9,35 +9,35 @@ const galleryItems = [
     id: 1,
     title: "Keynote Sessions",
     description: "Industry leaders sharing insights with alumni",
-    image: "/gallery/keynote.jpg",
+    image: "/images/DSC_7137.jpg",
     category: "convention"
   },
   {
     id: 2,
     title: "Class Reunions",
     description: "Decade groups reuniting after years",
-    image: "/gallery/reunion.jpg",
+    image: "/images/DSC_7252.jpg",
     category: "reunion"
   },
   {
     id: 3,
     title: "Networking Mixers",
     description: "Professional connections across generations",
-    image: "/gallery/networking.jpg",
+    image: "/images/DSC_7718.jpg",
     category: "convention"
   },
   {
     id: 4,
     title: "Campus Tour",
     description: "Rediscovering our alma mater together",
-    image: "/gallery/campus.jpg",
+    image: "/images/DSC_7546.jpg",
     category: "reunion"
   },
   {
     id: 5,
     title: "Award Ceremony",
     description: "Recognizing outstanding alumni achievements",
-    image: "/gallery/awards.jpg",
+    image: "/images/DSC_7466.jpg",
     category: "convention"
   }
 ];

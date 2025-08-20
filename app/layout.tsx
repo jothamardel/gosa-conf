@@ -20,6 +20,11 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/images/gosa.png',
+    apple: '/images/gosa.png',
+  },
 };
 
 export default function RootLayout({
@@ -36,6 +41,12 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="GOSA Convention 2025" />
         <meta name="format-detection" content="telephone=no" />
+        
+        {/* Favicon links */}
+        <link rel="icon" href="/images/gosa.png" sizes="any" />
+        <link rel="icon" href="/images/gosa.png" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/images/gosa.png" />
+        <link rel="manifest" href="/images/gosa.png" />
       </head>
       <body className={`${inter.className} antialiased`}>
         <Providers>
