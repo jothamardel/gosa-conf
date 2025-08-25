@@ -24,7 +24,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
   const [formData, setFormData] = useState({
     attendeeName: '',
     attendeeTitle: 'ATTENDEE',
-   
+
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -42,16 +42,16 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
       ...prev,
       [field]: value
     }));
-    
+
     if (field === 'attendeeName' && onPreviewUpdate) {
       onPreviewUpdate(value, previewUrl || '');
     }
   };
-  
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-  
+
     if (!file.type.startsWith('image/')) {
       const errorMsg = 'Please select a valid image file (JPG, PNG, etc.)';
       setError(errorMsg);
@@ -74,10 +74,10 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
 
     setSelectedFile(file);
     setError(null);
-  
+
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
-    
+
     if (onPreviewUpdate) {
       onPreviewUpdate(formData.attendeeName, url);
     }
@@ -110,7 +110,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
       setError(null);
-      
+
       if (onPreviewUpdate) {
         onPreviewUpdate(formData.attendeeName, url);
       }
@@ -190,10 +190,10 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
 
     try {
       setIsDownloading(true);
-      
+
       // Wait a bit for any rendering to complete
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       // Create canvas with higher quality
       const canvas = await html2canvas(badgePreviewRef.current, {
         scale: 3,
@@ -210,7 +210,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
       const fileName = `${formData.attendeeName.replace(/\s+/g, '_')}_GOSA_Convention_${CONVENTION_YEAR}_Badge.png`;
       link.download = fileName;
       link.href = canvas.toDataURL('image/png', 1.0);
-      
+
       // Append to body, click, then remove
       document.body.appendChild(link);
       link.click();
@@ -238,10 +238,10 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
 
     try {
       setIsSharing(true);
-      
+
       // Wait a bit for any rendering to complete
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       // Create canvas for sharing
       const canvas = await html2canvas(badgePreviewRef.current, {
         scale: 2,
@@ -262,7 +262,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
 
         try {
           const file = new File([blob], `${formData.attendeeName}_GOSA_Badge.png`, { type: 'image/png' });
-          
+
           // Check if Web Share API is available and supports files
           if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({
@@ -274,7 +274,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
           } else {
             // Fallback: Copy image data URL to clipboard
             const dataUrl = canvas.toDataURL('image/png');
-            
+
             // Try to copy to clipboard
             if (navigator.clipboard && navigator.clipboard.write) {
               try {
@@ -436,40 +436,41 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex justify-center">
-            <div 
+            <div
               ref={badgePreviewRef}
               className="w-full max-w-xs rounded-xl bg-gradient-to-b from-green-100 to-yellow-50 p-6 text-center border-2 border-green-200 shadow-inner"
             >
               {/* Badge Design */}
               <div className="mb-6">
                 <div className='flex gap-2 items-center justify-center mb-4'>
-                  <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
-                    <Image 
-                      src="/images/gosa.png" 
-                      alt="GOSA Logo" 
-                      width={48} 
-                      height={48} 
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center">
+                    <Image
+                      src="/images/gosa.png"
+                      alt="GOSA Logo"
+                      width={48}
+                      height={48}
                       className="object-contain"
-                    />    
+                    />
                   </div>
-                  <p className="text-sm font-medium text-green-800">
+                  <p className="text-xs md:text-sm font-medium text-green-800">
                     GOSA Convention {CONVENTION_YEAR}
                   </p>
                 </div>
-                
-                <div className="h-1 bg-gradient-to-r from-green-500 to-yellow-500 w-16 mx-auto mb-4 rounded-full"></div>
+
+                <div className="h-1 bg-gradient-to-r from-green-500 to-yellow-500 w-48  mx-auto mb-4 rounded-full"></div>
                 <h3 className="text-sm font-semibold uppercase tracking-widest text-green-600">
                   {formData.attendeeTitle || 'ATTENDEE'}
                 </h3>
               </div>
 
               {/* Profile Image */}
+              {/* Profile Image */}
               <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-yellow-100 to-green-100 border-4 border-yellow-300 overflow-hidden mx-auto mb-4 shadow-md">
                 {previewUrl ? (
-                  <img 
-                    src={previewUrl} 
-                    alt="Badge Photo" 
-                    className="w-full h-full object-cover"
+                  <img
+                    src={previewUrl}
+                    alt="Badge Photo"
+                    className="w-full h-full object-cover object-center"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -490,13 +491,13 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
 
               {/* Convention Info */}
               <div className="border-t border-green-200 pt-4 space-y-2">
-                <div className="flex items-center justify-center gap-2 text-green-800">
+                <div className="flex items-center h-4 justify-center gap-2 text-green-800">
                   <Calendar className="w-4 h-4" />
                   <p className="text-sm font-medium">
                     23rd - 25th August {CONVENTION_YEAR}
                   </p>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-green-800">
+                <div className="flex items-center h-4 justify-center gap-2 text-green-800">
                   <MapPin className="w-4 h-4" />
                   <p className="text-sm font-medium">
                     GOSA Convention Center
@@ -507,7 +508,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button 
+            <Button
               onClick={handleDownloadBadge}
               className="w-full bg-green-600 hover:bg-green-700 text-white"
               size="lg"
@@ -524,9 +525,9 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
                 </>
               )}
             </Button>
-            <Button 
+            <Button
               onClick={handleShareBadge}
-              variant="outline" 
+              variant="outline"
               className="w-full border-green-600 text-green-600 hover:bg-green-50"
               size="lg"
               disabled={isSharing}
@@ -646,7 +647,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
               />
             </div>
 
-           
+
           </div>
 
           {/* Generate Button */}
