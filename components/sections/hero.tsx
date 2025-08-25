@@ -233,16 +233,16 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden py-8 sm:py-16 lg:py-20">
       {/* Background Image */}
-      <div 
+      <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: "url('/images/DSC_7550.jpg')", // Replace with your image path
         }}
       ></div>
-      
+
       {/* White Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/90 via-white/85 to-white/80"></div>
-      
+
       {/* Additional Color Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary-50/60 via-transparent to-secondary-50/40"></div>
 
@@ -255,6 +255,8 @@ export function Hero() {
           <img
             src="/images/gosa.png"
             alt="GOSA Logo"
+            // width="32px"
+            // height="32px"
             className="w-32 sm:w-40 md:w-48 lg:w-52 h-auto object-contain"
           />
         </div>
