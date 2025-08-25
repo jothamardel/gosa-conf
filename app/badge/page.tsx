@@ -200,6 +200,7 @@ export default function BadgePage() {
   });
   const [showPreview, setShowPreview] = useState(true); // New state to control preview visibility
 
+  const now = new Date()
   const handleBadgeGenerated = (badge: any) => {
     setShowPreview(false); // Hide preview when badge is generated
     triggerDownload();
@@ -216,7 +217,7 @@ export default function BadgePage() {
 
   const triggerDownload = () => {
     if (!previewData.imageUrl || !previewData.name) return;
-   
+
   };
 
   return (
@@ -227,11 +228,11 @@ export default function BadgePage() {
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center gap-4 mb-4 md:mb-0">
             <Link href="/">
-            <Image 
-                src="/images/gosa.png" 
-                alt="GOSA Logo" 
-                width={48} 
-                height={48} 
+            <Image
+                src="/images/gosa.png"
+                alt="GOSA Logo"
+                width={48}
+                height={48}
                 className="rounded-full border-2 border-white"
               />
 </Link>
@@ -274,24 +275,33 @@ export default function BadgePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex justify-center">
-                    <div className="w-full max-w-xs rounded-xl bg-gradient-to-b from-green-100 to-yellow-50 p-6 text-center border-2 border-green-200 shadow-inner">
+                  <div className="flex justify-center relative" >
+                    <div className="overflow-hidden w-full max-w-xs rounded-xl bg-gradient-to-b from-green-100 to-yellow-50 p-6 text-center border-2 border-green-200 shadow-inner">
+
                       {/* Badge Design */}
-                      <div className="mb-6">
-                        <div className='flex gap-2 items-center justify-center mb-4'>
-                          <Image 
-                            src={'/images/gosa.png'} 
-                            alt="GOSA Logo" 
-                            width={48} 
-                            height={48} 
-                            className="rounded-full border-2 border-green-500"
+                        {/*<div
+                          className="absolute bg-cover bg-center bg-no-repeat"
+                          style={{
+                            backgroundImage: "url('/images/gosa.png')", // Replace with your image path
+                          }}
+                          />*/}
+                      <div className="mb-6" >
+                        <div className='flex flex-col  items-center justify-center mb-2'>
+                          <div className="w-18 h-18 object-contain rounded-full flex justify-center items-center">
+                          <Image
+                            src={'/images/gosa.png'}
+                            alt="GOSA Logo"
+                            width={48}
+                            height={48}
+                            className=" "
                           />
-                          <p className="text-xl font-medium text-green-800">
-                            GOSA Convention 2025
+                          </div>
+                          <p className="text-lg font-medium text-green-800">
+                            GOSA Convention {now.getFullYear()}
                           </p>
                         </div>
-                        
-                        <div className="h-1 bg-gradient-to-r from-green-500 to-yellow-500 w-16 mx-auto mb-4 rounded-full"></div>
+
+                        <div className="h-1 bg-gradient-to-r from-green-500 to-yellow-500 w-16 mx-auto mb-2 rounded-full"></div>
                         <h3 className="text-sm font-semibold uppercase tracking-widest text-green-600">
                           {previewData.title}
                         </h3>
@@ -300,9 +310,9 @@ export default function BadgePage() {
                       {/* Profile Image */}
                       <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-yellow-100 to-green-100 border-4 border-yellow-300 overflow-hidden mx-auto mb-4 shadow-md">
                         {previewData.imageUrl ? (
-                          <img 
-                            src={previewData.imageUrl} 
-                            alt="Preview" 
+                          <img
+                            src={previewData.imageUrl}
+                            alt="Preview"
                             className="w-full h-full object-cover"
                           />
                         ) : (

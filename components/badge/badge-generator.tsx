@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge, Share2 } from 'lucide-react';
@@ -18,12 +19,14 @@ interface BadgeGeneratorProps {
   onPreviewUpdate?: (name: string, imageUrl: string) => void;
 }
 
-const CONVENTION_YEAR = '2025';
+const CONVENTION_YEAR = new Date().getFullYear();
 
 export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: BadgeGeneratorProps) {
   const [formData, setFormData] = useState({
     attendeeName: '',
     attendeeTitle: 'ATTENDEE',
+    year: "",
+    house: ''
 
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -239,19 +242,44 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
     try {
       setIsSharing(true);
 
+      const element = badgePreviewRef.current;
+      // Get the actual rendered dimensions
+         const rect = element.getBoundingClientRect();
+         console.log('Element dimensions:', rect.width, rect.height);
+         // Force a reflow and wait
+             element.style.position = 'relative';
+             element.style.zIndex = '9999';
       // Wait a bit for any rendering to complete
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      console.log({
+        badgePreviewRef
+      })
+
       // Create canvas for sharing
       const canvas = await html2canvas(badgePreviewRef.current, {
-        scale: 2,
-        logging: false,
+        scale: 3, // Reduced scale to prevent memory issues
+        logging: true, // Enable logging to debug
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        width: badgePreviewRef.current.offsetWidth,
-        height: badgePreviewRef.current.offsetHeight
+        // Use actual dimensions instead of fixed ones
+        width: Math.floor(rect.width),
+        height: Math.floor(rect.height),
+        windowWidth: window.innerWidth,
+        windowHeight: window.innerHeight,
+        scrollX: 0,
+        scrollY: 0,
+        // Add these options to improve rendering
+        letterRendering: true,
+        foreignObjectRendering: true,
+        // width: badgePreviewRef.current.offsetWidth,
+        // height: badgePreviewRef.current.offsetHeight,
       });
+
+      // Reset element styles
+          element.style.position = '';
+          element.style.zIndex = '';
 
       // Convert canvas to blob
       canvas.toBlob(async (blob) => {
@@ -322,10 +350,10 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
             <title>GOSA Badge - ${formData.attendeeName}</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-              body { 
-                font-family: Arial, sans-serif; 
-                padding: 20px; 
-                text-align: center; 
+              body {
+                font-family: Arial, sans-serif;
+                padding: 20px;
+                text-align: center;
                 background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
                 margin: 0;
                 min-height: 100vh;
@@ -342,25 +370,25 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
                 max-width: 600px;
                 width: 100%;
               }
-              img { 
-                max-width: 100%; 
-                height: auto; 
-                margin: 20px 0; 
+              img {
+                max-width: 100%;
+                height: auto;
+                margin: 20px 0;
                 border-radius: 8px;
                 box-shadow: 0 2px 10px rgba(0,0,0,0.1);
               }
-              .buttons { 
-                margin-top: 20px; 
+              .buttons {
+                margin-top: 20px;
                 display: flex;
                 gap: 10px;
                 justify-content: center;
                 flex-wrap: wrap;
               }
-              button { 
-                padding: 12px 20px; 
+              button {
+                padding: 12px 20px;
                 border: none;
                 border-radius: 6px;
-                cursor: pointer; 
+                cursor: pointer;
                 font-weight: 500;
                 transition: all 0.2s;
               }
@@ -435,56 +463,65 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex justify-center">
+          <div className="flex justify-center"
+
+          >
             <div
               ref={badgePreviewRef}
               className="w-full max-w-xs rounded-xl bg-gradient-to-b from-green-100 to-yellow-50 p-6 text-center border-2 border-green-200 shadow-inner"
             >
-              {/* Badge Design */}
+
               <div className="mb-6">
-                <div className='flex gap-2 items-center justify-center mb-4'>
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center">
+                <div className='flex gap-2 items-center flex-col justify-center mb-2'>
+                  <div className="w-12 h-12 flex items-center  justify-center">
+                    <div className="w-12 h-12 object-contain rounded-full flex justify-center items-center">
                     <Image
-                      src="/images/gosa.png"
+                      src={'/images/gosa.png'}
                       alt="GOSA Logo"
                       width={48}
                       height={48}
-                      className="object-contain"
+                      className=" "
                     />
+                    </div>
                   </div>
                   <p className="text-xs md:text-sm font-medium text-green-800">
                     GOSA Convention {CONVENTION_YEAR}
                   </p>
                 </div>
 
-                <div className="h-1 bg-gradient-to-r from-green-500 to-yellow-500 w-48  mx-auto mb-4 rounded-full"></div>
+                <div className="h-1 bg-gradient-to-r from-green-500 to-yellow-500 w-48  mx-auto mb-2 rounded-full"></div>
                 <h3 className="text-sm font-semibold uppercase tracking-widest text-green-600">
                   {formData.attendeeTitle || 'ATTENDEE'}
                 </h3>
               </div>
 
+
               {/* Profile Image */}
-              {/* Profile Image */}
-              <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-yellow-100 to-green-100 border-4 border-yellow-300 overflow-hidden mx-auto mb-4 shadow-md">
+              <div
+                className="flex justify-center items-center overflow-hidden object-contain object-center relative w-32 h-32 rounded-full bg-gradient-to-br from-yellow-100 to-green-100  overflow-hidden mx-auto mb-4 shadow-md"
+              >
+                <div className="w-32 h-32 overflow-hidden rounded-full flex justify-center items-center">
+
                 {previewUrl ? (
                   <img
                     src={previewUrl}
                     alt="Badge Photo"
-                    className="w-full h-full object-cover object-center"
+                    className="w-full  object-cover "
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
                     <Upload className="w-8 h-8" />
                   </div>
                 )}
+                </div>
               </div>
 
               {/* Name */}
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-green-900">
+                <h2 className="text-lg font-bold text-green-900">
                   {formData.attendeeName}
                 </h2>
-                <p className="text-green-700 mt-2 font-medium">
+                <p className="text-green-700 mt-2 font-medium text-sm">
                   WILL BE ATTENDING
                 </p>
               </div>
@@ -572,6 +609,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
     );
   }
 
+
   return (
     <Card className="w-full max-w-2xl mx-auto bg-white/90 backdrop-blur-sm border border-primary-200 shadow-xl">
       <CardHeader className="bg-gradient-to-r from-primary-50 to-secondary-50">
@@ -645,6 +683,22 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
                 onChange={(e) => handleInputChange('attendeeName', e.target.value)}
                 maxLength={100}
               />
+
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Year *</Label>
+              <Input
+                id="year"
+                placeholder="Enter graduation year"
+                value={formData.year}
+                onChange={(e) => handleInputChange('year', e.target.value)}
+                maxLength={100}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">House *</Label>
+
+              <Select data={[{name: "House 1"}]}/>
             </div>
 
 
@@ -665,7 +719,7 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
             ) : (
               <>
                 <ImageIcon className="h-4 w-4 mr-2" />
-                ✨ Generate GOSA Badge
+                ✨ Generate Your Badge
               </>
             )}
           </Button>
