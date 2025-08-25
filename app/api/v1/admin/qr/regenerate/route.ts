@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { QRCodeService } from '@/lib/services/qr-code.service';
-import { connectToDatabase } from '@/lib/mongodb';
+import { NextRequest, NextResponse } from "next/server";
+import { QRCodeService } from "@/lib/services/qr-code.service";
+import { connectToDatabase } from "@/lib/mongodb";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,23 +11,29 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!serviceType || !serviceId || !adminId) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'serviceType, serviceId, and adminId are required' 
+        {
+          success: false,
+          error: "serviceType, serviceId, and adminId are required",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Validate service type
-    const validServiceTypes = ['convention', 'dinner', 'accommodation', 'brochure'];
+    const validServiceTypes = [
+      "convention",
+      "dinner",
+      "accommodation",
+      "brochure",
+    ];
     if (!validServiceTypes.includes(serviceType)) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Invalid service type. Must be one of: convention, dinner, accommodation, brochure' 
+        {
+          success: false,
+          error:
+            "Invalid service type. Must be one of: convention, dinner, accommodation, brochure",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -36,16 +42,16 @@ export async function POST(request: NextRequest) {
       serviceType,
       serviceId,
       adminId,
-      reason
+      reason,
     );
 
     if (!result.success) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: result.message 
+        {
+          success: false,
+          error: result.message,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -55,57 +61,56 @@ export async function POST(request: NextRequest) {
         oldQRCode: result.oldQRCode,
         newQRCode: result.newQRCode,
         historyId: result.historyId,
-        message: result.message
-      }
-    });
-
-  } catch (error: any) {
-    console.error('QR code regeneration error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to regenerate QR code' 
+        message: result.message,
       },
-      { status: 500 }
+    });
+  } catch (error: any) {
+    console.error("QR code regeneration error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to regenerate QR code",
+      },
+      { status: 500 },
     );
   }
 }
 
+export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
 
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const userId = searchParams.get("userId");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
 
     if (userId) {
       // Get regeneration history for specific user
       const history = await QRCodeService.getRegenerationHistory(userId);
-      
+
       return NextResponse.json({
         success: true,
-        data: { history }
+        data: { history },
       });
     } else {
       // Get all regeneration history (admin view)
       const result = await QRCodeService.getAllRegenerationHistory(page, limit);
-      
+
       return NextResponse.json({
         success: true,
-        data: result
+        data: result,
       });
     }
-
   } catch (error: any) {
-    console.error('Get QR regeneration history error:', error);
+    console.error("Get QR regeneration history error:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to retrieve regeneration history' 
+      {
+        success: false,
+        error: "Failed to retrieve regeneration history",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

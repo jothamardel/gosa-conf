@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PDFGeneratorService } from '@/lib/services/pdf-generator.service';
-import { PDFData } from '@/lib/types';
+import { NextRequest, NextResponse } from "next/server";
+import { PDFGeneratorService } from "@/lib/services/pdf-generator.service";
+import { PDFData } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,9 +11,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Missing required fields: userDetails, operationDetails, and qrCodeData are required'
+          error:
+            "Missing required fields: userDetails, operationDetails, and qrCodeData are required",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
         name: body.userDetails.name,
         email: body.userDetails.email,
         phone: body.userDetails.phone,
-        registrationId: body.userDetails.registrationId
+        registrationId: body.userDetails.registrationId,
       },
       operationDetails: {
         type: body.operationDetails.type,
@@ -32,9 +33,9 @@ export async function POST(request: NextRequest) {
         date: new Date(body.operationDetails.date),
         status: body.operationDetails.status,
         description: body.operationDetails.description,
-        additionalInfo: body.operationDetails.additionalInfo
+        additionalInfo: body.operationDetails.additionalInfo,
       },
-      qrCodeData: body.qrCodeData
+      qrCodeData: body.qrCodeData,
     };
 
     // Generate PDF HTML
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     // Generate filename
     const filename = PDFGeneratorService.generateFilename(
       pdfData.userDetails,
-      pdfData.operationDetails.type
+      pdfData.operationDetails.type,
     );
 
     return NextResponse.json({
@@ -52,22 +53,22 @@ export async function POST(request: NextRequest) {
         html: pdfHTML,
         filename,
         userDetails: pdfData.userDetails,
-        operationType: pdfData.operationDetails.type
-      }
+        operationType: pdfData.operationDetails.type,
+      },
     });
-
   } catch (error: any) {
-    console.error('PDF generation error:', error);
+    console.error("PDF generation error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to generate PDF. Please try again.'
+        error: "Failed to generate PDF. Please try again.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
+export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -75,40 +76,40 @@ export async function GET(request: NextRequest) {
     // Example usage endpoint - shows how to use the PDF generator
     const exampleData: PDFData = {
       userDetails: {
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        phone: '+234 123 456 7890',
-        registrationId: 'GOSA2025-001'
+        name: "John Doe",
+        email: "john.doe@example.com",
+        phone: "+234 123 456 7890",
+        registrationId: "GOSA2025-001",
       },
       operationDetails: {
-        type: 'convention',
+        type: "convention",
         amount: 50000,
-        paymentReference: 'PAY_123456789',
+        paymentReference: "PAY_123456789",
         date: new Date(),
-        status: 'confirmed',
-        description: 'Convention registration with accommodation and dinner package',
-        additionalInfo: 'Includes welcome package and conference materials'
+        status: "confirmed",
+        description:
+          "Convention registration with accommodation and dinner package",
+        additionalInfo: "Includes welcome package and conference materials",
       },
-      qrCodeData: 'GOSA2025-CONV-001-JOHN-DOE'
+      qrCodeData: "GOSA2025-CONV-001-JOHN-DOE",
     };
 
     const pdfHTML = await PDFGeneratorService.generatePDFHTML(exampleData);
 
     return new NextResponse(pdfHTML, {
       headers: {
-        'Content-Type': 'text/html',
-        'Cache-Control': 'no-cache'
-      }
+        "Content-Type": "text/html",
+        "Cache-Control": "no-cache",
+      },
     });
-
   } catch (error: any) {
-    console.error('PDF preview error:', error);
+    console.error("PDF preview error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to generate PDF preview'
+        error: "Failed to generate PDF preview",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
