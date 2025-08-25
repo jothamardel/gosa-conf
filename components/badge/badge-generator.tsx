@@ -271,7 +271,9 @@ export function BadgeGenerator({ userId, onBadgeGenerated, onPreviewUpdate }: Ba
         scrollX: 0,
         scrollY: 0,
         // Add these options to improve rendering
+        // @ts-ignore
         letterRendering: true,
+        // @ts-ignore
         foreignObjectRendering: true,
         // width: badgePreviewRef.current.offsetWidth,
         // height: badgePreviewRef.current.offsetHeight,
