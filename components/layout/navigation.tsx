@@ -368,6 +368,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
+import Image from "next/image";
 
 // Type definitions
 interface NavItem {
@@ -492,8 +493,8 @@ export function Navigation() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-secondary-500 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform duration-200 shadow-lg">
-                <Calendar className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 flex items-center justify-center group-hover:scale-105 transition-transform duration-200 shadow-lg">
+                <Image src={"/images/gosa.png"} alt="" className="w-10 h-10 text-white" />
               </div>
               <div className="flex flex-col">
                 <span className="text-xl font-bold gradient-text">
@@ -600,7 +601,7 @@ export function Navigation() {
             {/* Sign In Button for Guests */}
             {!isAuthenticated && status !== "loading" && (
               <div className="ml-4">
-                <Link href="/signin">
+                <Link href="/donate">
                   <Button
                     size="sm"
                     className="bg-gradient-to-r from-primary-600 to-secondary-500 hover:from-primary-700 hover:to-secondary-600 text-white shadow-md hover:shadow-lg transition-all duration-200"

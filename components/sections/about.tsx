@@ -3,6 +3,7 @@
 import { GraduationCap, Users, Handshake, Calendar, Sparkles, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function AboutSection() {
   return (
@@ -112,10 +113,12 @@ export default function AboutSection() {
             <div className="md:w-1/2 md:pl-10">
               <div className="bg-white p-1 rounded-lg shadow-lg border border-gray-200">
                 <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-md overflow-hidden">
-                  <img 
-                    src="/convention-preview.jpg" 
+                  <Image   
+                    src="/images/DSC_7550.jpg" 
                     alt="2023 Alumni Convention Highlights"
                     className="object-cover w-full h-full"
+                    width={640}
+                    height={360}
                   />
                 </div>
                 <div className="p-4 text-center">
