@@ -1,7 +1,7 @@
-import { PDFData } from '@/lib/types';
-import * as QRCode from 'qrcode';
+import { PDFData } from "@/lib/types";
+import * as QRCode from "qrcode";
 
-export interface ImageData extends PDFData { }
+export interface ImageData extends PDFData {}
 
 export class ImageGeneratorService {
   /**
@@ -21,35 +21,46 @@ export class ImageGeneratorService {
    */
   static async generateImageBuffer(data: ImageData): Promise<Buffer> {
     try {
-      console.log(`[IMAGE-GENERATOR] Generating image for ${data.operationDetails.paymentReference}`);
+      console.log(
+        `[IMAGE-GENERATOR] Generating image for ${data.operationDetails.paymentReference}`,
+      );
 
       // Check if we're on Vercel
-      const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+      const isVercel = process.env.VERCEL === "1" || process.env.VERCEL_ENV;
 
       if (isVercel) {
-        console.log('[IMAGE-GENERATOR] Running on Vercel, using canvas-based generation');
+        console.log(
+          "[IMAGE-GENERATOR] Running on Vercel, using canvas-based generation",
+        );
         return await this.generateCanvasImage(data);
       } else {
         // Try Sharp for local development
         try {
-          const sharp = require('sharp');
+          const sharp = require("sharp");
           const svgContent = await this.generateSVGContent(data);
 
           const pngBuffer = await sharp(Buffer.from(svgContent))
             .png({ quality: 90, compressionLevel: 6 })
-            .resize(800, 1200, { fit: 'inside', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+            .resize(800, 1200, {
+              fit: "inside",
+              background: { r: 255, g: 255, b: 255, alpha: 1 },
+            })
             .toBuffer();
 
-          console.log(`[IMAGE-GENERATOR] Sharp conversion successful (${pngBuffer.length} bytes)`);
+          console.log(
+            `[IMAGE-GENERATOR] Sharp conversion successful (${pngBuffer.length} bytes)`,
+          );
           return pngBuffer;
         } catch (sharpError) {
-          console.warn('[IMAGE-GENERATOR] Sharp failed, falling back to canvas:', sharpError);
+          console.warn(
+            "[IMAGE-GENERATOR] Sharp failed, falling back to canvas:",
+            sharpError,
+          );
           return await this.generateCanvasImage(data);
         }
       }
-
     } catch (error) {
-      console.error('[IMAGE-GENERATOR] Critical error:', error);
+      console.error("[IMAGE-GENERATOR] Critical error:", error);
       return this.generateTextFallback(data);
     }
   }
@@ -59,26 +70,26 @@ export class ImageGeneratorService {
    */
   private static async generateCanvasImage(data: ImageData): Promise<Buffer> {
     try {
-      const { createCanvas, loadImage, registerFont } = require('canvas');
+      const { createCanvas, loadImage, registerFont } = require("canvas");
 
       // Set environment variables to avoid fontconfig errors
-      process.env.FONTCONFIG_PATH = process.env.FONTCONFIG_PATH || '/dev/null';
-      process.env.FC_CONFIG_FILE = process.env.FC_CONFIG_FILE || '/dev/null';
+      process.env.FONTCONFIG_PATH = process.env.FONTCONFIG_PATH || "/dev/null";
+      process.env.FC_CONFIG_FILE = process.env.FC_CONFIG_FILE || "/dev/null";
 
       let fontRegistered = false;
 
       // Register fonts more safely for serverless environments
       try {
-        const fs = require('fs');
-        const path = require('path');
+        const fs = require("fs");
+        const path = require("path");
 
         // Updated font paths to match your actual file
         const projectFontPaths = [
-          path.join(process.cwd(), 'public', 'fonts', 'InterVariable.ttf'),
-          path.join(process.cwd(), 'public', 'fonts', 'Inter-Regular.ttf'),
-          path.join(process.cwd(), 'public', 'fonts', 'Inter-Bold.ttf'),
-          path.join(process.cwd(), 'assets', 'fonts', 'Inter-Regular.ttf'),
-          path.join(process.cwd(), 'fonts', 'Inter-Regular.ttf'),
+          path.join(process.cwd(), "public", "fonts", "InterVariable.ttf"),
+          path.join(process.cwd(), "public", "fonts", "Inter-Regular.ttf"),
+          path.join(process.cwd(), "public", "fonts", "Inter-Bold.ttf"),
+          path.join(process.cwd(), "assets", "fonts", "Inter-Regular.ttf"),
+          path.join(process.cwd(), "fonts", "Inter-Regular.ttf"),
         ];
 
         // Try to register project fonts
@@ -86,32 +97,59 @@ export class ImageGeneratorService {
           try {
             if (fs.existsSync(fontPath)) {
               // Register multiple variants from the same file
-              registerFont(fontPath, { family: 'Inter', weight: 'normal', style: 'normal' });
-              registerFont(fontPath, { family: 'Inter', weight: 'bold', style: 'normal' });
-              console.log(`[IMAGE-GENERATOR] Registered project font: ${fontPath}`);
+              registerFont(fontPath, {
+                family: "Inter",
+                weight: "normal",
+                style: "normal",
+              });
+              registerFont(fontPath, {
+                family: "Inter",
+                weight: "bold",
+                style: "normal",
+              });
+              console.log(
+                `[IMAGE-GENERATOR] Registered project font: ${fontPath}`,
+              );
               fontRegistered = true;
               break;
             }
           } catch (fontError) {
-            console.warn(`[IMAGE-GENERATOR] Failed to register font ${fontPath}:`, fontError);
+            console.warn(
+              `[IMAGE-GENERATOR] Failed to register font ${fontPath}:`,
+              fontError,
+            );
             continue;
           }
         }
 
         // Only try system fonts if no project fonts were registered
-        if (!fontRegistered && !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+        if (
+          !fontRegistered &&
+          !process.env.VERCEL &&
+          !process.env.AWS_LAMBDA_FUNCTION_NAME
+        ) {
           const systemFontPaths = [
-            '/System/Library/Fonts/Arial.ttf', // macOS
-            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', // Linux
-            '/Windows/Fonts/arial.ttf', // Windows
+            "/System/Library/Fonts/Arial.ttf", // macOS
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", // Linux
+            "/Windows/Fonts/arial.ttf", // Windows
           ];
 
           for (const fontPath of systemFontPaths) {
             try {
               if (fs.existsSync(fontPath)) {
-                registerFont(fontPath, { family: 'SystemFont', weight: 'normal', style: 'normal' });
-                registerFont(fontPath, { family: 'SystemFont', weight: 'bold', style: 'normal' });
-                console.log(`[IMAGE-GENERATOR] Registered system font: ${fontPath}`);
+                registerFont(fontPath, {
+                  family: "SystemFont",
+                  weight: "normal",
+                  style: "normal",
+                });
+                registerFont(fontPath, {
+                  family: "SystemFont",
+                  weight: "bold",
+                  style: "normal",
+                });
+                console.log(
+                  `[IMAGE-GENERATOR] Registered system font: ${fontPath}`,
+                );
                 fontRegistered = true;
                 break;
               }
@@ -121,27 +159,30 @@ export class ImageGeneratorService {
           }
         }
       } catch (fontRegError) {
-        console.warn('[IMAGE-GENERATOR] Font registration error:', fontRegError);
+        console.warn(
+          "[IMAGE-GENERATOR] Font registration error:",
+          fontRegError,
+        );
       }
 
       // Create canvas
       const width = 800;
       const height = 1200;
       const canvas = createCanvas(width, height);
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
 
-      console.log({ fontRegistered })
+      console.log({ fontRegistered });
 
       // Improved font string function
-      const getFontString = (size = "14", weight = 'normal') => {
+      const getFontString = (size = "14", weight = "normal") => {
         let fontFamily;
 
         if (fontRegistered) {
           // Use registered fonts
-          fontFamily = 'Inter, SystemFont, Arial, sans-serif';
+          fontFamily = "Inter, SystemFont, Arial, sans-serif";
         } else {
           // Fallback to basic system fonts
-          fontFamily = 'Arial, Helvetica, sans-serif';
+          fontFamily = "Arial, Helvetica, sans-serif";
         }
 
         return `${weight} ${size}px ${fontFamily}`;
@@ -149,30 +190,30 @@ export class ImageGeneratorService {
 
       // Set text rendering properties for better quality
       try {
-        ctx.textRenderingOptimization = 'optimizeQuality';
-        ctx.antialias = 'default';
-        ctx.textBaseline = 'alphabetic'; // More reliable baseline
+        ctx.textRenderingOptimization = "optimizeQuality";
+        ctx.antialias = "default";
+        ctx.textBaseline = "alphabetic"; // More reliable baseline
       } catch (renderError) {
         // These properties might not be available in all environments
       }
 
       // Set background
-      ctx.fillStyle = '#F9FAFB';
+      ctx.fillStyle = "#F9FAFB";
       ctx.fillRect(0, 0, width, height);
 
       // Main container
-      ctx.fillStyle = 'white';
+      ctx.fillStyle = "white";
       ctx.fillRect(40, 40, 720, 1120);
-      ctx.strokeStyle = '#E5E7EB';
+      ctx.strokeStyle = "#E5E7EB";
       ctx.lineWidth = 1;
       ctx.strokeRect(40, 40, 720, 1120);
 
       // Header background
-      ctx.fillStyle = '#16A34A';
+      ctx.fillStyle = "#16A34A";
       ctx.fillRect(60, 60, 680, 100);
 
       // Logo circle
-      ctx.fillStyle = 'white';
+      ctx.fillStyle = "white";
       ctx.beginPath();
       ctx.arc(120, 110, 30, 0, 2 * Math.PI);
       ctx.fill();
@@ -185,168 +226,186 @@ export class ImageGeneratorService {
           ctx.drawImage(logoImage, 95, 85, 50, 50);
         } else {
           // Fallback logo text
-          ctx.fillStyle = '#16A34A';
-          ctx.font = getFontString('14', 'bold');
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('GOSA', 120, 110);
+          ctx.fillStyle = "#16A34A";
+          ctx.font = getFontString("14", "bold");
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("GOSA", 120, 110);
         }
       } catch (logoError) {
-        console.warn('[IMAGE-GENERATOR] Logo loading failed:', logoError);
+        console.warn("[IMAGE-GENERATOR] Logo loading failed:", logoError);
         // Draw fallback
-        ctx.fillStyle = '#16A34A';
-        ctx.font = getFontString('14', 'bold');
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('GOSA', 120, 110);
+        ctx.fillStyle = "#16A34A";
+        ctx.font = getFontString("14", "bold");
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("GOSA", 120, 110);
       }
 
       // Header text
-      ctx.fillStyle = 'white';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.font = getFontString('24', 'bold');
-      ctx.fillText('GOSA 2025 Convention', 170, 85);
+      ctx.fillStyle = "white";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.font = getFontString("24", "bold");
+      ctx.fillText("GOSA 2025 Convention", 170, 85);
 
-      ctx.font = getFontString('16', 'normal');
-      ctx.fillText('Payment Receipt', 170, 110);
+      ctx.font = getFontString("16", "normal");
+      ctx.fillText("Payment Receipt", 170, 110);
 
-      ctx.font = getFontString('14', 'normal');
+      ctx.font = getFontString("14", "normal");
       ctx.fillText(this.getServiceTitle(data.operationDetails.type), 170, 130);
 
       // Amount section
-      ctx.fillStyle = '#F0FDF4';
+      ctx.fillStyle = "#F0FDF4";
       ctx.fillRect(80, 200, 640, 80);
-      ctx.strokeStyle = '#16A34A';
+      ctx.strokeStyle = "#16A34A";
       ctx.strokeRect(80, 200, 640, 80);
 
-      ctx.fillStyle = '#6B7280';
-      ctx.font = getFontString('11', 'bold');
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText('AMOUNT PAID', 400, 220);
+      ctx.fillStyle = "#6B7280";
+      ctx.font = getFontString("11", "bold");
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("AMOUNT PAID", 400, 220);
 
-      ctx.fillStyle = '#16A34A';
-      ctx.font = getFontString('32', 'bold');
-      ctx.textAlign = 'center';
-      ctx.fillText(`₦${data.operationDetails.amount.toLocaleString()}`, 400, 245);
+      ctx.fillStyle = "#16A34A";
+      ctx.font = getFontString("32", "bold");
+      ctx.textAlign = "center";
+      ctx.fillText(
+        `₦${data.operationDetails.amount.toLocaleString()}`,
+        400,
+        245,
+      );
 
       // Success indicator
-      ctx.fillStyle = '#DCFCE7';
+      ctx.fillStyle = "#DCFCE7";
       ctx.fillRect(350, 275, 100, 25);
-      ctx.fillStyle = '#16A34A';
+      ctx.fillStyle = "#16A34A";
       ctx.beginPath();
       ctx.arc(365, 287, 4, 0, 2 * Math.PI);
       ctx.fill();
-      ctx.font = getFontString('14', 'bold');
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('Successful', 375, 287);
+      ctx.font = getFontString("14", "bold");
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Successful", 375, 287);
 
       // Personal details section
-      ctx.fillStyle = '#FAFAFA';
+      ctx.fillStyle = "#FAFAFA";
       ctx.fillRect(80, 320, 640, 120);
-      ctx.strokeStyle = '#E5E7EB';
+      ctx.strokeStyle = "#E5E7EB";
       ctx.strokeRect(80, 320, 640, 120);
 
-      ctx.fillStyle = '#6B7280';
-      ctx.font = getFontString('11', 'bold');
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText('PERSONAL INFORMATION', 100, 340);
+      ctx.fillStyle = "#6B7280";
+      ctx.font = getFontString("11", "bold");
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText("PERSONAL INFORMATION", 100, 340);
 
       // Personal details with consistent spacing
       const personalDetails = [
-        { label: 'Name:', value: this.truncateText(data.userDetails.name, 35), y: 360 },
-        { label: 'Email:', value: this.truncateText(data.userDetails.email, 35), y: 395 }
+        {
+          label: "Name:",
+          value: this.truncateText(data.userDetails.name, 35),
+          y: 360,
+        },
+        {
+          label: "Email:",
+          value: this.truncateText(data.userDetails.email, 35),
+          y: 395,
+        },
       ];
 
-      personalDetails.forEach(detail => {
-        ctx.fillStyle = '#6B7280';
-        ctx.font = getFontString('11', 'normal');
+      personalDetails.forEach((detail) => {
+        ctx.fillStyle = "#6B7280";
+        ctx.font = getFontString("11", "normal");
         ctx.fillText(detail.label, 100, detail.y);
 
-        ctx.fillStyle = '#374151';
-        ctx.font = getFontString('13', 'normal');
+        ctx.fillStyle = "#374151";
+        ctx.font = getFontString("13", "normal");
         ctx.fillText(detail.value, 100, detail.y + 15);
       });
 
       // Phone number on the right
-      ctx.fillStyle = '#6B7280';
-      ctx.font = getFontString('11', 'normal');
-      ctx.fillText('Phone:', 420, 360);
-      ctx.fillStyle = '#374151';
-      ctx.font = getFontString('13', 'normal');
+      ctx.fillStyle = "#6B7280";
+      ctx.font = getFontString("11", "normal");
+      ctx.fillText("Phone:", 420, 360);
+      ctx.fillStyle = "#374151";
+      ctx.font = getFontString("13", "normal");
       ctx.fillText(data.userDetails.phone, 420, 375);
 
       // Transaction details
-      ctx.fillStyle = '#FAFAFA';
+      ctx.fillStyle = "#FAFAFA";
       ctx.fillRect(80, 460, 640, 140);
-      ctx.strokeStyle = '#E5E7EB';
+      ctx.strokeStyle = "#E5E7EB";
       ctx.strokeRect(80, 460, 640, 140);
 
-      ctx.fillStyle = '#6B7280';
-      ctx.font = getFontString('11', 'bold');
-      ctx.textAlign = 'left';
-      ctx.fillText('TRANSACTION DETAILS', 100, 485);
+      ctx.fillStyle = "#6B7280";
+      ctx.font = getFontString("11", "bold");
+      ctx.textAlign = "left";
+      ctx.fillText("TRANSACTION DETAILS", 100, 485);
 
       const details = [
         {
-          label: 'Reference:',
+          label: "Reference:",
           value: this.truncateText(data.operationDetails.paymentReference, 30),
           x: 100,
-          y: 505
+          y: 505,
         },
         {
-          label: 'Date:',
-          value: new Date(data.operationDetails.date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          }),
+          label: "Date:",
+          value: new Date(data.operationDetails.date).toLocaleDateString(
+            "en-US",
+            {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            },
+          ),
           x: 100,
-          y: 540
+          y: 540,
         },
         {
-          label: 'Service:',
-          value: this.truncateText(this.getServiceTitle(data.operationDetails.type), 25),
+          label: "Service:",
+          value: this.truncateText(
+            this.getServiceTitle(data.operationDetails.type),
+            25,
+          ),
           x: 420,
-          y: 505
+          y: 505,
         },
         {
-          label: 'Method:',
-          value: 'Online Payment',
+          label: "Method:",
+          value: "Online Payment",
           x: 420,
-          y: 540
-        }
+          y: 540,
+        },
       ];
 
-      details.forEach(detail => {
-        ctx.fillStyle = '#6B7280';
-        ctx.font = getFontString('11', 'normal');
+      details.forEach((detail) => {
+        ctx.fillStyle = "#6B7280";
+        ctx.font = getFontString("11", "normal");
         ctx.fillText(detail.label, detail.x, detail.y);
 
-        ctx.fillStyle = '#374151';
-        ctx.font = getFontString('12', 'normal');
+        ctx.fillStyle = "#374151";
+        ctx.font = getFontString("12", "normal");
         ctx.fillText(detail.value, detail.x, detail.y + 15);
       });
 
       // QR Code section
-      ctx.fillStyle = 'white';
+      ctx.fillStyle = "white";
       ctx.fillRect(80, 620, 640, 200);
-      ctx.strokeStyle = '#16A34A';
+      ctx.strokeStyle = "#16A34A";
       ctx.lineWidth = 2;
       ctx.strokeRect(80, 620, 640, 200);
 
-      ctx.fillStyle = '#16A34A';
-      ctx.font = getFontString('18', 'bold');
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText('Event Access QR Code', 400, 640);
+      ctx.fillStyle = "#16A34A";
+      ctx.font = getFontString("18", "bold");
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("Event Access QR Code", 400, 640);
 
-      ctx.fillStyle = '#374151';
-      ctx.font = getFontString('12', 'normal');
-      ctx.fillText('Present this at the event', 400, 660);
+      ctx.fillStyle = "#374151";
+      ctx.font = getFontString("12", "normal");
+      ctx.fillText("Present this at the event", 400, 660);
 
       // Generate and draw QR code
       try {
@@ -356,75 +415,78 @@ export class ImageGeneratorService {
           ctx.drawImage(qrImage, 320, 680, 160, 160);
         } else {
           // QR code fallback
-          ctx.fillStyle = '#F3F4F6';
+          ctx.fillStyle = "#F3F4F6";
           ctx.fillRect(320, 680, 160, 160);
-          ctx.strokeStyle = '#D1D5DB';
+          ctx.strokeStyle = "#D1D5DB";
           ctx.strokeRect(320, 680, 160, 160);
-          ctx.fillStyle = '#6B7280';
-          ctx.font = getFontString('12', 'normal');
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('QR Code', 400, 760);
+          ctx.fillStyle = "#6B7280";
+          ctx.font = getFontString("12", "normal");
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("QR Code", 400, 760);
         }
       } catch (qrError) {
-        console.warn('[IMAGE-GENERATOR] QR code generation failed:', qrError);
+        console.warn("[IMAGE-GENERATOR] QR code generation failed:", qrError);
         // Draw QR placeholder
-        ctx.fillStyle = '#F3F4F6';
+        ctx.fillStyle = "#F3F4F6";
         ctx.fillRect(320, 680, 160, 160);
-        ctx.strokeStyle = '#D1D5DB';
+        ctx.strokeStyle = "#D1D5DB";
         ctx.strokeRect(320, 680, 160, 160);
-        ctx.fillStyle = '#6B7280';
-        ctx.font = getFontString('12', 'normal');
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('QR Code', 400, 760);
+        ctx.fillStyle = "#6B7280";
+        ctx.font = getFontString("12", "normal");
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("QR Code", 400, 760);
       }
 
       // Instructions
-      ctx.fillStyle = '#F8FAFC';
+      ctx.fillStyle = "#F8FAFC";
       ctx.fillRect(80, 840, 640, 100);
-      ctx.strokeStyle = '#E2E8F0';
+      ctx.strokeStyle = "#E2E8F0";
       ctx.lineWidth = 1;
       ctx.strokeRect(80, 840, 640, 100);
 
-      ctx.fillStyle = '#6B7280';
-      ctx.font = getFontString('11', 'bold');
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText('IMPORTANT NOTES:', 100, 860);
+      ctx.fillStyle = "#6B7280";
+      ctx.font = getFontString("11", "bold");
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText("IMPORTANT NOTES:", 100, 860);
 
       const instructions = [
-        '• Save this receipt for your records',
-        '• Show QR code at event registration',
-        '• Contact support@gosa.org for help'
+        "• Save this receipt for your records",
+        "• Show QR code at event registration",
+        "• Contact support@gosa.org for help",
       ];
 
-      ctx.fillStyle = '#374151';
-      ctx.font = getFontString('12', 'normal');
+      ctx.fillStyle = "#374151";
+      ctx.font = getFontString("12", "normal");
       instructions.forEach((instruction, index) => {
-        ctx.fillText(instruction, 100, 880 + (index * 18));
+        ctx.fillText(instruction, 100, 880 + index * 18);
       });
 
       // Footer
-      ctx.fillStyle = '#F1F5F9';
+      ctx.fillStyle = "#F1F5F9";
       ctx.fillRect(60, 960, 680, 80);
 
-      ctx.fillStyle = '#16A34A';
-      ctx.font = getFontString('14', 'bold');
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText('GOSA 2025 Convention', 400, 980);
+      ctx.fillStyle = "#16A34A";
+      ctx.font = getFontString("14", "bold");
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("GOSA 2025 Convention", 400, 980);
 
-      ctx.fillStyle = '#374151';
-      ctx.font = getFontString('12', 'normal');
-      ctx.fillText('www.gosa.events', 400, 1000);
-      ctx.fillText(`Generated on ${new Date().toLocaleDateString()}`, 400, 1015);
+      ctx.fillStyle = "#374151";
+      ctx.font = getFontString("12", "normal");
+      ctx.fillText("www.gosa.events", 400, 1000);
+      ctx.fillText(
+        `Generated on ${new Date().toLocaleDateString()}`,
+        400,
+        1015,
+      );
 
       // Convert to PNG buffer
-      return canvas.toBuffer('image/png');
-
+      return canvas.toBuffer("image/png");
     } catch (canvasError) {
-      console.error('[IMAGE-GENERATOR] Canvas generation failed:', canvasError);
+      console.error("[IMAGE-GENERATOR] Canvas generation failed:", canvasError);
       throw canvasError;
     }
   }
@@ -432,20 +494,25 @@ export class ImageGeneratorService {
   /**
    * Generate QR code as buffer for canvas
    */
-  private static async generateQRCodeBuffer(qrData: string): Promise<Buffer | null> {
+  private static async generateQRCodeBuffer(
+    qrData: string,
+  ): Promise<Buffer | null> {
     try {
-      const QRCode = require('qrcode');
+      const QRCode = require("qrcode");
       return await QRCode.toBuffer(qrData, {
         width: 160,
         margin: 1,
-        errorCorrectionLevel: 'M',
+        errorCorrectionLevel: "M",
         color: {
-          dark: '#16A34A',
-          light: '#ffffff'
-        }
+          dark: "#16A34A",
+          light: "#ffffff",
+        },
       });
     } catch (error) {
-      console.error('[IMAGE-GENERATOR] QR code buffer generation failed:', error);
+      console.error(
+        "[IMAGE-GENERATOR] QR code buffer generation failed:",
+        error,
+      );
       return null;
     }
   }
@@ -485,25 +552,29 @@ export class ImageGeneratorService {
       Then copy the TTF files from node_modules/@fontsource/inter/files/ to public/fonts/
       */
 
-      console.log('[IMAGE-GENERATOR] For production, include font files in your project');
-      console.log('[IMAGE-GENERATOR] Download Inter from: https://fonts.google.com/specimen/Inter');
-      console.log('[IMAGE-GENERATOR] Place TTF files in: public/fonts/');
+      console.log(
+        "[IMAGE-GENERATOR] For production, include font files in your project",
+      );
+      console.log(
+        "[IMAGE-GENERATOR] Download Inter from: https://fonts.google.com/specimen/Inter",
+      );
+      console.log("[IMAGE-GENERATOR] Place TTF files in: public/fonts/");
     } catch (error) {
-      console.warn('[IMAGE-GENERATOR] Font setup failed:', error);
+      console.warn("[IMAGE-GENERATOR] Font setup failed:", error);
     }
   }
   private static async loadLogoBuffer(): Promise<Buffer | null> {
     try {
-      const fs = require('fs').promises;
-      const path = require('path');
+      const fs = require("fs").promises;
+      const path = require("path");
 
       // Try multiple possible logo locations
       const possiblePaths = [
-        path.join(process.cwd(), 'public', 'logo.png'),
-        path.join(process.cwd(), 'assets', 'logo.png'),
-        path.join(process.cwd(), 'public', 'images', 'logo.png'),
-        path.join(process.cwd(), 'public', 'images', 'gosa.png'),
-        path.join(__dirname, '..', 'assets', 'logo.png')
+        path.join(process.cwd(), "public", "logo.png"),
+        path.join(process.cwd(), "assets", "logo.png"),
+        path.join(process.cwd(), "public", "images", "logo.png"),
+        path.join(process.cwd(), "public", "images", "gosa.png"),
+        path.join(__dirname, "..", "assets", "logo.png"),
       ];
 
       for (const logoPath of possiblePaths) {
@@ -516,10 +587,10 @@ export class ImageGeneratorService {
         }
       }
 
-      console.warn('[IMAGE-GENERATOR] No logo found in any expected location');
+      console.warn("[IMAGE-GENERATOR] No logo found in any expected location");
       return null;
     } catch (error) {
-      console.error('[IMAGE-GENERATOR] Logo loading error:', error);
+      console.error("[IMAGE-GENERATOR] Logo loading error:", error);
       return null;
     }
   }
@@ -529,7 +600,9 @@ export class ImageGeneratorService {
    */
   private static async generateSVGContent(data: ImageData): Promise<string> {
     const serviceTitle = this.getServiceTitle(data.operationDetails.type);
-    const formattedDate = new Date(data.operationDetails.date).toLocaleDateString();
+    const formattedDate = new Date(
+      data.operationDetails.date,
+    ).toLocaleDateString();
 
     return `<svg width="800" height="1200" xmlns="http://www.w3.org/2000/svg">
   <rect width="800" height="1200" fill="#F9FAFB"/>
@@ -572,23 +645,25 @@ export class ImageGeneratorService {
    * Helper methods
    */
   private static truncateText(text: string, maxLength: number): string {
-    if (!text) return '';
-    return text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text;
+    if (!text) return "";
+    return text.length > maxLength
+      ? text.substring(0, maxLength - 3) + "..."
+      : text;
   }
 
   private static escapeXML(text: string): string {
-    if (!text) return '';
+    if (!text) return "";
     return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   private static generateTextFallback(data: ImageData): Buffer {
     const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ₦${data.operationDetails.amount.toLocaleString()}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: support@gosa.org`;
-    return Buffer.from(fallbackText, 'utf-8');
+    return Buffer.from(fallbackText, "utf-8");
   }
   //  * Helper methods
   //  */
@@ -635,10 +710,9 @@ export class ImageGeneratorService {
   //   return Buffer.from(fallbackText, 'utf-8');
   // }
 
-
   /**
- * Generate image buffer - optimized for Vercel serverless deployment
- */
+   * Generate image buffer - optimized for Vercel serverless deployment
+   */
   //   static async generateImageBuffer(data: ImageData): Promise<Buffer> {
   //     try {
   //       console.log(`[IMAGE-GENERATOR] Generating image for ${data.operationDetails.paymentReference}`);
@@ -1401,53 +1475,78 @@ export class ImageGeneratorService {
 
     // For now, return a simple 1x1 white PNG - in production, this could be enhanced
     // with a more sophisticated base64-encoded image template
-    const simplePng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
+    const simplePng =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
 
-    console.log('[IMAGE-GENERATOR] Generated simple PNG fallback for:', serviceTitle);
+    console.log(
+      "[IMAGE-GENERATOR] Generated simple PNG fallback for:",
+      serviceTitle,
+    );
     return simplePng;
   }
-
-
 
   /**
    * Generate image and upload to Vercel Blob storage
    */
   static async generateAndUploadToBlob(data: ImageData): Promise<string> {
     try {
-      const { ImageBlobService } = await import('./image-blob.service');
+      const { ImageBlobService } = await import("./image-blob.service");
 
       // Generate image buffer
       const imageBuffer = await this.generateImageBuffer(data);
 
       // Determine the correct file extension based on content
-      const isPNG = imageBuffer.length >= 8 &&
-        imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50 &&
-        imageBuffer[2] === 0x4E && imageBuffer[3] === 0x47;
+      const isPNG =
+        imageBuffer.length >= 8 &&
+        imageBuffer[0] === 0x89 &&
+        imageBuffer[1] === 0x50 &&
+        imageBuffer[2] === 0x4e &&
+        imageBuffer[3] === 0x47;
 
-      const isSVG = imageBuffer.toString('utf8', 0, Math.min(100, imageBuffer.length)).includes('<svg');
+      const isSVG = imageBuffer
+        .toString("utf8", 0, Math.min(100, imageBuffer.length))
+        .includes("<svg");
 
       // Generate blob filename with correct extension
-      const baseFilename = ImageBlobService.generateBlobFilename(data.userDetails, data.operationDetails.type);
-      const filename = isPNG ? baseFilename.replace(/\.(svg|png)$/, '.png') :
-        isSVG ? baseFilename.replace(/\.(svg|png)$/, '.svg') :
-          baseFilename;
+      const baseFilename = ImageBlobService.generateBlobFilename(
+        data.userDetails,
+        data.operationDetails.type,
+      );
+      const filename = isPNG
+        ? baseFilename.replace(/\.(svg|png)$/, ".png")
+        : isSVG
+          ? baseFilename.replace(/\.(svg|png)$/, ".svg")
+          : baseFilename;
 
-      console.log(`[IMAGE-GENERATOR] Generated ${isPNG ? 'PNG' : isSVG ? 'SVG' : 'unknown'} image (${imageBuffer.length} bytes)`);
+      console.log(
+        `[IMAGE-GENERATOR] Generated ${isPNG ? "PNG" : isSVG ? "SVG" : "unknown"} image (${imageBuffer.length} bytes)`,
+      );
 
       // Upload to Vercel Blob storage
-      const blobUrl = await ImageBlobService.uploadImageToBlob(imageBuffer, filename);
+      const blobUrl = await ImageBlobService.uploadImageToBlob(
+        imageBuffer,
+        filename,
+      );
 
-      console.log(`[IMAGE-GENERATOR] Successfully uploaded image to blob: ${filename}`);
+      console.log(
+        `[IMAGE-GENERATOR] Successfully uploaded image to blob: ${filename}`,
+      );
       return blobUrl;
     } catch (error) {
-      console.error('[IMAGE-GENERATOR] Failed to generate and upload image to blob:', error);
+      console.error(
+        "[IMAGE-GENERATOR] Failed to generate and upload image to blob:",
+        error,
+      );
 
       try {
-        const { ImageBlobService } = await import('./image-blob.service');
-        return await ImageBlobService.handleBlobUploadError(error as Error, data);
+        const { ImageBlobService } = await import("./image-blob.service");
+        return await ImageBlobService.handleBlobUploadError(
+          error as Error,
+          data,
+        );
       } catch (fallbackError) {
-        console.error('[IMAGE-GENERATOR] Fallback also failed:', fallbackError);
-        throw new Error('Image generation and all fallbacks failed');
+        console.error("[IMAGE-GENERATOR] Fallback also failed:", fallbackError);
+        throw new Error("Image generation and all fallbacks failed");
       }
     }
   }
@@ -1455,17 +1554,20 @@ export class ImageGeneratorService {
   /**
    * Generate filename for image (PNG preferred for WhatsApp compatibility)
    */
-  static generateFilename(userDetails: { name: string }, serviceType: string): string {
+  static generateFilename(
+    userDetails: { name: string },
+    serviceType: string,
+  ): string {
     const timestamp = Date.now();
     const sanitizedName = userDetails.name
       .toLowerCase()
-      .replace(/[^a-z0-9]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
+      .replace(/[^a-z0-9]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
 
     const sanitizedServiceType = serviceType
       .toLowerCase()
-      .replace(/[^a-z0-9]/g, '-');
+      .replace(/[^a-z0-9]/g, "-");
 
     // Use PNG extension for better WhatsApp compatibility
     return `gosa-2025-${sanitizedServiceType}-${sanitizedName}-${timestamp}.png`;
@@ -1476,12 +1578,12 @@ export class ImageGeneratorService {
    */
   private static getServiceTitle(type: string): string {
     const titles: { [key: string]: string } = {
-      'convention': 'Convention Registration',
-      'dinner': 'Dinner Reservation',
-      'accommodation': 'Accommodation Booking',
-      'brochure': 'Brochure Order',
-      'goodwill': 'Goodwill Message & Donation',
-      'donation': 'Donation'
+      convention: "Convention Registration",
+      dinner: "Dinner Reservation",
+      accommodation: "Accommodation Booking",
+      brochure: "Brochure Order",
+      goodwill: "Goodwill Message & Donation",
+      donation: "Donation",
     };
     return titles[type] || type.charAt(0).toUpperCase() + type.slice(1);
   }
@@ -1494,26 +1596,40 @@ export class ImageGeneratorService {
       // Try to use canvas package for server-side rendering
       let Canvas: any;
       try {
-        Canvas = require('canvas');
-        console.log('[IMAGE-GENERATOR] Canvas package loaded successfully');
+        Canvas = require("canvas");
+        console.log("[IMAGE-GENERATOR] Canvas package loaded successfully");
       } catch (canvasError) {
-        console.error('[IMAGE-GENERATOR] Canvas package not available:', canvasError instanceof Error ? canvasError.message : 'Unknown error');
-        throw new Error('Canvas package not available');
+        console.error(
+          "[IMAGE-GENERATOR] Canvas package not available:",
+          canvasError instanceof Error ? canvasError.message : "Unknown error",
+        );
+        throw new Error("Canvas package not available");
       }
 
       const { createCanvas, loadImage } = Canvas;
       const canvas = createCanvas(800, 1200);
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
 
       // Add roundRect method if not available (for older Canvas versions)
       if (!ctx.roundRect) {
-        ctx.roundRect = function (x: number, y: number, width: number, height: number, radius: number) {
+        ctx.roundRect = function (
+          x: number,
+          y: number,
+          width: number,
+          height: number,
+          radius: number,
+        ) {
           this.beginPath();
           this.moveTo(x + radius, y);
           this.lineTo(x + width - radius, y);
           this.quadraticCurveTo(x + width, y, x + width, y + radius);
           this.lineTo(x + width, y + height - radius);
-          this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+          this.quadraticCurveTo(
+            x + width,
+            y + height,
+            x + width - radius,
+            y + height,
+          );
           this.lineTo(x + radius, y + height);
           this.quadraticCurveTo(x, y + height, x, y + height - radius);
           this.lineTo(x, y + radius);
@@ -1523,207 +1639,222 @@ export class ImageGeneratorService {
       }
 
       // Set white background
-      ctx.fillStyle = '#F0FDF4';
+      ctx.fillStyle = "#F0FDF4";
       ctx.fillRect(0, 0, 800, 1200);
 
       // Draw main container
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
       ctx.roundRect(40, 60, 720, 1080, 24);
       ctx.fill();
 
       // Draw header
       const gradient = ctx.createLinearGradient(60, 80, 740, 80);
-      gradient.addColorStop(0, '#16A34A');
-      gradient.addColorStop(1, '#15803D');
+      gradient.addColorStop(0, "#16A34A");
+      gradient.addColorStop(1, "#15803D");
       ctx.fillStyle = gradient;
       ctx.roundRect(60, 80, 680, 120, 16);
       ctx.fill();
 
       // Draw header text
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 24px Arial';
-      ctx.textAlign = 'left';
-      ctx.fillText('GOSA 2025 Convention', 180, 125);
+      ctx.fillStyle = "white";
+      ctx.font = "bold 24px Arial";
+      ctx.textAlign = "left";
+      ctx.fillText("GOSA 2025 Convention", 180, 125);
 
-      ctx.font = '16px Arial';
-      ctx.fillText('For Light and Truth', 180, 150);
+      ctx.font = "16px Arial";
+      ctx.fillText("For Light and Truth", 180, 150);
 
-      ctx.font = '14px Arial';
+      ctx.font = "14px Arial";
       const serviceTitle = this.getServiceTitle(data.operationDetails.type);
       ctx.fillText(`${serviceTitle} Receipt`, 180, 175);
 
       // Draw GOSA logo placeholder (circle with text)
-      ctx.fillStyle = 'white';
+      ctx.fillStyle = "white";
       ctx.beginPath();
       ctx.arc(120, 140, 35, 0, 2 * Math.PI);
       ctx.fill();
 
-      ctx.fillStyle = '#16A34A';
-      ctx.font = 'bold 16px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('GOSA', 120, 150);
+      ctx.fillStyle = "#16A34A";
+      ctx.font = "bold 16px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("GOSA", 120, 150);
 
       // Draw amount section
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
       ctx.roundRect(80, 240, 640, 100, 16);
       ctx.fill();
 
-      ctx.fillStyle = '#6B7280';
-      ctx.font = '14px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('TRANSACTION AMOUNT', 400, 270);
+      ctx.fillStyle = "#6B7280";
+      ctx.font = "14px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("TRANSACTION AMOUNT", 400, 270);
 
-      ctx.fillStyle = '#16A34A';
-      ctx.font = 'bold 42px Arial';
-      ctx.fillText(`₦${data.operationDetails.amount.toLocaleString()}`, 400, 310);
+      ctx.fillStyle = "#16A34A";
+      ctx.font = "bold 42px Arial";
+      ctx.fillText(
+        `₦${data.operationDetails.amount.toLocaleString()}`,
+        400,
+        310,
+      );
 
       // Draw success badge
-      ctx.fillStyle = '#DCFCE7';
+      ctx.fillStyle = "#DCFCE7";
       ctx.roundRect(320, 320, 160, 32, 16);
       ctx.fill();
 
-      ctx.fillStyle = '#16A34A';
+      ctx.fillStyle = "#16A34A";
       ctx.beginPath();
       ctx.arc(340, 336, 6, 0, 2 * Math.PI);
       ctx.fill();
 
-      ctx.font = '14px Arial';
-      ctx.fillText('Successful', 400, 341);
+      ctx.font = "14px Arial";
+      ctx.fillText("Successful", 400, 341);
 
       // Draw personal information section
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
       ctx.roundRect(80, 380, 640, 140, 16);
       ctx.fill();
 
-      ctx.fillStyle = '#374151';
-      ctx.font = 'bold 12px Arial';
-      ctx.textAlign = 'left';
-      ctx.fillText('PERSONAL INFORMATION', 100, 405);
+      ctx.fillStyle = "#374151";
+      ctx.font = "bold 12px Arial";
+      ctx.textAlign = "left";
+      ctx.fillText("PERSONAL INFORMATION", 100, 405);
 
-      ctx.fillStyle = '#6B7280';
-      ctx.font = '10px Arial';
-      ctx.fillText('FULL NAME', 100, 435);
-      ctx.fillText('EMAIL ADDRESS', 420, 435);
-      ctx.fillText('PHONE NUMBER', 100, 485);
+      ctx.fillStyle = "#6B7280";
+      ctx.font = "10px Arial";
+      ctx.fillText("FULL NAME", 100, 435);
+      ctx.fillText("EMAIL ADDRESS", 420, 435);
+      ctx.fillText("PHONE NUMBER", 100, 485);
 
-      ctx.fillStyle = '#1F2937';
-      ctx.font = '16px Arial';
+      ctx.fillStyle = "#1F2937";
+      ctx.font = "16px Arial";
       ctx.fillText(data.userDetails.name, 100, 455);
-      ctx.font = '14px Arial';
+      ctx.font = "14px Arial";
       ctx.fillText(data.userDetails.email, 420, 455);
-      ctx.font = '16px Arial';
+      ctx.font = "16px Arial";
       ctx.fillText(data.userDetails.phone, 100, 505);
 
       // Draw transaction details section
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
       ctx.roundRect(80, 540, 640, 160, 16);
       ctx.fill();
 
-      ctx.fillStyle = '#374151';
-      ctx.font = 'bold 12px Arial';
-      ctx.fillText('TRANSACTION DETAILS', 100, 565);
+      ctx.fillStyle = "#374151";
+      ctx.font = "bold 12px Arial";
+      ctx.fillText("TRANSACTION DETAILS", 100, 565);
 
-      ctx.fillStyle = '#6B7280';
-      ctx.font = '10px Arial';
-      ctx.fillText('PAYMENT REFERENCE', 100, 595);
-      ctx.fillText('DATE & TIME', 420, 595);
-      ctx.fillText('SERVICE TYPE', 100, 645);
-      ctx.fillText('PAYMENT METHOD', 420, 645);
+      ctx.fillStyle = "#6B7280";
+      ctx.font = "10px Arial";
+      ctx.fillText("PAYMENT REFERENCE", 100, 595);
+      ctx.fillText("DATE & TIME", 420, 595);
+      ctx.fillText("SERVICE TYPE", 100, 645);
+      ctx.fillText("PAYMENT METHOD", 420, 645);
 
-      ctx.fillStyle = '#1F2937';
-      ctx.font = '13px Arial';
+      ctx.fillStyle = "#1F2937";
+      ctx.font = "13px Arial";
       ctx.fillText(data.operationDetails.paymentReference, 100, 615);
-      ctx.font = '14px Arial';
-      ctx.fillText(new Date(data.operationDetails.date).toLocaleDateString(), 420, 615);
+      ctx.font = "14px Arial";
+      ctx.fillText(
+        new Date(data.operationDetails.date).toLocaleDateString(),
+        420,
+        615,
+      );
       ctx.fillText(serviceTitle, 100, 665);
-      ctx.fillText('Online Transfer', 420, 665);
+      ctx.fillText("Online Transfer", 420, 665);
 
       // Draw QR code section
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
       ctx.setLineDash([8, 4]);
-      ctx.strokeStyle = 'rgba(22, 163, 74, 0.3)';
+      ctx.strokeStyle = "rgba(22, 163, 74, 0.3)";
       ctx.lineWidth = 2;
       ctx.roundRect(80, 720, 640, 240, 16);
       ctx.stroke();
       ctx.fill();
       ctx.setLineDash([]);
 
-      ctx.fillStyle = '#16A34A';
-      ctx.font = 'bold 14px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('YOUR DIGITAL PASS', 400, 750);
+      ctx.fillStyle = "#16A34A";
+      ctx.font = "bold 14px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("YOUR DIGITAL PASS", 400, 750);
 
-      ctx.fillStyle = '#6B7280';
-      ctx.font = '12px Arial';
-      ctx.fillText('Scan this QR code at the event', 400, 770);
+      ctx.fillStyle = "#6B7280";
+      ctx.font = "12px Arial";
+      ctx.fillText("Scan this QR code at the event", 400, 770);
 
       // Draw QR code placeholder
-      ctx.fillStyle = 'white';
+      ctx.fillStyle = "white";
       ctx.roundRect(310, 785, 180, 180, 12);
       ctx.fill();
 
-      ctx.strokeStyle = '#E5E7EB';
+      ctx.strokeStyle = "#E5E7EB";
       ctx.lineWidth = 1;
       ctx.roundRect(310, 785, 180, 180, 12);
       ctx.stroke();
 
       // Try to generate actual QR code
       try {
-        const QRCode = require('qrcode');
+        const QRCode = require("qrcode");
         const qrCodeDataURL = await QRCode.toDataURL(data.qrCodeData, {
           width: 180,
           margin: 0,
-          errorCorrectionLevel: 'M',
+          errorCorrectionLevel: "M",
           color: {
-            dark: '#16A34A',
-            light: '#ffffff'
-          }
+            dark: "#16A34A",
+            light: "#ffffff",
+          },
         });
 
         const qrImage = await loadImage(qrCodeDataURL);
         ctx.drawImage(qrImage, 310, 785, 180, 180);
       } catch (qrError) {
         // QR code generation failed, draw placeholder
-        ctx.fillStyle = '#6B7280';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('QR Code', 400, 885);
+        ctx.fillStyle = "#6B7280";
+        ctx.font = "12px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("QR Code", 400, 885);
       }
 
       // Draw instructions section
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
       ctx.roundRect(80, 980, 640, 120, 16);
       ctx.fill();
 
-      ctx.fillStyle = '#374151';
-      ctx.font = 'bold 12px Arial';
-      ctx.textAlign = 'left';
-      ctx.fillText('IMPORTANT INSTRUCTIONS', 100, 1005);
+      ctx.fillStyle = "#374151";
+      ctx.font = "bold 12px Arial";
+      ctx.textAlign = "left";
+      ctx.fillText("IMPORTANT INSTRUCTIONS", 100, 1005);
 
-      ctx.font = '13px Arial';
-      ctx.fillText('• Save this receipt to your device for your records', 100, 1030);
-      ctx.fillText('• Present the QR code when required at the event', 100, 1050);
-      ctx.fillText('• Contact support@gosa.org for any assistance', 100, 1070);
+      ctx.font = "13px Arial";
+      ctx.fillText(
+        "• Save this receipt to your device for your records",
+        100,
+        1030,
+      );
+      ctx.fillText(
+        "• Present the QR code when required at the event",
+        100,
+        1050,
+      );
+      ctx.fillText("• Contact support@gosa.org for any assistance", 100, 1070);
 
       // Draw footer
-      ctx.fillStyle = 'rgba(249, 250, 251, 0.9)';
+      ctx.fillStyle = "rgba(249, 250, 251, 0.9)";
       ctx.roundRect(60, 1120, 680, 60, 16);
       ctx.fill();
 
-      ctx.fillStyle = '#16A34A';
-      ctx.font = 'bold 14px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('GOSA 2025 Convention Team', 400, 1140);
+      ctx.fillStyle = "#16A34A";
+      ctx.font = "bold 14px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("GOSA 2025 Convention Team", 400, 1140);
 
-      ctx.fillStyle = '#6B7280';
-      ctx.font = '12px Arial';
-      ctx.fillText('www.gosa.events • support@gosa.org', 400, 1160);
+      ctx.fillStyle = "#6B7280";
+      ctx.font = "12px Arial";
+      ctx.fillText("www.gosa.events • support@gosa.org", 400, 1160);
 
       // Convert canvas to PNG buffer
-      return canvas.toBuffer('image/png');
-
+      return canvas.toBuffer("image/png");
     } catch (error) {
-      console.error('[IMAGE-GENERATOR] Canvas PNG generation failed:', error);
+      console.error("[IMAGE-GENERATOR] Canvas PNG generation failed:", error);
       throw error;
     }
   }
@@ -1735,27 +1866,27 @@ export class ImageGeneratorService {
     // Add XML declaration and ensure proper encoding
     let optimizedSvg = svgContent;
 
-    if (!optimizedSvg.startsWith('<?xml')) {
+    if (!optimizedSvg.startsWith("<?xml")) {
       optimizedSvg = '<?xml version="1.0" encoding="UTF-8"?>\n' + optimizedSvg;
     }
 
     // Ensure proper namespace declarations
     if (!optimizedSvg.includes('xmlns="http://www.w3.org/2000/svg"')) {
       optimizedSvg = optimizedSvg.replace(
-        '<svg',
-        '<svg xmlns="http://www.w3.org/2000/svg"'
+        "<svg",
+        '<svg xmlns="http://www.w3.org/2000/svg"',
       );
     }
 
     // Add viewBox if not present for better scaling
-    if (!optimizedSvg.includes('viewBox=')) {
+    if (!optimizedSvg.includes("viewBox=")) {
       optimizedSvg = optimizedSvg.replace(
         'width="800" height="1200"',
-        'width="800" height="1200" viewBox="0 0 800 1200"'
+        'width="800" height="1200" viewBox="0 0 800 1200"',
       );
     }
 
-    console.log('[IMAGE-GENERATOR] Optimized SVG for WhatsApp compatibility');
+    console.log("[IMAGE-GENERATOR] Optimized SVG for WhatsApp compatibility");
     return optimizedSvg;
   }
 
