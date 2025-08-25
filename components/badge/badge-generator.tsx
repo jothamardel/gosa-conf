@@ -721,7 +721,7 @@ export function BadgeGenerator({
                 maxLength={100}
               />
             </div>
-            <div className="space-y-2">
+            {/*<div className="space-y-2">
               <Label htmlFor="name">House *</Label>
 
               <Select>
@@ -730,7 +730,7 @@ export function BadgeGenerator({
                 <SelectItem value="crowther">Crowther</SelectItem>
                 <SelectItem value="livingstone">Livingstone</SelectItem>
               </Select>
-            </div>
+            </div>*/}
           </div>
 
           {/* Generate Button */}
