@@ -517,7 +517,7 @@ export function BadgeGenerator({
                   </p>
                 </div>
 
-                <div className="h-1 bg-gradient-to-r from-green-500 to-yellow-500 w-48  mx-auto mb-2 rounded-full"></div>
+                <div className="h-1 bg-gradient-to-r from-green-500 to-yellow-500 w-1/3  mx-auto mb-2 rounded-full"></div>
                 <h3 className="text-sm font-semibold uppercase tracking-widest text-green-600">
                   {formData.attendeeTitle || "ATTENDEE"}
                 </h3>
