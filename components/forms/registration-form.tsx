@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useState } from "react";
@@ -18,13 +16,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import {
-  User,
-  CreditCard,
-  CheckCircle,
-  Loader2,
-} from "lucide-react";
+import { User, CreditCard, CheckCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem } from "../ui/select";
 
 const registrationSchema = z.object({
   // Personal Information
@@ -32,15 +26,23 @@ const registrationSchema = z.object({
   lastName: z.string().min(2, "Last name is required"),
   email: z.string().email("Valid email is required"),
   phone: z.string().min(10, "Phone number is required"),
-  organization: z.string().optional(),
-  jobTitle: z.string().optional(),
+  year: z.string().optional(),
+  house: z.string().optional(),
 
   // Registration Options
   quantity: z.number().min(1, "Quantity must be at least 1").default(1),
-  persons: z.array(z.object({
-    phoneNumber: z.string().min(10, "Phone number is required"),
-    email: z.string().email("Valid email is required").optional().or(z.literal("")),
-  })).default([]),
+  persons: z
+    .array(
+      z.object({
+        phoneNumber: z.string().min(10, "Phone number is required"),
+        email: z
+          .string()
+          .email("Valid email is required")
+          .optional()
+          .or(z.literal("")),
+      }),
+    )
+    .default([]),
 
   // Terms
   agreeToTerms: z
@@ -94,10 +96,10 @@ export function RegistrationForm() {
         persons: data.persons,
       };
 
-      const response = await fetch('/api/v1/register', {
-        method: 'POST',
+      const response = await fetch("/api/v1/register", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(apiData),
       });
@@ -105,17 +107,19 @@ export function RegistrationForm() {
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.error || 'Registration failed');
+        throw new Error(result.error || "Registration failed");
       }
 
       // Redirect to Paystack payment page
       if (result.paymentLink?.data?.authorization_url) {
         window.location.href = result.paymentLink.data.authorization_url;
       } else {
-        toast.success("Registration successful! Check your email for your QR code.");
+        toast.success(
+          "Registration successful! Check your email for your QR code.",
+        );
       }
     } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error("Registration error:", error);
       toast.error(error.message || "Registration failed. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -133,17 +137,23 @@ export function RegistrationForm() {
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center">
               <div
-                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base ${i <= step
-                  ? "bg-primary-600 text-white"
-                  : "bg-gray-200 text-gray-600"
-                  }`}
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base ${
+                  i <= step
+                    ? "bg-primary-600 text-white"
+                    : "bg-gray-200 text-gray-600"
+                }`}
               >
-                {i < step ? <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" /> : i}
+                {i < step ? (
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                ) : (
+                  i
+                )}
               </div>
               {i < 3 && (
                 <div
-                  className={`w-8 sm:w-16 h-1 mx-1 sm:mx-2 ${i < step ? "bg-primary-600" : "bg-gray-200"
-                    }`}
+                  className={`w-8 sm:w-16 h-1 mx-1 sm:mx-2 ${
+                    i < step ? "bg-primary-600" : "bg-gray-200"
+                  }`}
                 />
               )}
             </div>
@@ -177,7 +187,9 @@ export function RegistrationForm() {
             <CardContent className="mobile-card-spacing space-y-4 sm:space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="form-group">
-                  <Label htmlFor="firstName" className="mobile-form-label">First Name *</Label>
+                  <Label htmlFor="firstName" className="mobile-form-label">
+                    First Name *
+                  </Label>
                   <Input
                     id="firstName"
                     {...register("firstName")}
@@ -192,7 +204,9 @@ export function RegistrationForm() {
                 </div>
 
                 <div className="form-group">
-                  <Label htmlFor="lastName" className="mobile-form-label">Last Name *</Label>
+                  <Label htmlFor="lastName" className="mobile-form-label">
+                    Last Name *
+                  </Label>
                   <Input
                     id="lastName"
                     {...register("lastName")}
@@ -207,7 +221,9 @@ export function RegistrationForm() {
                 </div>
 
                 <div className="form-group sm:col-span-2">
-                  <Label htmlFor="phone" className="mobile-form-label">Phone Number *</Label>
+                  <Label htmlFor="phone" className="mobile-form-label">
+                    Phone Number *
+                  </Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -223,7 +239,9 @@ export function RegistrationForm() {
                 </div>
 
                 <div className="form-group sm:col-span-2">
-                  <Label htmlFor="email" className="mobile-form-label">Email Address *</Label>
+                  <Label htmlFor="email" className="mobile-form-label">
+                    Email Address *
+                  </Label>
                   <Input
                     id="email"
                     type="email"
@@ -267,27 +285,32 @@ export function RegistrationForm() {
             <CardContent className="mobile-card-spacing space-y-4 sm:space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="form-group">
-                  <Label htmlFor="organization" className="mobile-form-label">Organization</Label>
+                  <Label htmlFor="year" className="mobile-form-label">
+                    Year
+                  </Label>
                   <Input
-                    id="organization"
-                    {...register("organization")}
+                    id="year"
+                    {...register("year")}
                     className="mobile-form-input"
-                    placeholder="Enter your organization"
+                    placeholder="Enter graduation year"
                   />
                 </div>
 
                 <div className="form-group">
-                  <Label htmlFor="jobTitle" className="mobile-form-label">Job Title</Label>
-                  <Input
-                    id="jobTitle"
-                    {...register("jobTitle")}
-                    className="mobile-form-input"
-                    placeholder="Enter your job title"
-                  />
+                  <Label htmlFor="jobTitle" className="mobile-form-label">
+                    House
+                  </Label>
+                  <Select>
+                    <SelectContent>
+                      <SelectItem value="aggrey">Aggrey</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="form-group sm:col-span-2">
-                  <Label htmlFor="quantity" className="mobile-form-label">Number of Tickets</Label>
+                  <Label htmlFor="quantity" className="mobile-form-label">
+                    Number of Tickets
+                  </Label>
                   <Input
                     id="quantity"
                     type="number"
@@ -305,10 +328,12 @@ export function RegistrationForm() {
                       const newPersons = [];
 
                       for (let i = 1; i < quantity; i++) {
-                        newPersons.push(currentPersons[i - 1] || {
-                          phoneNumber: '',
-                          email: ''
-                        });
+                        newPersons.push(
+                          currentPersons[i - 1] || {
+                            phoneNumber: "",
+                            email: "",
+                          },
+                        );
                       }
 
                       setValue("persons", newPersons);
@@ -331,35 +356,51 @@ export function RegistrationForm() {
                     Please provide details for the additional attendees.
                   </p>
 
-                  {Array.from({ length: (watchedValues.quantity || 1) - 1 }, (_, index) => (
-                    <Card key={index} className="mobile-card-spacing bg-gray-50 border border-gray-200 rounded-lg">
-                      <h5 className="font-medium text-gray-800 mb-3 text-sm sm:text-base">
-                        Attendee {index + 2}
-                      </h5>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="form-group">
-                          <Label htmlFor={`person-${index}-phone`} className="mobile-form-label">Phone Number *</Label>
-                          <Input
-                            id={`person-${index}-phone`}
-                            type="tel"
-                            {...register(`persons.${index}.phoneNumber`)}
-                            className="mobile-form-input"
-                            placeholder="Enter phone number"
-                          />
+                  {Array.from(
+                    { length: (watchedValues.quantity || 1) - 1 },
+                    (_, index) => (
+                      <Card
+                        key={index}
+                        className="mobile-card-spacing bg-gray-50 border border-gray-200 rounded-lg"
+                      >
+                        <h5 className="font-medium text-gray-800 mb-3 text-sm sm:text-base">
+                          Attendee {index + 2}
+                        </h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="form-group">
+                            <Label
+                              htmlFor={`person-${index}-phone`}
+                              className="mobile-form-label"
+                            >
+                              Phone Number *
+                            </Label>
+                            <Input
+                              id={`person-${index}-phone`}
+                              type="tel"
+                              {...register(`persons.${index}.phoneNumber`)}
+                              className="mobile-form-input"
+                              placeholder="Enter phone number"
+                            />
+                          </div>
+                          <div className="form-group">
+                            <Label
+                              htmlFor={`person-${index}-email`}
+                              className="mobile-form-label"
+                            >
+                              Email (Optional)
+                            </Label>
+                            <Input
+                              id={`person-${index}-email`}
+                              type="email"
+                              {...register(`persons.${index}.email`)}
+                              className="mobile-form-input"
+                              placeholder="Enter email address (optional)"
+                            />
+                          </div>
                         </div>
-                        <div className="form-group">
-                          <Label htmlFor={`person-${index}-email`} className="mobile-form-label">Email (Optional)</Label>
-                          <Input
-                            id={`person-${index}-email`}
-                            type="email"
-                            {...register(`persons.${index}.email`)}
-                            className="mobile-form-input"
-                            placeholder="Enter email address (optional)"
-                          />
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    ),
+                  )}
                 </div>
               )}
 
@@ -402,26 +443,42 @@ export function RegistrationForm() {
                     </h4>
                     <div className="text-sm sm:text-base text-gray-600 space-y-3 bg-gray-50 p-4 rounded-lg">
                       <div>
-                        <p className="font-medium text-gray-800">Primary Attendee:</p>
-                        <p className="mt-1">{watchedValues.firstName} {watchedValues.lastName}</p>
+                        <p className="font-medium text-gray-800">
+                          Primary Attendee:
+                        </p>
+                        <p className="mt-1">
+                          {watchedValues.firstName} {watchedValues.lastName}
+                        </p>
                         <p>{watchedValues.email}</p>
                         <p>{watchedValues.phone}</p>
-                        {watchedValues.organization && (
+                        {/*{watchedValues.organization && (
                           <p>{watchedValues.organization}</p>
-                        )}
+                        )}*/}
                       </div>
 
-                      {watchedValues.persons && watchedValues.persons.length > 0 && (
-                        <div className="pt-2 border-t border-gray-200">
-                          <p className="font-medium text-gray-800">Additional Attendees:</p>
-                          {watchedValues.persons.map((person, index) => (
-                            <div key={index} className="ml-2 mt-2 p-2 bg-white rounded border">
-                              <p className="font-medium">Attendee {index + 2}: {person.phoneNumber}</p>
-                              {person.email && <p className="text-sm">Email: {person.email}</p>}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      {watchedValues.persons &&
+                        watchedValues.persons.length > 0 && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <p className="font-medium text-gray-800">
+                              Additional Attendees:
+                            </p>
+                            {watchedValues.persons.map((person, index) => (
+                              <div
+                                key={index}
+                                className="ml-2 mt-2 p-2 bg-white rounded border"
+                              >
+                                <p className="font-medium">
+                                  Attendee {index + 2}: {person.phoneNumber}
+                                </p>
+                                {person.email && (
+                                  <p className="text-sm">
+                                    Email: {person.email}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                     </div>
                   </div>
 
@@ -440,7 +497,9 @@ export function RegistrationForm() {
                       </div>
                       <div className="flex justify-between text-sm sm:text-base">
                         <span>Subtotal</span>
-                        <span>₦{(50 * (watchedValues.quantity || 1)).toFixed(2)}</span>
+                        <span>
+                          ₦{(50 * (watchedValues.quantity || 1)).toFixed(2)}
+                        </span>
                       </div>
 
                       <Separator />
@@ -458,16 +517,27 @@ export function RegistrationForm() {
                   <Checkbox
                     id="agreeToTerms"
                     checked={watchedValues.agreeToTerms}
-                    onCheckedChange={(checked) => setValue("agreeToTerms", Boolean(checked))}
+                    onCheckedChange={(checked) =>
+                      setValue("agreeToTerms", Boolean(checked))
+                    }
                     className="mt-1 touch-target"
                   />
-                  <Label htmlFor="agreeToTerms" className="text-sm sm:text-base leading-relaxed">
+                  <Label
+                    htmlFor="agreeToTerms"
+                    className="text-sm sm:text-base leading-relaxed"
+                  >
                     I agree to the{" "}
-                    <a href="#" className="text-primary-600 hover:underline font-medium">
+                    <a
+                      href="#"
+                      className="text-primary-600 hover:underline font-medium"
+                    >
                       Terms and Conditions
                     </a>{" "}
                     and{" "}
-                    <a href="#" className="text-primary-600 hover:underline font-medium">
+                    <a
+                      href="#"
+                      className="text-primary-600 hover:underline font-medium"
+                    >
                       Privacy Policy
                     </a>
                   </Label>

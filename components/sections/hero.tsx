@@ -55,9 +55,9 @@ export function Hero() {
           </div>
 
           {/* Main Heading - Mobile Responsive Typography */}
-          <h1 className="heading-responsive-xl font-bold text-gray-900 mb-4 sm:mb-6 animate-fade-in leading-tight">
+          <h1 className="heading-responsive-lg font-bold text-gray-900 mb-4 sm:mb-6 animate-fade-in leading-tight">
             <span className="block">Strengthening our legacy</span>
-            <span className="gradient-text block mt-2">
+            <span className="gradient-text block mt-1.5">
               Empowering the next generation of leaders
             </span>
           </h1>
@@ -129,7 +129,7 @@ export function Hero() {
           <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-sm text-gray-700">
             <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm px-3 py-2 rounded-full border border-white/50">
               <Users className="w-4 h-4 text-primary-600" />
-              <span>15000+ Expected Attendees</span>
+              <span>15,000+ Expected Attendees</span>
             </div>
             <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm px-3 py-2 rounded-full border border-white/50">
               <Calendar className="w-4 h-4 text-secondary-600" />
