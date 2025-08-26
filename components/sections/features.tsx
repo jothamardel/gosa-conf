@@ -179,8 +179,9 @@ export function Features() {
             <span className="gradient-text"> Services</span>
           </h2>
           <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            From registration to check-in, we've built comprehensive features to
-            make your convention experience exceptional.
+            {
+              " From registration to check-in, we've built comprehensive features to make your convention experience exceptional."
+            }
           </p>
         </div>
 
