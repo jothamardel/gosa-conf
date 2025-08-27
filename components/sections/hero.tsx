@@ -12,20 +12,133 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
+// Array of background images for the carousel
+const backgroundImages = [
+  "/images/DSC_7116.jpg",
+  "/images/DSC_7137.jpg",
+  "/images/DSC_7252.jpg",
+  "/images/DSC_7311.jpg",
+  "/images/DSC_7466.jpg",
+  "/images/DSC_7546.jpg",
+  "/images/DSC_7550.jpg",
+  "/images/DSC_7716.jpg",
+  "/images/DSC_7718.jpg",
+  "/images/DSC_8295.jpg",
+];
 export function Hero() {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Auto-advance carousel every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex(
+        (prevIndex: number) => (prevIndex + 1) % backgroundImages.length,
+      );
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [backgroundImages.length]);
+
+  // Manual navigation functions
+  const goToSlide = (index: number) => {
+    setCurrentImageIndex(index);
+  };
+
+  const nextSlide = () => {
+    setCurrentImageIndex(
+      (prevIndex: number) => (prevIndex + 1) % backgroundImages.length,
+    );
+  };
+
+  const prevSlide = () => {
+    setCurrentImageIndex(
+      (prevIndex: number) =>
+        (prevIndex - 1 + backgroundImages.length) % backgroundImages.length,
+    );
+  };
   return (
     <section className="relative overflow-hidden py-8 sm:py-16 lg:py-20">
       {/* Background Image */}
-      <div
+      {/*<div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: "url('/images/DSC_7550.jpg')", // Replace with your image path
         }}
-      ></div>
+      ></div>*/}
+
+      {/* Background Image Carousel */}
+      <div className="absolute inset-0">
+        {backgroundImages.map((image, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ${
+              index === currentImageIndex ? "opacity-100" : "opacity-0"
+            }`}
+            style={{
+              backgroundImage: `url('${image}')`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Carousel Navigation Arrows */}
+      <button
+        onClick={prevSlide}
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm rounded-full p-3 hover:bg-white/30 transition-all duration-200 group"
+      >
+        <svg
+          className="w-6 h-6 text-white group-hover:scale-110 transition-transform"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 19l-7-7 7-7"
+          />
+        </svg>
+      </button>
+
+      <button
+        onClick={nextSlide}
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm rounded-full p-3 hover:bg-white/30 transition-all duration-200 group"
+      >
+        <svg
+          className="w-6 h-6 text-white group-hover:scale-110 transition-transform"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+      </button>
+
+      {/* Carousel Indicators */}
+      <div className="absolute bottom-4  left-1/2 -translate-x-1/2 z-20 flex space-x-2">
+        {backgroundImages.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => goToSlide(index)}
+            className={`w-3 h-3 rounded-full transition-all duration-200 ${
+              index === currentImageIndex
+                ? "bg-white scale-110"
+                : "bg-white/50 hover:bg-white/70"
+            }`}
+          />
+        ))}
+      </div>
 
       {/* White Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/90 via-white/85 to-white/80"></div>
+      {/*<div className="absolute inset-0 bg-gradient-to-br from-black/90 via-white/85 to-black/80"></div>*/}
 
       {/* Additional Color Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary-50/60 via-transparent to-secondary-50/40"></div>
@@ -55,19 +168,36 @@ export function Hero() {
           </div>
 
           {/* Main Heading - Mobile Responsive Typography */}
-          <h1 className="heading-responsive-lg font-bold text-gray-900 mb-4 sm:mb-6 animate-fade-in leading-tight">
-            <span className="block">Strengthening our legacy</span>
-            <span className="gradient-text block mt-1.5">
+          <h1 className="heading-responsive-lg font-extrabold text-gray-900 mb-4 sm:mb-6 animate-fade-in leading-none">
+            <span
+              className="block text-white"
+              style={{
+                textShadow:
+                  "2px 2px 4px rgba(0,0,0,0.9), -1px -1px 2px rgba(255,255,255,0.2), 0 0 20px rgba(0,0,0,0.5)",
+              }}
+            >
+              Strengthening our legacy
+            </span>
+            <span
+              className="text-white block mt-1.5"
+              // className="gradient-text block mt-1.5"
+              style={{
+                textShadow:
+                  "2px 2px 4px rgba(0,0,0,0.9), -1px -1px 2px rgba(255,255,255,0.2), 0 0 20px rgba(0,0,0,0.5)",
+              }}
+            >
               Empowering the next generation of leaders
             </span>
           </h1>
 
           {/* Description - Mobile Optimized */}
-          <p className="text-base sm:text-lg lg:text-xl text-gray-700 mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed animate-fade-in px-4 sm:px-0">
-            Professional development meets cherished memories at our premier
-            alumni convention. Featuring keynote speakers, career networking,
-            and special reunion events.
-          </p>
+          <div className="text-center w-full">
+            <p className="bg-gradient-to-r from-primary-100/30 to-secondary-100/30 backdrop-blur-sm w-fit rounded-lg p-2 text-black text-base sm:text-lg lg:text-xl  mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed animate-fade-in px-4 sm:px-0">
+              Professional development meets cherished memories at our premier
+              alumni convention. Featuring keynote speakers, career networking,
+              and special reunion events.
+            </p>
+          </div>
 
           {/* CTA Buttons - Mobile Stack */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 sm:mb-16 animate-fade-in px-4 sm:px-0">
@@ -84,7 +214,7 @@ export function Hero() {
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto border-2 border-primary-600 text-primary-600 hover:bg-primary-50/80 backdrop-blur-sm mobile-button-responsive font-semibold hover-lift touch-target bg-white/70"
+                className="w-full sm:w-auto border-2 border-primary-600 text-primary-600 hover:bg-primary-50/80 backdrop-blur-sm mobile-button-responsive font-semibold hover-lift touch-target bg-white"
               >
                 Convention Program
                 <BookOpen className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
