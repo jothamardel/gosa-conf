@@ -14,11 +14,11 @@ import Link from "next/link";
 export function EventDetails() {
   const events = [
     {
-      title: "Medical Outreach",
-      date: "29th Oct. 2025",
-      time: "8:00am - 6:00pm",
-      location: "Gindiri",
-      description: "Medical Outreach",
+      title: "Annual General Meeting(AGM)",
+      date: "1st Nov. 2025",
+      time: "9:00am - 1:00pm",
+      location: "Crispan Events Centre",
+      description: "GOSA general meeting",
       type: "ceremony",
     },
     {
@@ -49,7 +49,7 @@ export function EventDetails() {
             <span className="gradient-text"> Schedule 2025</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Five(5) days packed with inspiring sessions, networking, community
+            Two(2) days packed with inspiring sessions, networking, community
             impact, and memorable experiences.
           </p>
         </div>

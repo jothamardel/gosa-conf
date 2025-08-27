@@ -176,7 +176,7 @@ export function Hero() {
                   "2px 2px 4px rgba(0,0,0,0.9), -1px -1px 2px rgba(255,255,255,0.2), 0 0 20px rgba(0,0,0,0.5)",
               }}
             >
-              Strengthening our legacy
+              Strengthening Our Legacy:
             </span>
             <span
               className="text-white block mt-1.5"
@@ -186,7 +186,7 @@ export function Hero() {
                   "2px 2px 4px rgba(0,0,0,0.9), -1px -1px 2px rgba(255,255,255,0.2), 0 0 20px rgba(0,0,0,0.5)",
               }}
             >
-              Empowering the next generation of leaders
+              Empowering the Next Generation of Leaders
             </span>
           </h1>
 

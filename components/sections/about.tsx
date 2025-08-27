@@ -1,6 +1,13 @@
-    "use client";
+"use client";
 
-import { GraduationCap, Users, Handshake, Calendar, Sparkles, ChevronRight } from "lucide-react";
+import {
+  GraduationCap,
+  Users,
+  Handshake,
+  Calendar,
+  Sparkles,
+  ChevronRight,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -24,8 +31,8 @@ export default function AboutSection() {
             Where Memories Meet New Beginnings
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Our platform bridges generations of alumni through professional networking 
-            and cherished reunions - all in one seamless experience.
+            Our platform bridges generations of alumni through professional
+            networking and cherished reunions - all in one seamless experience.
           </p>
         </motion.div>
 
@@ -36,10 +43,12 @@ export default function AboutSection() {
             className="bg-gray-50 p-6 rounded-xl border border-gray-200"
           >
             <GraduationCap className="w-10 h-10 text-primary-600 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Legacy Reconnected</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Legacy Reconnected
+            </h3>
             <p className="text-gray-600">
-              Rediscover your alma mater and classmates through digitized yearbooks 
-              and class timelines.
+              Rediscover your alma mater and classmates through digitized
+              yearbooks and class timelines.
             </p>
           </motion.div>
 
@@ -48,9 +57,12 @@ export default function AboutSection() {
             className="bg-gray-50 p-6 rounded-xl border border-gray-200"
           >
             <Handshake className="w-10 h-10 text-secondary-600 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Professional Network</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Professional Network
+            </h3>
             <p className="text-gray-600">
-              Leverage our alumni directory to find mentors, collaborators, or career opportunities.
+              Leverage our alumni directory to find mentors, collaborators, or
+              career opportunities.
             </p>
           </motion.div>
 
@@ -59,9 +71,12 @@ export default function AboutSection() {
             className="bg-gray-50 p-6 rounded-xl border border-gray-200"
           >
             <Calendar className="w-10 h-10 text-primary-600 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Annual Convention</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Annual Convention
+            </h3>
             <p className="text-gray-600">
-              Our flagship event combining professional development with milestone reunions.
+              Our event combining professional development with milestone
+              reunions.
             </p>
           </motion.div>
 
@@ -70,7 +85,9 @@ export default function AboutSection() {
             className="bg-gray-50 p-6 rounded-xl border border-gray-200"
           >
             <Users className="w-10 h-10 text-secondary-600 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Community First</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Community First
+            </h3>
             <p className="text-gray-600">
               Give back through mentorship programs and scholarship initiatives.
             </p>
@@ -85,8 +102,13 @@ export default function AboutSection() {
                 Alumni Convention 2024
               </h3>
               <p className="text-gray-700 mb-6">
-                This year's theme: <span className="font-semibold">"Bridging Generations"</span> 
-                celebrates our shared history while building future connections through:
+                This year's theme:{" "}
+                <span className="font-semibold">
+                  "Strengthening Our Legacy: Empowering the Next Generation of
+                  Leaders"
+                </span>
+                celebrates our shared history while building future connections
+                through:
               </p>
               <ul className="space-y-2 mb-6">
                 <li className="flex items-center">
@@ -102,8 +124,8 @@ export default function AboutSection() {
                   Interactive career workshops
                 </li>
               </ul>
-              <Link 
-                href="/convention" 
+              <Link
+                href="/convention"
                 className="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
               >
                 Explore Convention Details
@@ -113,8 +135,8 @@ export default function AboutSection() {
             <div className="md:w-1/2 md:pl-10">
               <div className="bg-white p-1 rounded-lg shadow-lg border border-gray-200">
                 <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-md overflow-hidden">
-                  <Image   
-                    src="/images/DSC_7550.jpg" 
+                  <Image
+                    src="/images/DSC_7550.jpg"
                     alt="2023 Alumni Convention Highlights"
                     className="object-cover w-full h-full"
                     width={640}
@@ -122,7 +144,9 @@ export default function AboutSection() {
                   />
                 </div>
                 <div className="p-4 text-center">
-                  <p className="text-sm text-gray-500">2024 Convention Highlights</p>
+                  <p className="text-sm text-gray-500">
+                    2024 Convention Highlights
+                  </p>
                 </div>
               </div>
             </div>
