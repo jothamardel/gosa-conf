@@ -1,6 +1,7 @@
 import { EventAgenda } from "@/components/agenda/event-agenda";
 import { Navigation } from "@/components/layout/navigation";
 import { Footer } from "@/components/layout/footer";
+import { Sponsors } from "@/components/sections/sponsors";
 
 export default function AgendaPage() {
   return (
@@ -14,12 +15,12 @@ export default function AgendaPage() {
               <span className="gradient-text"> Agenda</span>
             </h1>
             <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Discover our comprehensive five-day program featuring industry
+              Discover our comprehensive two-day program featuring industry
               experts, networking sessions, and engaging workshops.
             </p>
           </div>
-
           <EventAgenda />
+          <Sponsors bg={"bg-none"} />
         </div>
       </div>
       <Footer />

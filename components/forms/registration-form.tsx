@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,16 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { User, CreditCard, CheckCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Select, SelectContent, SelectItem } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectGroup,
+  SelectValue,
+  SelectLabel,
+  SelectSeparator,
+} from "../ui/select";
 
 const registrationSchema = z.object({
   // Personal Information
@@ -63,6 +72,7 @@ export function RegistrationForm() {
     watch,
     setValue,
     formState: { errors },
+    control,
   } = useForm<RegistrationData>({
     resolver: zodResolver(registrationSchema),
   });
@@ -94,6 +104,8 @@ export function RegistrationForm() {
         amount: calculatedTotal,
         quantity: data.quantity,
         persons: data.persons,
+        year: data.year,
+        house: data.house,
       };
 
       const response = await fetch("/api/v1/register", {
@@ -297,14 +309,66 @@ export function RegistrationForm() {
                 </div>
 
                 <div className="form-group">
-                  <Label htmlFor="jobTitle" className="mobile-form-label">
+                  <Label htmlFor="house" className="mobile-form-label">
                     House
                   </Label>
-                  <Select>
+                  <Controller
+                    name="house"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select house" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>GHS</SelectLabel>
+                            <SelectItem value="curie">Curie</SelectItem>
+                            <SelectItem value="keller">Keller</SelectItem>
+                            <SelectItem value="nightangle">
+                              Nightangle
+                            </SelectItem>
+                            <SelectItem value="slessor">Slessor</SelectItem>
+                          </SelectGroup>
+                          <SelectSeparator />
+                          <SelectGroup>
+                            <SelectLabel>BSS</SelectLabel>
+                            <SelectItem value="aggrey">Aggrey</SelectItem>
+                            <SelectItem value="carver">Carver</SelectItem>
+                            <SelectItem value="crowther">Crowther</SelectItem>
+                            <SelectItem value="livingstone">
+                              Livingstone
+                            </SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {/*<Select {...register("house")}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select house" />
+                    </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="aggrey">Aggrey</SelectItem>
+                      <SelectGroup>
+                        <SelectLabel>GHS</SelectLabel>
+                        <SelectItem value="curie">Curie</SelectItem>
+                        <SelectItem value="keller">Keller</SelectItem>
+                        <SelectItem value="nightangle">Nightangle</SelectItem>
+                        <SelectItem value="slessor">Slessor</SelectItem>
+                      </SelectGroup>
+                      <SelectSeparator />
+                      <SelectGroup>
+                        <SelectLabel>BSS</SelectLabel>
+                        <SelectItem value="aggrey">Aggrey</SelectItem>
+                        <SelectItem value="carver">Carver</SelectItem>
+                        <SelectItem value="crowther">Crowther</SelectItem>
+                        <SelectItem value="livingstone">Livingstone</SelectItem>
+                      </SelectGroup>
                     </SelectContent>
-                  </Select>
+                  </Select>*/}
                 </div>
 
                 <div className="form-group sm:col-span-2">
@@ -316,9 +380,10 @@ export function RegistrationForm() {
                     type="number"
                     min="1"
                     max="10"
+                    defaultValue={1}
                     {...register("quantity", { valueAsNumber: true })}
                     className="mobile-form-input"
-                    placeholder="1"
+                    placeholder=""
                     onChange={(e) => {
                       const quantity = parseInt(e.target.value) || 1;
                       setValue("quantity", quantity);

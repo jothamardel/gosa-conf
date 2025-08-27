@@ -27,6 +27,8 @@ export class UserUtils {
     fullName?: string;
     email: string;
     phoneNumber: string;
+    year?: string;
+    house?: string;
   }): Promise<IUser> {
     await connectDB();
 
@@ -43,6 +45,8 @@ export class UserUtils {
         fullName,
         email: userData.email.toLowerCase(),
         phoneNumber: userData.phoneNumber,
+        year: userData.year,
+        house: userData.house,
       });
     }
 

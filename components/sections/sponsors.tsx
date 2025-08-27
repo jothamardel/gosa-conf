@@ -18,9 +18,9 @@ const animationStyles = `
   }
 `;
 
-export function Sponsors() {
+export function Sponsors({ bg = "bg-white" }) {
   return (
-    <div className="pt-12 sm:pt-16 relative bg-white">
+    <div className={`pt-12 sm:pt-16 relative ${bg}`}>
       {/* Inject animation styles */}
       <style>{animationStyles}</style>
 

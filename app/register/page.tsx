@@ -1,6 +1,7 @@
-import { RegistrationForm } from '@/components/forms/registration-form';
-import { Navigation } from '@/components/layout/navigation';
-import { Footer } from '@/components/layout/footer';
+import { RegistrationForm } from "@/components/forms/registration-form";
+import { Navigation } from "@/components/layout/navigation";
+import { Footer } from "@/components/layout/footer";
+import { Sponsors } from "@/components/sections/sponsors";
 
 export default function RegisterPage() {
   return (
@@ -11,15 +12,22 @@ export default function RegisterPage() {
           <div className="text-center mb-8 sm:mb-12">
             <h1 className="heading-responsive-lg font-bold text-gray-900 mb-3 sm:mb-4">
               Register for
-              <span className="gradient-text block sm:inline"> GOSA Convention 2025</span>
+              <span className="gradient-text block sm:inline">
+                {" "}
+                GOSA Convention 2025
+              </span>
             </h1>
             <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Secure your spot at the premier alumni convention. Complete your registration and receive your QR code for seamless check-in.
+              Secure your spot at the alumni convention. Complete your
+              registration and receive your QR code for seamless check-in.
             </p>
           </div>
 
           <RegistrationForm />
         </div>
+      </div>
+      <div className="mb-6">
+        <Sponsors bg={"bg-none"} />
       </div>
       <Footer />
     </div>

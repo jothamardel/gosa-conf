@@ -6,6 +6,8 @@ export interface IUser extends Document {
   phoneNumber: string;
   createdAt: Date;
   updatedAt: Date;
+  house: string;
+  year: string;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -27,6 +29,12 @@ const UserSchema = new Schema<IUser>(
       required: true,
       unique: true,
       trim: true,
+    },
+    house: {
+      type: String,
+    },
+    year: {
+      type: String,
     },
   },
   {
