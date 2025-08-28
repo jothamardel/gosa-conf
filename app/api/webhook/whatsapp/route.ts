@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     
     await Wasender.httpSenderMessage({
       to: body?.data?.messages?.key?.remoteJid,
+      // @ts-ignore
       text: response?.response as string || response as string
     })
     
