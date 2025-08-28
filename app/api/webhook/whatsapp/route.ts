@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     
     await Wasender.httpSenderMessage({
       to: body?.data?.messages?.key?.remoteJid,
-      text: response?.response || response
+      text: response?.response as string || response as string
     })
     
     
