@@ -74,6 +74,7 @@
     "next-auth": "^4.24.5",
     "next-themes": "^0.3.0",
     "nodemailer": "^6.9.8",
+    "openai": "^5.16.0",
     "postcss": "8.4.30",
     "puppeteer": "^24.16.1",
     "qrcode": "^1.5.4",
