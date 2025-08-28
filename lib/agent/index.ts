@@ -87,7 +87,7 @@ class AgentClass {
       return response.choices[0]?.message?.content;
     }catch(err) {
       console.log(err)
-      throw error;
+      throw err;
       
     }
   }
