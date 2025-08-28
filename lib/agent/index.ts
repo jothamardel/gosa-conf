@@ -12,7 +12,7 @@ import OpenAI from 'openai';
 
 
 class AgentClass {
-  // this.openAI: OpenAI;
+  private openAI: OpenAI;
   constructor() {
     this.openAI = new OpenAI();
   }
