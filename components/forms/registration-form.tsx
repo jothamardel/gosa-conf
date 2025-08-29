@@ -81,9 +81,9 @@ export function RegistrationForm() {
 
   // Calculate total cost
   const calculateTotal = () => {
-    const basePrice = process.env.REGISTRATION_FEE; // Base registration fee per person in Naira
+    const basePrice = process.env.REGISTRATION_FEE || 700; // Base registration fee per person in Naira
     const quantity = watchedValues.quantity || 1;
-    const total = basePrice * quantity;
+    const total = +basePrice * quantity;
 
     setCalculatedTotal(total);
   };
