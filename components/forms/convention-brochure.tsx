@@ -26,9 +26,11 @@ interface Errors {
 }
 
 const BROCHURE_PRICING = {
-  digital: 10,
-  physical: 25
+  digital: process.env.BROCHURE_PHYSICAL_FEE,
+  physical: process.env.BROCHURE_PHYSICAL_FEE
 }
+// BROCHURE_PHYSICAL_FEE=1200
+// BROCHURE_DIGITAL_FEE=2200
 
 const ConventionBrochure = () => {
   const [formData, setFormData] = useState<FormData>({

@@ -81,7 +81,7 @@ export function RegistrationForm() {
 
   // Calculate total cost
   const calculateTotal = () => {
-    const basePrice = 50; // Base registration fee per person in Naira
+    const basePrice = process.env.REGISTRATION_FEE; // Base registration fee per person in Naira
     const quantity = watchedValues.quantity || 1;
     const total = basePrice * quantity;
 
@@ -563,7 +563,7 @@ export function RegistrationForm() {
                       <div className="flex justify-between text-sm sm:text-base">
                         <span>Subtotal</span>
                         <span>
-                          ₦{(50 * (watchedValues.quantity || 1)).toFixed(2)}
+                          ₦{(process.env.REGISTRATION_FEE * (watchedValues.quantity || 1)).toFixed(2)}
                         </span>
                       </div>
 
