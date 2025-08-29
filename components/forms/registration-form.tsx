@@ -563,7 +563,7 @@ export function RegistrationForm() {
                       <div className="flex justify-between text-sm sm:text-base">
                         <span>Subtotal</span>
                         <span>
-                          ₦{(process.env.REGISTRATION_FEE * (watchedValues.quantity || 1)).toFixed(2)}
+                          ₦{(+(process.env.REGISTRATION_FEE || 700) * (watchedValues.quantity || 1)).toFixed(2)}
                         </span>
                       </div>
 
