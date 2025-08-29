@@ -554,7 +554,7 @@ export function RegistrationForm() {
                     <div className="bg-primary-50 p-4 rounded-lg space-y-3">
                       <div className="flex justify-between text-sm sm:text-base">
                         <span>Registration Fee</span>
-                        <span>₦50.00 per person</span>
+                        <span>₦{+(process.env.REGISTRATION_FEE || 700)} per person</span>
                       </div>
                       <div className="flex justify-between text-sm sm:text-base">
                         <span>Number of Tickets</span>
