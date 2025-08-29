@@ -46,12 +46,12 @@ const ConventionBrochure = () => {
 
   const calculateTotal = (): number => {
     if (!formData.purchaseBrochure || !formData.brochureType) return 0
-    return BROCHURE_PRICING[formData.brochureType] * formData.quantity
+    return +BROCHURE_PRICING[formData.brochureType] * formData.quantity
   }
 
   const getPricePerUnit = (): number => {
     if (!formData.brochureType) return 0
-    return BROCHURE_PRICING[formData.brochureType]
+    return +BROCHURE_PRICING[formData.brochureType]
   }
 
   const normalizePhoneNumber = (phoneNumber: string): string => {
