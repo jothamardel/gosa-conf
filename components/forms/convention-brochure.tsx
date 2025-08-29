@@ -26,8 +26,8 @@ interface Errors {
 }
 
 const BROCHURE_PRICING = {
-  digital: process.env.BROCHURE_PHYSICAL_FEE,
-  physical: process.env.BROCHURE_PHYSICAL_FEE
+  digital: +process.env.BROCHURE_PHYSICAL_FEE as string,
+  physical: +process.env.BROCHURE_PHYSICAL_FEE as string
 }
 // BROCHURE_PHYSICAL_FEE=1200
 // BROCHURE_DIGITAL_FEE=2200
@@ -35,7 +35,7 @@ const BROCHURE_PRICING = {
 const ConventionBrochure = () => {
   const [formData, setFormData] = useState<FormData>({
     purchaseBrochure: false,
-    brochureType: 'digital',
+    brochureType: 'physical',
     quantity: 1,
     recipientDetails: [{ name: '', email: '', phone: '' }],
     agreeToTerms: false,
