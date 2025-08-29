@@ -170,8 +170,8 @@ export function EventAgenda() {
         {/* Mobile-Optimized Day Navigation */}
         <div className="mb-6 sm:mb-8">
           {/* Mobile: Horizontal Scrollable Tabs */}
-          <div className="block sm:hidden">
-            {/*<div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
+          {/*<div className="block sm:hidden">
+            <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
               {Object.entries(agendaData).map(
                 ([dayKey, dayData]: any, index) => (
                   <button
