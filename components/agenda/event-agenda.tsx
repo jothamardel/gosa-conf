@@ -171,7 +171,7 @@ export function EventAgenda() {
         <div className="mb-6 sm:mb-8">
           {/* Mobile: Horizontal Scrollable Tabs */}
           <div className="block sm:hidden">
-            <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
+            {/*<div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
               {Object.entries(agendaData).map(
                 ([dayKey, dayData]: any, index) => (
                   <button
@@ -188,9 +188,9 @@ export function EventAgenda() {
                         Day {index + 1}
                       </div>
                       <div className="text-xs opacity-90">
-                        {/*{dayKey === "day-1" && "Oct 29"}
+                        {dayKey === "day-1" && "Oct 29"}
                         {dayKey === "day-2" && "Oct 30"}
-                        {dayKey === "day-3" && "Oct 31"}*/}
+                        {dayKey === "day-3" && "Oct 31"}
                         {dayKey === "day-1" && "Nov 1"}
                         {dayKey === "day-2" && "Nov 2"}
                       </div>
@@ -199,7 +199,7 @@ export function EventAgenda() {
                 ),
               )}
             </div>
-          </div>
+          </div>*/}
 
           {/* Desktop: Grid Layout */}
           <div className="flex justify-center w-full">

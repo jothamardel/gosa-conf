@@ -79,6 +79,8 @@ class AgentClass {
             - **Dinner reservations** → https://www.gosa.events/dinner
             - **Make donations** → https://www.gosa.events/donate
             - **Create badge** → https://www.gosa.events/badge
+            - **Convention Schedule/agenda** → https://www.gosa.events/agenda
+
 
             ---
 
