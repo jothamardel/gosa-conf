@@ -351,7 +351,7 @@ export class DinnerUtils {
   /**
    * Calculate dinner reservation total amount
    */
-  static calculateTotalAmount(numberOfGuests: number, pricePerPerson: number = 75): number {
+  static calculateTotalAmount(numberOfGuests: number, pricePerPerson: number = 3200): number {
     return numberOfGuests * pricePerPerson;
   }
 
