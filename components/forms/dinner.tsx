@@ -37,7 +37,7 @@ const DinnerPayment = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const calculateTotal = (): number => {
-    return formData.dinnerTicket ? 75 * formData.numberOfGuests : 0
+    return formData.dinnerTicket ? 3200 * formData.numberOfGuests : 0
   }
 
   const validateForm = (): boolean => {
@@ -414,7 +414,7 @@ const DinnerPayment = () => {
 
         {/* Footer */}
         <div className="text-center text-gray-500 text-sm mt-8">
-          <p>Questions? Contact us at events@company.com or (555) 123-4567</p>
+          <p>Questions? Contact us at info@gosa.events</p>
         </div>
       </div>
     </div>

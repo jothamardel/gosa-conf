@@ -28,14 +28,14 @@ interface Errors {
   agreeToTerms?: string
 }
 
-const SUGGESTED_AMOUNTS = [10, 25, 50, 100, 250]
-const MIN_DONATION = 10
+const SUGGESTED_AMOUNTS = [1000, 2500, 5000, 10000, 25000]
+const MIN_DONATION = 1000
 
 const GoodwillMessage = () => {
   const [formData, setFormData] = useState<FormData>({
     includeMessage: false,
     message: '',
-    donationAmount: 25,
+    donationAmount: 2500,
     customAmount: '',
     attributionName: '',
     email: '',

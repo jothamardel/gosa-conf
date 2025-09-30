@@ -204,14 +204,7 @@ export async function POST(req: NextRequest) {
       notification: notificationResult,
     });
 
-    // return NextResponse.json(
-    //   {
-    //     message: "Success",
-    //     success: true,
 
-    //   },
-
-    // );
   } catch (error: any) {
     console.error("Webhook handler error:", error);
     return NextResponse.json(
@@ -516,5 +509,3 @@ function convertToInternationalFormat(phoneNumber: string) {
 
   throw new Error("Invalid Nigerian phone number format");
 }
-
-

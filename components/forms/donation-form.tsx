@@ -34,7 +34,7 @@ const MIN_DONATION = 5
 
 const DonationForm = () => {
   const [formData, setFormData] = useState<FormData>({
-    donationAmount: 25,
+    donationAmount: 2500,
     customAmount: '',
     donorName: '',
     donorEmail: '',
@@ -48,26 +48,26 @@ const DonationForm = () => {
 
   const donationOptions: DonationOption[] = [
     {
-      amount: 25,
-      label: '₦25',
+      amount: 2500,
+      label: '₦2,500',
       description: 'Provides materials for one student',
       icon: BookOpen
     },
     {
-      amount: 50,
-      label: '₦50',
+      amount: 5000,
+      label: '₦5,000',
       description: 'Supports a workshop session',
       icon: Lightbulb
     },
     {
-      amount: 100,
-      label: '₦100',
+      amount: 10000,
+      label: '₦10,000',
       description: 'Sponsors a community program',
       icon: Users
     },
     {
-      amount: 250,
-      label: '₦250',
+      amount: 25000,
+      label: '₦25,000',
       description: 'Funds a complete course',
       icon: Shield
     }

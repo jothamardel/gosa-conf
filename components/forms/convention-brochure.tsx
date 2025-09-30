@@ -26,8 +26,8 @@ interface Errors {
 }
 
 const BROCHURE_PRICING = {
-  digital: process.env.BROCHURE_PHYSICAL_FEE ||2200,
-  physical: process.env.BROCHURE_PHYSICAL_FEE ||1200
+  digital: process.env.NEXT_APP_BROCHURE_PHYSICAL_FEE || 2200,
+  physical: process.env.NEXT_APP_BROCHURE_PHYSICAL_FEE || 1200
 }
 // BROCHURE_PHYSICAL_FEE=1200
 // BROCHURE_DIGITAL_FEE=2200
