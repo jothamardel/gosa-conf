@@ -217,7 +217,7 @@ const DinnerPayment = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-primary-600">₦75</div>
+                  <div className="text-2xl font-bold text-primary-600">₦3,200</div>
                   <div className="text-gray-600 text-sm">per person</div>
                 </div>
               </div>

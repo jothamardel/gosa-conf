@@ -150,8 +150,8 @@ export function RegistrationForm() {
             <div key={i} className="flex items-center">
               <div
                 className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base ${i <= step
-                    ? "bg-primary-600 text-white"
-                    : "bg-gray-200 text-gray-600"
+                  ? "bg-primary-600 text-white"
+                  : "bg-gray-200 text-gray-600"
                   }`}
               >
                 {i < step ? (
@@ -552,7 +552,7 @@ export function RegistrationForm() {
                     <div className="bg-primary-50 p-4 rounded-lg space-y-3">
                       <div className="flex justify-between text-sm sm:text-base">
                         <span>Registration Fee</span>
-                        <span>₦{+(process.env.REGISTRATION_FEE || 700)} per person</span>
+                        <span>₦{+(process.env.NEXT_APP_REGISTRATION_FEE || 720)} per person</span>
                       </div>
                       <div className="flex justify-between text-sm sm:text-base">
                         <span>Number of Tickets</span>
