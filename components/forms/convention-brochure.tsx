@@ -27,7 +27,7 @@ interface Errors {
 
 const BROCHURE_PRICING = {
   digital: process.env.NEXT_APP_BROCHURE_PHYSICAL_FEE || 2200,
-  physical: process.env.NEXT_APP_BROCHURE_PHYSICAL_FEE || 1200
+  physical: process.env.NEXT_APP_BROCHURE_PHYSICAL_FEE || 2200
 }
 // BROCHURE_PHYSICAL_FEE=1200
 // BROCHURE_DIGITAL_FEE=2200
@@ -399,7 +399,7 @@ const ConventionBrochure = () => {
                       <div>
                         <label className="block text-sm font-semibold text-gray-900 mb-3">Brochure Type</label>
                         <div className="grid grid-cols-2 gap-2">
-                          <div
+                          {/* <div
                             className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${formData.brochureType === 'digital'
                               ? 'border-primary-500 bg-primary-50'
                               : 'border-gray-200 hover:border-primary-300'
@@ -417,7 +417,7 @@ const ConventionBrochure = () => {
                               <span className="text-sm font-medium">Digital</span>
                             </div>
                             <p className="text-xs text-gray-500 mt-1 ml-6">₦{BROCHURE_PRICING.digital} • Instant download</p>
-                          </div>
+                          </div> */}
                           <div
                             className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${formData.brochureType === 'physical'
                               ? 'border-primary-500 bg-primary-50'
