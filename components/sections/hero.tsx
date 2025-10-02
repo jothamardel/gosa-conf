@@ -70,7 +70,10 @@ export function Hero() {
 
       {/* Background Image Carousel */}
       <div className="absolute inset-0">
-        {backgroundImages.map((image, index) => (
+        <video loop autoPlay muted>
+          <source src="https://cad1586blf8dbj3t.public.blob.vercel-storage.com/gosa" />
+        </video>
+        {/*{backgroundImages.map((image, index) => (
           <div
             key={index}
             className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ${
@@ -80,11 +83,11 @@ export function Hero() {
               backgroundImage: `url('${image}')`,
             }}
           />
-        ))}
+        ))}*/}
       </div>
 
       {/* Carousel Navigation Arrows */}
-      <button
+      {/*<button
         onClick={prevSlide}
         className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm rounded-full p-3 hover:bg-white/30 transition-all duration-200 group"
       >
@@ -120,10 +123,10 @@ export function Hero() {
             d="M9 5l7 7-7 7"
           />
         </svg>
-      </button>
+      </button>*/}
 
       {/* Carousel Indicators */}
-      <div className="absolute bottom-4  left-1/2 -translate-x-1/2 z-20 flex space-x-2">
+      {/*<div className="absolute bottom-4  left-1/2 -translate-x-1/2 z-20 flex space-x-2">
         {backgroundImages.map((_, index) => (
           <button
             key={index}
@@ -135,7 +138,7 @@ export function Hero() {
             }`}
           />
         ))}
-      </div>
+      </div>*/}
 
       {/* White Gradient Overlay */}
       {/*<div className="absolute inset-0 bg-gradient-to-br from-black/90 via-white/85 to-black/80"></div>*/}
