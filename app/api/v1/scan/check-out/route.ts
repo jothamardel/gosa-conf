@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Update the ticket (temporary check-out - they can check back in)
+    // @ts-ignore
     const updatedTicket = await Model.findByIdAndUpdate(
       ticketId,
       {
