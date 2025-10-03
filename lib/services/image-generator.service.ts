@@ -1,7 +1,7 @@
 import { PDFData } from "@/lib/types";
 import * as QRCode from "qrcode";
 
-export interface ImageData extends PDFData {}
+export interface ImageData extends PDFData { }
 
 export class ImageGeneratorService {
   /**
@@ -25,40 +25,9 @@ export class ImageGeneratorService {
         `[IMAGE-GENERATOR] Generating image for ${data.operationDetails.paymentReference}`,
       );
 
-      // Check if we're on Vercel
-      const isVercel = process.env.VERCEL === "1" || process.env.VERCEL_ENV;
-
-      if (isVercel) {
-        console.log(
-          "[IMAGE-GENERATOR] Running on Vercel, using canvas-based generation",
-        );
-        return await this.generateCanvasImage(data);
-      } else {
-        // Try Sharp for local development
-        try {
-          const sharp = require("sharp");
-          const svgContent = await this.generateSVGContent(data);
-
-          const pngBuffer = await sharp(Buffer.from(svgContent))
-            .png({ quality: 90, compressionLevel: 6 })
-            .resize(800, 1200, {
-              fit: "inside",
-              background: { r: 255, g: 255, b: 255, alpha: 1 },
-            })
-            .toBuffer();
-
-          console.log(
-            `[IMAGE-GENERATOR] Sharp conversion successful (${pngBuffer.length} bytes)`,
-          );
-          return pngBuffer;
-        } catch (sharpError) {
-          console.warn(
-            "[IMAGE-GENERATOR] Sharp failed, falling back to canvas:",
-            sharpError,
-          );
-          return await this.generateCanvasImage(data);
-        }
-      }
+      // Always use Canvas for consistent QR code and logo rendering
+      console.log("[IMAGE-GENERATOR] Using canvas-based generation for consistent rendering");
+      return await this.generateCanvasImage(data);
     } catch (error) {
       console.error("[IMAGE-GENERATOR] Critical error:", error);
       return this.generateTextFallback(data);
@@ -221,6 +190,7 @@ export class ImageGeneratorService {
       // Load and draw logo if available
       try {
         const logoBuffer = await this.loadLogoBuffer();
+
         if (logoBuffer) {
           const logoImage = await loadImage(logoBuffer);
           ctx.drawImage(logoImage, 95, 85, 50, 50);
@@ -410,6 +380,7 @@ export class ImageGeneratorService {
       // Generate and draw QR code
       try {
         const qrCodeBuffer = await this.generateQRCodeBuffer(data.qrCodeData);
+
         if (qrCodeBuffer) {
           const qrImage = await loadImage(qrCodeBuffer);
           ctx.drawImage(qrImage, 320, 680, 160, 160);
@@ -426,7 +397,7 @@ export class ImageGeneratorService {
           ctx.fillText("QR Code", 400, 760);
         }
       } catch (qrError) {
-        console.warn("[IMAGE-GENERATOR] QR code generation failed:", qrError);
+        console.error("[IMAGE-GENERATOR] QR code generation failed:", qrError);
         // Draw QR placeholder
         ctx.fillStyle = "#F3F4F6";
         ctx.fillRect(320, 680, 160, 160);
@@ -499,7 +470,7 @@ export class ImageGeneratorService {
   ): Promise<Buffer | null> {
     try {
       const QRCode = require("qrcode");
-      return await QRCode.toBuffer(qrData, {
+      const buffer = await QRCode.toBuffer(qrData, {
         width: 160,
         margin: 1,
         errorCorrectionLevel: "M",
@@ -508,6 +479,7 @@ export class ImageGeneratorService {
           light: "#ffffff",
         },
       });
+      return buffer;
     } catch (error) {
       console.error(
         "[IMAGE-GENERATOR] QR code buffer generation failed:",
@@ -604,7 +576,25 @@ export class ImageGeneratorService {
       data.operationDetails.date,
     ).toLocaleDateString();
 
-    return `<svg width="800" height="1200" xmlns="http://www.w3.org/2000/svg">
+    // Generate QR code as data URL for SVG
+    let qrCodeDataURL = '';
+    try {
+      const QRCode = require("qrcode");
+      qrCodeDataURL = await QRCode.toDataURL(data.qrCodeData, {
+        errorCorrectionLevel: 'M',
+        type: 'image/png',
+        margin: 1,
+        color: {
+          dark: '#16A34A',
+          light: '#FFFFFF'
+        },
+        width: 160
+      });
+    } catch (qrError) {
+      console.warn('[IMAGE-GENERATOR] QR code generation failed for SVG:', qrError);
+    }
+
+    return `<svg width="800" height="1200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <rect width="800" height="1200" fill="#F9FAFB"/>
   <rect x="40" y="40" width="720" height="1120" rx="20" fill="white" stroke="#E5E7EB"/>
   <rect x="60" y="60" width="680" height="100" rx="15" fill="#16A34A"/>
@@ -636,8 +626,11 @@ export class ImageGeneratorService {
   <rect x="80" y="620" width="640" height="200" rx="10" fill="white" stroke="#16A34A" stroke-width="2"/>
   <text x="400" y="645" text-anchor="middle" font-family="Arial" font-size="18" font-weight="bold" fill="#16A34A">Event Access QR Code</text>
   <text x="400" y="665" text-anchor="middle" font-family="Arial" font-size="12" fill="#374151">Present this at the event</text>
-  <rect x="320" y="680" width="160" height="160" rx="8" fill="#F3F4F6" stroke="#D1D5DB"/>
-  <text x="400" y="770" text-anchor="middle" font-family="Arial" font-size="12" fill="#6B7280">QR Code Available in PNG version</text>
+  ${qrCodeDataURL ?
+        `<image x="320" y="680" width="160" height="160" xlink:href="${qrCodeDataURL}"/>` :
+        `<rect x="320" y="680" width="160" height="160" rx="8" fill="#F3F4F6" stroke="#D1D5DB"/>
+     <text x="400" y="770" text-anchor="middle" font-family="Arial" font-size="12" fill="#6B7280">QR Code Unavailable</text>`
+      }
 </svg>`;
   }
 

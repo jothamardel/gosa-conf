@@ -159,7 +159,7 @@ export default function BadgePage() {
                         <div className="flex items-center justify-center gap-2 text-green-800">
                           <Calendar className="w-4 h-4" />
                           <p className="text-sm font-medium">
-                            23rd - 25th August {CONVENTION_YEAR}
+                            1st - 2nd November, {CONVENTION_YEAR}
                           </p>
                         </div>
                         <div className="flex items-center justify-center gap-2 text-green-800">

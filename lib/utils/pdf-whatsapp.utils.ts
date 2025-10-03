@@ -572,39 +572,8 @@ export class PDFWhatsAppUtils {
     additionalData?: any
   ): Promise<string> {
     try {
-      const baseData = {
-        type: serviceType,
-        id: serviceId,
-        timestamp: new Date().toISOString(),
-        ...additionalData,
-      };
-
-      // Set appropriate expiration based on service type
-      let validUntil: Date;
-      switch (serviceType) {
-        case 'convention':
-        case 'goodwill':
-        case 'donation':
-          validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year
-          break;
-        case 'dinner':
-          validUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
-          break;
-        case 'accommodation':
-          validUntil = additionalData?.checkOutDate
-            ? new Date(additionalData.checkOutDate)
-            : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days default
-          break;
-        case 'brochure':
-          validUntil = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days
-          break;
-        default:
-          validUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year default
-      }
-
-      baseData.validUntil = validUntil.toISOString();
-
-      return JSON.stringify(baseData);
+      // Generate the URL format for QR code scanning
+      return `https://gosa.events/scan?id=${serviceId}`;
     } catch (error) {
       console.error('Error generating service QR code data:', error);
       throw new Error('Failed to generate QR code data');

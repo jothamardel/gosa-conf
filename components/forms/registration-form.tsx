@@ -149,10 +149,11 @@ export function RegistrationForm() {
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center">
               <div
-                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base ${i <= step
-                  ? "bg-primary-600 text-white"
-                  : "bg-gray-200 text-gray-600"
-                  }`}
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base ${
+                  i <= step
+                    ? "bg-primary-600 text-white"
+                    : "bg-gray-200 text-gray-600"
+                }`}
               >
                 {i < step ? (
                   <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -162,8 +163,9 @@ export function RegistrationForm() {
               </div>
               {i < 3 && (
                 <div
-                  className={`w-8 sm:w-16 h-1 mx-1 sm:mx-2 ${i < step ? "bg-primary-600" : "bg-gray-200"
-                    }`}
+                  className={`w-8 sm:w-16 h-1 mx-1 sm:mx-2 ${
+                    i < step ? "bg-primary-600" : "bg-gray-200"
+                  }`}
                 />
               )}
             </div>
@@ -552,7 +554,10 @@ export function RegistrationForm() {
                     <div className="bg-primary-50 p-4 rounded-lg space-y-3">
                       <div className="flex justify-between text-sm sm:text-base">
                         <span>Registration Fee</span>
-                        <span>₦{+(process.env.NEXT_APP_REGISTRATION_FEE || 720)} per person</span>
+                        <span>
+                          ₦{+(process.env.NEXT_APP_REGISTRATION_FEE || 720)} per
+                          person
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm sm:text-base">
                         <span>Number of Tickets</span>
@@ -561,7 +566,11 @@ export function RegistrationForm() {
                       <div className="flex justify-between text-sm sm:text-base">
                         <span>Subtotal</span>
                         <span>
-                          ₦{(+(process.env.REGISTRATION_FEE || 700) * (watchedValues.quantity || 1)).toFixed(2)}
+                          ₦
+                          {(
+                            +(process.env.NEXT_APP_REGISTRATION_FEE || 720) *
+                            (watchedValues.quantity || 1)
+                          ).toFixed(2)}
                         </span>
                       </div>
 

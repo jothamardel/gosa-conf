@@ -20,12 +20,18 @@ async function validatePDFUtils() {
         additionalData
       );
       
-      const parsedData = JSON.parse(qrData);
-      console.log(`   ${serviceType}: ✓ Generated QR data with type: ${parsedData.type}`);
+      console.log(`   ${serviceType}: ✓ Generated QR data: ${qrData}`);
       
-      // Validate structure
-      if (!parsedData.type || !parsedData.id || !parsedData.validUntil || !parsedData.timestamp) {
-        throw new Error(`Invalid QR data structure for ${serviceType}`);
+      // Validate URL format
+      if (!qrData.startsWith('https://gosa.events/scan?id=')) {
+        throw new Error(`Invalid QR data format for ${serviceType}. Expected URL format.`);
+      }
+      
+      // Extract and validate ID
+      const url = new URL(qrData);
+      const id = url.searchParams.get('id');
+      if (!id) {
+        throw new Error(`Missing ID in QR data for ${serviceType}`);
       }
     }
 
@@ -50,8 +56,8 @@ async function validatePDFUtils() {
       }
     }
 
-    // Test 3: Validate QR code data structure for accommodation with custom checkout
-    console.log('\n✅ Test 3: Validate accommodation QR data with custom checkout date');
+    // Test 3: Validate QR code data structure for accommodation
+    console.log('\n✅ Test 3: Validate accommodation QR data format');
     const checkOutDate = new Date('2024-12-31T10:00:00Z');
     const accomQrData = await PDFWhatsAppUtils.generateServiceQRCodeData(
       'accommodation',
@@ -63,44 +69,36 @@ async function validatePDFUtils() {
       }
     );
 
-    const accomParsedData = JSON.parse(accomQrData);
-    console.log(`   ✓ Accommodation QR data uses custom checkout date: ${accomParsedData.validUntil}`);
+    console.log(`   ✓ Accommodation QR data: ${accomQrData}`);
     
-    if (accomParsedData.validUntil !== checkOutDate.toISOString()) {
-      throw new Error('Custom checkout date not properly set in accommodation QR data');
+    if (!accomQrData.startsWith('https://gosa.events/scan?id=')) {
+      throw new Error('Accommodation QR data should use URL format');
     }
 
-    // Test 4: Validate expiration times for different service types
-    console.log('\n✅ Test 4: Validate expiration times for different service types');
-    const now = Date.now();
+    // Test 4: Validate URL format consistency
+    console.log('\n✅ Test 4: Validate URL format consistency');
     
-    const conventionQr = JSON.parse(await PDFWhatsAppUtils.generateServiceQRCodeData('convention', serviceId, additionalData));
-    const dinnerQr = JSON.parse(await PDFWhatsAppUtils.generateServiceQRCodeData('dinner', serviceId, additionalData));
-    const brochureQr = JSON.parse(await PDFWhatsAppUtils.generateServiceQRCodeData('brochure', serviceId, additionalData));
+    const conventionQr = await PDFWhatsAppUtils.generateServiceQRCodeData('convention', serviceId, additionalData);
+    const dinnerQr = await PDFWhatsAppUtils.generateServiceQRCodeData('dinner', serviceId, additionalData);
+    const brochureQr = await PDFWhatsAppUtils.generateServiceQRCodeData('brochure', serviceId, additionalData);
 
-    const conventionExpiry = new Date(conventionQr.validUntil).getTime();
-    const dinnerExpiry = new Date(dinnerQr.validUntil).getTime();
-    const brochureExpiry = new Date(brochureQr.validUntil).getTime();
+    console.log(`   ✓ Convention QR: ${conventionQr}`);
+    console.log(`   ✓ Dinner QR: ${dinnerQr}`);
+    console.log(`   ✓ Brochure QR: ${brochureQr}`);
 
-    // Convention should expire in ~1 year (365 days)
-    const conventionDays = Math.round((conventionExpiry - now) / (1000 * 60 * 60 * 24));
-    console.log(`   ✓ Convention expires in ~${conventionDays} days (expected ~365)`);
-    
-    // Dinner should expire in ~30 days
-    const dinnerDays = Math.round((dinnerExpiry - now) / (1000 * 60 * 60 * 24));
-    console.log(`   ✓ Dinner expires in ~${dinnerDays} days (expected ~30)`);
-    
-    // Brochure should expire in ~90 days
-    const brochureDays = Math.round((brochureExpiry - now) / (1000 * 60 * 60 * 24));
-    console.log(`   ✓ Brochure expires in ~${brochureDays} days (expected ~90)`);
+    // All should have the same format with the service ID
+    const expectedUrl = `https://gosa.events/scan?id=${serviceId}`;
+    if (conventionQr !== expectedUrl || dinnerQr !== expectedUrl || brochureQr !== expectedUrl) {
+      throw new Error('QR codes should all use the same URL format with service ID');
+    }
 
     console.log('\n🎉 All PDF WhatsApp Utils validation tests passed!');
     console.log('\n📋 Summary:');
     console.log('   ✓ QR code data generation for all service types');
     console.log('   ✓ Service type extraction from payment references');
-    console.log('   ✓ Custom expiration dates for accommodation');
-    console.log('   ✓ Appropriate expiration times for each service type');
-    console.log('   ✓ Data structure validation');
+    console.log('   ✓ URL format validation for QR codes');
+    console.log('   ✓ Consistent ID usage across service types');
+    console.log('   ✓ Proper URL structure validation');
 
   } catch (error) {
     console.error('\n❌ Validation failed:', error.message);

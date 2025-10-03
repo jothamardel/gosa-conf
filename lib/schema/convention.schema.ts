@@ -8,6 +8,16 @@ export interface IConventionRegistration extends Document {
   confirm: boolean;
   collected: boolean;
   checkIn: boolean;
+  checkedIn: boolean;
+  checkedInAt?: Date;
+  checkedOutAt?: Date;
+  checkInHistory: Array<{
+    action: 'check-in' | 'check-out';
+    timestamp: Date;
+    officialId: string;
+    officialName: string;
+  }>;
+  status: string;
   createdAt: Date;
   updatedAt: Date;
   persons: [];
@@ -47,6 +57,40 @@ const ConventionRegistrationSchema = new Schema<IConventionRegistration>(
     checkIn: {
       type: Boolean,
       default: false,
+    },
+    checkedIn: {
+      type: Boolean,
+      default: false,
+    },
+    checkedInAt: {
+      type: Date,
+    },
+    checkedOutAt: {
+      type: Date,
+    },
+    checkInHistory: [{
+      action: {
+        type: String,
+        enum: ['check-in', 'check-out'],
+        required: true,
+      },
+      timestamp: {
+        type: Date,
+        required: true,
+      },
+      officialId: {
+        type: String,
+        required: true,
+      },
+      officialName: {
+        type: String,
+        required: true,
+      },
+    }],
+    status: {
+      type: String,
+      enum: ['pending', 'confirmed', 'cancelled'],
+      default: 'pending',
     },
     persons: {
       type: [],

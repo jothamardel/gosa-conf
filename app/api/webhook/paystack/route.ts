@@ -441,7 +441,8 @@ async function sendServiceNotification(
 
     // If no QR code exists, generate a basic one
     if (!qrCodeData) {
-      qrCodeData = `https://gosa.events/scan?id=GOSA2025-${serviceType.toUpperCase()}-${record._id}`;
+      qrCodeData = `https://gosa.events/scan?id=${record._id}`;
+      // qrCodeData = `https://gosa.events/scan?id=GOSA2025-${serviceType.toUpperCase()}-${record._id}`;
     }
 
     let imageResult: any = null;

@@ -277,15 +277,8 @@ export class QRCodeService {
 
   // Private helper methods
   private static generateQRCodeData(data: QRCodeData): string {
-    return JSON.stringify({
-      type: data.type,
-      id: data.id,
-      userId: data.userId,
-      guestName: data.guestName,
-      validUntil: data.validUntil.toISOString(),
-      metadata: data.metadata,
-      timestamp: new Date().toISOString()
-    });
+    // Generate the URL format for QR code scanning
+    return `https://gosa.events/scan?id=${data.id}`;
   }
 
   private static async getServiceRecord(serviceType: string, serviceId: string): Promise<any> {
@@ -330,18 +323,8 @@ export class QRCodeService {
    * Generate unique QR code data string
    */
   static generateUniqueQRData(type: string, id: string, additionalData?: any): string {
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 15);
-
-    const qrData = {
-      type,
-      id,
-      timestamp,
-      random,
-      ...additionalData
-    };
-
-    return JSON.stringify(qrData);
+    // Generate the URL format for QR code scanning
+    return `https://gosa.events/scan?id=${id}`;
   }
 
   /**
@@ -349,6 +332,17 @@ export class QRCodeService {
    */
   static parseQRCodeData(qrDataString: string): any {
     try {
+      // Handle URL format: https://gosa.events/scan?id=xxxxxxxxxx
+      if (qrDataString.startsWith('https://gosa.events/scan?id=')) {
+        const url = new URL(qrDataString);
+        const id = url.searchParams.get('id');
+        return {
+          id,
+          url: qrDataString
+        };
+      }
+
+      // Fallback to JSON parsing for backward compatibility
       return JSON.parse(qrDataString);
     } catch (error) {
       console.error('Error parsing QR code data:', error);
@@ -440,12 +434,17 @@ export class QRCodeService {
         return { valid: false, error: 'Invalid QR code format' };
       }
 
-      // Check if QR code has expired
+      // For URL format, validate the ID exists
+      if (data.url && data.id) {
+        return { valid: true, data };
+      }
+
+      // For legacy JSON format, check expiration and required fields
       if (data.validUntil && new Date(data.validUntil) < new Date()) {
         return { valid: false, error: 'QR code has expired' };
       }
 
-      // Validate required fields
+      // Validate required fields for legacy format
       if (!data.type || !data.id || !data.userId) {
         return { valid: false, error: 'QR code missing required data' };
       }

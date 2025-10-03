@@ -555,7 +555,7 @@ export function BadgeGenerator({
                 <div className="flex items-center h-4 justify-center gap-2 text-green-800">
                   <Calendar className="w-4 h-4" />
                   <p className="text-sm font-medium">
-                    23rd - 25th August {CONVENTION_YEAR}
+                    1st - 2nd November, {CONVENTION_YEAR}
                   </p>
                 </div>
                 <div className="flex items-center h-4 justify-center gap-2 text-green-800">
@@ -582,7 +582,7 @@ export function BadgeGenerator({
                 <>📥 Download Badge</>
               )}
             </Button>
-            <Button
+            {/*<Button
               onClick={handleShareBadge}
               variant="outline"
               className="w-full border-green-600 text-green-600 hover:bg-green-50"
@@ -600,7 +600,7 @@ export function BadgeGenerator({
                   🚀 Share Badge
                 </>
               )}
-            </Button>
+            </Button>*/}
           </div>
 
           <div className="text-center">

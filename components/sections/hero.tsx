@@ -10,6 +10,7 @@ import {
   GraduationCap,
   BookOpen,
   ArrowRight,
+  Badge,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -143,6 +144,16 @@ export function Hero() {
               >
                 Convention Program
                 <BookOpen className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+              </Button>
+            </Link>
+            <Link href="/badge" className="w-full sm:w-auto">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto border-2 border-primary-600 text-primary-600 hover:bg-primary-50/80 backdrop-blur-sm mobile-button-responsive font-semibold hover-lift touch-target bg-white"
+              >
+                Generate Badge
+                <Badge className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </Link>
           </div>
