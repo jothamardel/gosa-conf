@@ -139,6 +139,7 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
         const track = streamRef.current.getVideoTracks()[0];
         const capabilities = track.getCapabilities();
 
+        // @ts-ignore
         if (capabilities.torch) {
           await track.applyConstraints({
             advanced: [{ torch: !flashlightOn } as any]
