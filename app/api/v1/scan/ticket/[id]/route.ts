@@ -87,7 +87,7 @@ export async function GET(
           ticketType = 'brochure';
           // Fetch user separately
           user = await User.findById(brochureTicket.userId);
-          console.log('Found brochure ticket');
+          console.log('Found brochure ticket', user);
         }
       } catch (error) {
         console.error('Error checking brochure orders:', error);
