@@ -469,7 +469,7 @@ The system includes comprehensive error handling:
 
 For technical support or questions about PDF content customization:
 
-- Email: tech-support@gosa.events
+- Email: contact@gosa.events
 - Documentation: [Internal Wiki]
 - Issue Tracking: [GitHub Issues]
 - Code Reviews: [Pull Request Process]

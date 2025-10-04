@@ -115,7 +115,7 @@ This specification covers the implementation of PDF document generation and What
 3. WHEN including payment details THEN the system SHALL show amount in Nigerian Naira (₦), payment reference, and confirmation status
 4. WHEN providing document access THEN the system SHALL include both the attached PDF and backup instructions
 5. WHEN formatting instructions THEN the system SHALL include clear steps for downloading, saving, and using the PDF
-6. WHEN adding contact information THEN the system SHALL include support@gosa.org for help requests
+6. WHEN adding contact information THEN the system SHALL include contact@gosa.events for help requests
 7. WHEN branding messages THEN the system SHALL include "GOSA 2025 Convention - For Light and Truth" and "www.gosa.events" domain
 
 ### Requirement 9: Performance and Scalability

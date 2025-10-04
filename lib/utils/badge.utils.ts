@@ -209,7 +209,7 @@ ${userDetails.title ? `Title: ${userDetails.title}` : ''}
 ${userDetails.organization ? `Organization: ${userDetails.organization}` : ''}
 
 Welcome to GOSA Convention
-www.gosa.org
+www.gosa.events
     `;
 
     return Buffer.from(textBadge, 'utf-8');
@@ -238,7 +238,7 @@ www.gosa.org
         <!-- Footer -->
         <rect x="0" y="920" width="${template.width}" height="80" fill="${template.textColor}"/>
         <text x="400" y="950" text-anchor="middle" fill="white" font-size="14">Welcome to GOSA Convention</text>
-        <text x="400" y="975" text-anchor="middle" fill="white" font-size="12">www.gosa.org</text>
+        <text x="400" y="975" text-anchor="middle" fill="white" font-size="12">www.gosa.events</text>
       </svg>
     `;
   }
@@ -273,7 +273,7 @@ www.gosa.org
         <!-- Footer -->
         <rect x="0" y="920" width="${template.width}" height="80" fill="${template.textColor}"/>
         <text x="400" y="950" text-anchor="middle" fill="white" font-size="14">Welcome to GOSA Convention</text>
-        <text x="400" y="975" text-anchor="middle" fill="white" font-size="12">www.gosa.org</text>
+        <text x="400" y="975" text-anchor="middle" fill="white" font-size="12">www.gosa.events</text>
       </svg>
     `;
   }

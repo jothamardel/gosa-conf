@@ -426,7 +426,7 @@ export class ImageGeneratorService {
       const instructions = [
         "• Save this receipt for your records",
         "• Show QR code at event registration",
-        "• Contact support@gosa.org for help",
+        "• Contact contact@gosa.events for help",
       ];
 
       ctx.fillStyle = "#374151";
@@ -655,7 +655,7 @@ export class ImageGeneratorService {
   }
 
   private static generateTextFallback(data: ImageData): Buffer {
-    const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ₦${data.operationDetails.amount.toLocaleString()}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: support@gosa.org`;
+    const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ₦${data.operationDetails.amount.toLocaleString()}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: contact@gosa.events\nPhone: +234 810 248 1754, +234 803 701 1422, +234 813 694 9036\nAddress: GOSA Secretariat Dogo Karfe`;
     return Buffer.from(fallbackText, "utf-8");
   }
   //  * Helper methods
@@ -1828,7 +1828,7 @@ export class ImageGeneratorService {
         100,
         1050,
       );
-      ctx.fillText("• Contact support@gosa.org for any assistance", 100, 1070);
+      ctx.fillText("• Contact contact@gosa.events for any assistance", 100, 1070);
 
       // Draw footer
       ctx.fillStyle = "rgba(249, 250, 251, 0.9)";
@@ -1842,7 +1842,7 @@ export class ImageGeneratorService {
 
       ctx.fillStyle = "#6B7280";
       ctx.font = "12px Arial";
-      ctx.fillText("www.gosa.events • support@gosa.org", 400, 1160);
+      ctx.fillText("www.gosa.events • contact@gosa.events", 400, 1160);
 
       // Convert canvas to PNG buffer
       return canvas.toBuffer("image/png");

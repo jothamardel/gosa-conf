@@ -31,7 +31,7 @@
 - [x] 5. Implement professional footer with GOSA branding
   - Update footer section with clean background and proper spacing
   - Add GOSA 2025 Convention branding and "For Light and Truth" tagline
-  - Include contact information (support@gosa.org, www.gosa.events) with proper styling
+  - Include contact information (contact@gosa.events, www.gosa.events) with proper styling
   - Add document generation timestamp with appropriate formatting
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6_
 

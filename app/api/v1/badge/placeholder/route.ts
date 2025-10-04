@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         <!-- Footer -->
         <rect x="0" y="420" width="400" height="80" fill="#15803D"/>
         <text x="200" y="450" text-anchor="middle" fill="white" font-size="12">Welcome to GOSA Convention</text>
-        <text x="200" y="470" text-anchor="middle" fill="white" font-size="10">www.gosa.org</text>
+        <text x="200" y="470" text-anchor="middle" fill="white" font-size="10">www.gosa.events</text>
       </svg>
     `;
 

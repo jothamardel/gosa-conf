@@ -83,7 +83,7 @@ This specification covers the enhancement of the existing PDF template system to
 #### Acceptance Criteria
 
 1. WHEN creating the footer THEN the system SHALL include "© 2025 GOSA Convention - For Light and Truth" branding
-2. WHEN adding contact information THEN the system SHALL include support@gosa.org and www.gosa.events
+2. WHEN adding contact information THEN the system SHALL include contact@gosa.events and www.gosa.events
 3. WHEN showing service information THEN the system SHALL include relevant terms and conditions for the service
 4. WHEN displaying legal text THEN the system SHALL use appropriate font size and styling for readability
 5. WHEN formatting the footer THEN the system SHALL maintain consistency with the overall Laskad design theme

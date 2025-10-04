@@ -277,7 +277,7 @@ ${documentUrl}
 • Present the QR code when required
 • Keep this document for your records
 
-🔗 Need help? Contact support@gosa.org
+🔗 Need help? Contact contact@gosa.events
 
 GOSA 2025 Convention Team
 www.gosa.events`;
@@ -296,7 +296,7 @@ www.gosa.events`;
 
     const instructions = this.getServiceInstructions(operationDetails.type);
 
-    const footer = `\n📱 *Important:*\n• Save this PDF to your device\n• Present the QR code when required\n• Keep this document for your records\n\n🔗 *Need help?* Contact support@gosa.org\n\n*GOSA 2025 Convention Team*`;
+    const footer = `\n📱 *Important:*\n• Save this PDF to your device\n• Present the QR code when required\n• Keep this document for your records\n\n🔗 *Need help?* Contact contact@gosa.events\n📞 Phone: +234 810 248 1754, +234 803 701 1422, +234 813 694 9036\n📍 Address: GOSA Secretariat Dogo Karfe\n\n*GOSA 2025 Convention Team*`;
 
     return baseMessage + serviceSpecificContent + instructions + footer;
   }

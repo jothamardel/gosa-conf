@@ -46,7 +46,8 @@ Required by law or a regulatory agency, ‎ ‎ ‎you may appeal by emailing co
 
 contact:
 
- ‎📧 support@laskad.app ‎
-📞 +234 808 5614 502
+ ‎📧 contact@gosa.events ‎
+📞 +234 810 248 1754, +234 803 701 1422, +234 813 694 9036
+📍 GOSA Secretariat Dogo Karfe
 
 If a complaint is not resolved within 48 hours, you may escalate to the ‎Consumer Protection Department, Central Bank of Nigeria (CBN) ‎

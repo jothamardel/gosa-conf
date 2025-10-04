@@ -471,7 +471,9 @@ export class PDFGeneratorService {
                 GOSA 2025 Convention - For Light and Truth
               </div>
               <div class="footer-contact">
-                For support, contact us at support@gosa.org | www.gosa.events<br>
+                For support, contact us at contact@gosa.events | www.gosa.events<br>
+                Phone: +234 810 248 1754, +234 803 701 1422, +234 813 694 9036<br>
+                Address: GOSA Secretariat Dogo Karfe<br>
                 Nigerian banking services offered by GOSA Technologies Ltd (RC8597626).
               </div>
               <div class="footer-timestamp">
@@ -845,7 +847,7 @@ export class PDFGeneratorService {
             • Check-in time: 3:00 PM (early check-in available upon request)<br>
             • Check-out time: 11:00 AM (late check-out may be available)<br>
             • Hotel address: GOSA Convention Hotel, Convention District<br>
-            • Contact: +234-XXX-XXXX for any special arrangements
+            • Contact: +234 810 248 1754, +234 803 701 1422, +234 813 694 9036 for any special arrangements
           </div>
         </div>
       </div>
@@ -1094,9 +1096,9 @@ export class PDFGeneratorService {
             On behalf of GOSA and all the lives you've touched through your generosity, thank you for your donation of ₦${operationDetails.amount.toLocaleString()}. This official receipt confirms your contribution and serves as documentation for tax purposes. Your support makes our mission of "Light and Truth" possible.
             <br><br>
             <strong>Contact Information:</strong><br>
-            Finance Department: finance@gosa.org<br>
-            Phone: +234-XXX-XXXX<br>
-            Address: GOSA Headquarters, Convention District
+            Finance Department: contact@gosa.events<br>
+            Phone: +234 810 248 1754, +234 803 701 1422, +234 813 694 9036<br>
+            Address: GOSA Secretariat Dogo Karfe
           </div>
         </div>
       </div>
