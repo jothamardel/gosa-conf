@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { BookOpen, Loader2, Download, Check, FileText, Users, Calendar, MapPin, Star, Plus, Minus, Package, Monitor } from 'lucide-react'
 import { toast } from 'sonner'
+import { formatDisplayPrice } from '@/lib/utils/price-formatter'
 
 interface RecipientDetails {
   name: string
@@ -359,7 +360,7 @@ const ConventionBrochure = () => {
                 <div className="p-6">
                   <div className="text-center mb-6">
                     <div className="text-2xl font-bold text-primary-600">
-                      {formData.brochureType ? `₦${getPricePerUnit()}` : '₦10-25'}
+                      {formData.brochureType ? formatDisplayPrice(getPricePerUnit()) : '₦1,200-2,200'}
                     </div>
                     <div className="text-gray-500 text-sm">
                       {formData.brochureType ? 'per brochure' : 'per brochure (varies by type)'}
@@ -435,7 +436,7 @@ const ConventionBrochure = () => {
                               <Package className="w-4 h-4 text-primary-600" />
                               <span className="text-sm font-medium">Physical</span>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1 ml-6">₦{BROCHURE_PRICING.physical} • Pickup at venue</p>
+                            <p className="text-xs text-gray-500 mt-1 ml-6">{formatDisplayPrice(BROCHURE_PRICING.physical)} • Pickup at venue</p>
                           </div>
                         </div>
                         {errors.brochureType && (
@@ -537,10 +538,10 @@ const ConventionBrochure = () => {
                           <div>
                             <div className="text-gray-700 font-medium text-sm">Total Amount</div>
                             <div className="text-xs text-gray-500">
-                              {formData.quantity} × ₦{getPricePerUnit()}
+                              {formData.quantity} × {formatDisplayPrice(getPricePerUnit())}
                             </div>
                           </div>
-                          <div className="text-xl font-bold text-primary-600">₦{calculateTotal()}</div>
+                          <div className="text-xl font-bold text-primary-600">{formatDisplayPrice(calculateTotal())}</div>
                         </div>
                       </div>
                     </div>
@@ -587,7 +588,7 @@ const ConventionBrochure = () => {
                         ) : (
                           <>
                             <BookOpen className="w-5 h-5 mr-2" />
-                            Order for ₦{calculateTotal()}
+                            Order for {formatDisplayPrice(calculateTotal())}
                           </>
                         )}
                       </button>

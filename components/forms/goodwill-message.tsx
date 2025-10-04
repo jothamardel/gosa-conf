@@ -1,8 +1,9 @@
 "use client"
 
 import React, { useState } from 'react'
-import { MessageCircle, Loader2, Heart, Users, Sparkles, Star, DollarSign, User, EyeOff } from 'lucide-react'
+import { MessageCircle, Loader2, Heart, Users, Sparkles, Star, DollarSign, User, EyeOff, Edit3 } from 'lucide-react'
 import { toast } from 'sonner'
+import { formatDisplayPrice, formatInputPrice, validatePrice } from '@/lib/utils/price-formatter'
 
 interface FormData {
   includeMessage: boolean
@@ -81,11 +82,12 @@ const GoodwillMessage = () => {
     }
 
     const donationAmount = getDonationAmount()
-    if (donationAmount < MIN_DONATION) {
+    const priceValidation = validatePrice(donationAmount, MIN_DONATION)
+    if (!priceValidation.isValid) {
       if (formData.donationAmount === 0) {
-        newErrors.customAmount = `Minimum donation amount is ₦${MIN_DONATION}`
+        newErrors.customAmount = priceValidation.error
       } else {
-        newErrors.donationAmount = `Minimum donation amount is ₦${MIN_DONATION}`
+        newErrors.donationAmount = priceValidation.error
       }
     }
 
@@ -305,6 +307,7 @@ const GoodwillMessage = () => {
                         type="checkbox"
                         checked={formData.includeMessage}
                         onChange={(e) => updateFormData('includeMessage', e.target.checked)}
+                        onClick={(e) => e.stopPropagation()}
                         className="w-5 h-5 text-primary-600 border-2 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                       />
                       <div className="flex-1">
@@ -315,7 +318,10 @@ const GoodwillMessage = () => {
                     </div>
 
                     {formData.includeMessage && (
-                      <div className="animate-in slide-in-from-top-4 duration-500">
+                      <div
+                        className="animate-in slide-in-from-top-4 duration-500"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Your Message of Goodwill *
                         </label>
@@ -337,13 +343,18 @@ const GoodwillMessage = () => {
                           </div>
                         </div>
 
-                        <textarea
-                          value={formData.message}
-                          onChange={(e) => updateFormData('message', e.target.value)}
-                          className="w-full rounded-xl border border-gray-300 bg-white py-3 px-4 text-gray-900 placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none"
-                          rows={5}
-                          placeholder="Share your thoughts, appreciation, encouragement, or kind words..."
-                        />
+                        <div className="relative">
+                          <textarea
+                            value={formData.message}
+                            onChange={(e) => updateFormData('message', e.target.value)}
+                            className="w-full rounded-xl border border-gray-300 bg-white py-3 px-4 pr-10 text-gray-900 placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none"
+                            rows={5}
+                            placeholder="Type your own message here... Share your thoughts, appreciation, encouragement, or kind words. Make it personal and heartfelt!"
+                          />
+                          <div className="absolute top-3 right-3">
+                            <Edit3 className="w-4 h-4 text-gray-400" />
+                          </div>
+                        </div>
                         <div className="flex justify-between items-center mt-1">
                           {errors.message && (
                             <p className="text-red-600 text-sm">{errors.message}</p>
@@ -379,8 +390,8 @@ const GoodwillMessage = () => {
                     <div className="flex items-center space-x-3 mb-4">
                       <DollarSign className="w-5 h-5 text-primary-600" />
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Support with a Donation</h3>
-                        <p className="text-gray-600 text-sm">Your contribution helps support our mission</p>
+                        <h3 className="text-lg font-semibold text-gray-900">Amount</h3>
+                        <p className="text-gray-600 text-sm">goodwill message</p>
                       </div>
                     </div>
 
@@ -401,7 +412,7 @@ const GoodwillMessage = () => {
                               : 'border-gray-200 hover:border-primary-300 text-gray-700'
                               }`}
                           >
-                            <div className="font-semibold">₦{amount}</div>
+                            <div className="font-semibold">{formatDisplayPrice(amount)}</div>
                           </button>
                         ))}
                         <button
@@ -424,7 +435,7 @@ const GoodwillMessage = () => {
                     {formData.donationAmount === 0 && (
                       <div className="mb-4 animate-in slide-in-from-top-4 duration-300">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Custom Amount (minimum ₦{MIN_DONATION})
+                          Custom Amount (minimum {formatDisplayPrice(MIN_DONATION)})
                         </label>
                         <div className="relative">
                           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -437,7 +448,7 @@ const GoodwillMessage = () => {
                             value={formData.customAmount}
                             onChange={(e) => updateFormData('customAmount', e.target.value)}
                             className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                            placeholder={`${MIN_DONATION}`}
+                            placeholder={formatInputPrice(MIN_DONATION)}
                           />
                         </div>
                         {errors.customAmount && (
@@ -451,7 +462,7 @@ const GoodwillMessage = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-gray-700 font-medium">Donation Amount:</span>
                         <span className="text-2xl font-bold text-primary-600">
-                          ₦{getDonationAmount() || MIN_DONATION}
+                          {formatDisplayPrice(getDonationAmount() || MIN_DONATION)}
                         </span>
                       </div>
                     </div>
@@ -557,8 +568,8 @@ const GoodwillMessage = () => {
                     <>
                       <Heart className="w-5 h-5 mr-2" />
                       {formData.includeMessage
-                        ? `Send Message & Donate ₦${getDonationAmount()}`
-                        : `Donate ₦${getDonationAmount()}`}
+                        ? `Send Message ${formatDisplayPrice(getDonationAmount())}`
+                        : `Pay ${formatDisplayPrice(getDonationAmount())}`}
                     </>
                   )}
                 </button>
@@ -570,7 +581,7 @@ const GoodwillMessage = () => {
         {/* Footer */}
         <div className="text-center text-gray-500 text-sm mt-8">
           <p>Your words of encouragement mean the world to our community</p>
-          <p className="mt-1">Questions? Contact us at messages@organization.org</p>
+          <p className="mt-1">Questions? Contact us at contact@gosa.events</p>
         </div>
       </div>
     </div>

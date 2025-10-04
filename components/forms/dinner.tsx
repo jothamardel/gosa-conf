@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Utensils, Loader2, Users, Calendar, Clock, MapPin, Plus, Minus, User, Mail, Phone } from 'lucide-react'
 import { toast } from 'sonner'
+import { formatDisplayPrice } from '@/lib/utils/price-formatter'
 
 interface GuestDetails {
   name: string
@@ -186,7 +187,7 @@ const DinnerPayment = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center space-x-3 text-gray-700">
                 <Calendar className="w-5 h-5 text-primary-600" />
-                <span>Saturday, August 12th</span>
+                <span>Saturday, November 1st</span>
               </div>
               <div className="flex items-center space-x-3 text-gray-700">
                 <Clock className="w-5 h-5 text-primary-600" />
@@ -194,7 +195,7 @@ const DinnerPayment = () => {
               </div>
               <div className="flex items-center space-x-3 text-gray-700 md:col-span-2">
                 <MapPin className="w-5 h-5 text-primary-600" />
-                <span>Grand Ballroom, Metropolitan Hotel</span>
+                <span>Crispan Hotel</span>
               </div>
             </div>
           </div>
@@ -217,7 +218,7 @@ const DinnerPayment = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-primary-600">₦3,200</div>
+                  <div className="text-2xl font-bold text-primary-600">{formatDisplayPrice(3200)}</div>
                   <div className="text-gray-600 text-sm">per person</div>
                 </div>
               </div>
@@ -365,9 +366,9 @@ const DinnerPayment = () => {
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="text-gray-700">Total Amount</div>
-                      <div className="text-sm text-gray-500">{formData.numberOfGuests} {formData.numberOfGuests === 1 ? 'guest' : 'guests'} × ₦75</div>
+                      <div className="text-sm text-gray-500">{formData.numberOfGuests} {formData.numberOfGuests === 1 ? 'guest' : 'guests'} × {formatDisplayPrice(3200)}</div>
                     </div>
-                    <div className="text-4xl font-bold text-primary-600">₦{calculateTotal()}</div>
+                    <div className="text-4xl font-bold text-primary-600">{formatDisplayPrice(calculateTotal())}</div>
                   </div>
                 </div>
 
@@ -402,7 +403,7 @@ const DinnerPayment = () => {
                       </>
                     ) : (
                       <>
-                        Confirm Reservation - ₦{calculateTotal()}
+                        Confirm Reservation - {formatDisplayPrice(calculateTotal())}
                       </>
                     )}
                   </button>

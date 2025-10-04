@@ -198,16 +198,16 @@ export function Footer() {
             <div className="space-y-3 sm:space-y-4">
               <div className="flex items-start space-x-3">
                 <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-primary-400 mt-1 flex-shrink-0" />
-                <span className="text-gray-300 text-sm sm:text-base">gosa@alumni.edu</span>
+                <span className="text-gray-300 text-sm sm:text-base">contact@gosa.events</span>
               </div>
               <div className="flex items-start space-x-3">
                 <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-primary-400 mt-1 flex-shrink-0" />
-                <span className="text-gray-300 text-sm sm:text-base">+234 (0) 123-456-789</span>
+                <span className="text-gray-300 text-sm sm:text-base">+234 810 248 1754</span>
               </div>
               <div className="flex items-start space-x-3">
                 <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-primary-400 mt-1 flex-shrink-0" />
                 <span className="text-gray-300 text-sm sm:text-base">
-                  GOSA Convention Center
+                  Ulster Church
                   <br />
                   Gindiri, Plateau State
                 </span>

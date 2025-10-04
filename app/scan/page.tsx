@@ -19,6 +19,7 @@ import {
   Mail,
   Phone
 } from 'lucide-react';
+import { formatDisplayPrice } from '@/lib/utils/price-formatter';
 
 interface TicketRecord {
   _id: string;
@@ -486,7 +487,7 @@ export default function ScanPage() {
                 </div>
                 <div>
                   <span className="text-gray-500">Amount:</span>
-                  <p className="font-medium">₦{ticket.amount.toLocaleString()}</p>
+                  <p className="font-medium">{formatDisplayPrice(ticket.amount)}</p>
                 </div>
                 <div>
                   <span className="text-gray-500">Reference:</span>

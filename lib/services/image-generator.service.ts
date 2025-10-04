@@ -1,5 +1,6 @@
 import { PDFData } from "@/lib/types";
 import * as QRCode from "qrcode";
+import { formatDisplayPrice } from "@/lib/utils/price-formatter";
 
 export interface ImageData extends PDFData { }
 
@@ -241,7 +242,7 @@ export class ImageGeneratorService {
       ctx.font = getFontString("32", "bold");
       ctx.textAlign = "center";
       ctx.fillText(
-        `₦${data.operationDetails.amount.toLocaleString()}`,
+        formatDisplayPrice(data.operationDetails.amount),
         400,
         245,
       );
@@ -655,7 +656,7 @@ export class ImageGeneratorService {
   }
 
   private static generateTextFallback(data: ImageData): Buffer {
-    const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ₦${data.operationDetails.amount.toLocaleString()}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: contact@gosa.events\nPhone: +234 810 248 1754, +234 803 701 1422, +234 813 694 9036\nAddress: GOSA Secretariat Dogo Karfe`;
+    const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ${formatDisplayPrice(data.operationDetails.amount)}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: contact@gosa.events\nPhone: +234 810 248 1754, +234 803 701 1422, +234 813 694 9036\nAddress: GOSA Secretariat Dogo Karfe`;
     return Buffer.from(fallbackText, "utf-8");
   }
   //  * Helper methods
@@ -1685,7 +1686,7 @@ export class ImageGeneratorService {
       ctx.fillStyle = "#16A34A";
       ctx.font = "bold 42px Arial";
       ctx.fillText(
-        `₦${data.operationDetails.amount.toLocaleString()}`,
+        formatDisplayPrice(data.operationDetails.amount),
         400,
         310,
       );

@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Heart, Loader2, Users, Lightbulb, BookOpen, Shield, User, Mail, Phone, EyeOff, DollarSign } from 'lucide-react'
 import { toast } from 'sonner'
+import { formatDisplayPrice, validatePrice } from '@/lib/utils/price-formatter'
 
 interface FormData {
   donationAmount: number
@@ -49,25 +50,25 @@ const DonationForm = () => {
   const donationOptions: DonationOption[] = [
     {
       amount: 2500,
-      label: '₦2,500',
+      label: formatDisplayPrice(2500),
       description: 'Provides materials for one student',
       icon: BookOpen
     },
     {
       amount: 5000,
-      label: '₦5,000',
+      label: formatDisplayPrice(5000),
       description: 'Supports a workshop session',
       icon: Lightbulb
     },
     {
       amount: 10000,
-      label: '₦10,000',
+      label: formatDisplayPrice(10000),
       description: 'Sponsors a community program',
       icon: Users
     },
     {
       amount: 25000,
-      label: '₦25,000',
+      label: formatDisplayPrice(25000),
       description: 'Funds a complete course',
       icon: Shield
     }
@@ -84,11 +85,12 @@ const DonationForm = () => {
     const newErrors: Errors = {}
 
     const donationAmount = getDonationAmount()
-    if (donationAmount < MIN_DONATION) {
+    const priceValidation = validatePrice(donationAmount, MIN_DONATION)
+    if (!priceValidation.isValid) {
       if (formData.donationAmount === 0) {
-        newErrors.customAmount = `Minimum donation amount is ₦${MIN_DONATION}`
+        newErrors.customAmount = priceValidation.error
       } else {
-        newErrors.donationAmount = `Minimum donation amount is ₦${MIN_DONATION}`
+        newErrors.donationAmount = priceValidation.error
       }
     }
 
