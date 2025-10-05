@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import {
@@ -32,15 +30,15 @@ const features = [
     path: "/dinner",
     requiresAuth: false,
   },
-  {
-    icon: Building,
-    title: "Accommodation",
-    description: "Book your stay with our partner hotels.",
-    gradient: "from-blue-500 to-blue-600",
-    path: "#",
-    // path: "/accommodation",
-    requiresAuth: false,
-  },
+  // {
+  //   icon: Building,
+  //   title: "Accommodation",
+  //   description: "Book your stay with our partner hotels.",
+  //   gradient: "from-blue-500 to-blue-600",
+  //   path: "#",
+  //   // path: "/accommodation",
+  //   requiresAuth: false,
+  // },
   {
     icon: BookOpen,
     title: "Convention Brochure",
