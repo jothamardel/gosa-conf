@@ -2,7 +2,7 @@ import * as QRCode from 'qrcode';
 import { PDFCacheService } from './pdf-cache.service';
 import { PDFLoggerService } from './pdf-logger.service';
 import { PDFData } from '@/lib/types';
-import StorageService from './storage.service';
+import StorageService from '@/storage.service';
 
 export interface PDFTemplate {
   title: string;
@@ -472,10 +472,10 @@ export class PDFGeneratorService {
                 GOSA 2025 Convention - For Light and Truth
               </div>
               <div class="footer-contact">
-                For support, contact us at contact@gosa.events | www.gosa.events<br>
-                Phone: +234 810 248 1754, +234 803 701 1422, +234 813 694 9036<br>
+                For support, contact us at gosasecretariat@gmail.com | www.gosa.events<br>
+                Phone: +234 816 2329 082<br>
                 Address: GOSA Secretariat Dogo Karfe<br>
-                Nigerian banking services offered by GOSA Technologies Ltd (RC8597626).
+              
               </div>
               <div class="footer-timestamp">
                 Generated on ${new Date().toLocaleDateString('en-US', {

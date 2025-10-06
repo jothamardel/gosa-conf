@@ -363,7 +363,7 @@ ${imageDownloadUrl}
 • Present the QR code when required
 • Keep this document for your records
 
-🔗 *Need help?* Contact contact@gosa.events
+🔗 *Need help?* Contact gosasecretariat@gmail.com
 
 *GOSA 2025 Convention Team*`;
 
