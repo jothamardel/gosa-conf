@@ -157,15 +157,15 @@ export default function BadgePage() {
                       {/* Convention Info */}
                       <div className="border-t border-green-200 pt-4 space-y-2">
                         <div className="flex items-center justify-center gap-2 text-green-800">
-                          <Calendar className="w-4 h-4" />
-                          <p className="text-sm font-medium">
+                          {/*<Calendar className="w-4 h-4" />*/}
+                          <p className="text-xs font-medium">
                             1st - 2nd November, {CONVENTION_YEAR}
                           </p>
                         </div>
                         <div className="flex items-center justify-center gap-2 text-green-800">
-                          <MapPin className="w-4 h-4" />
-                          <p className="text-sm font-medium">
-                            GOSA Convention Center
+                          {/*<MapPin className="w-4 h-4" />*/}
+                          <p className="text-xs font-medium">
+                            Ulster Church Gindiri
                           </p>
                         </div>
                       </div>
