@@ -9,7 +9,9 @@ export async function POST(request: NextRequest) {
     const { serviceType, serviceId, adminId, reason } = await request.json();
 
     // Validate required fields
-    if (!serviceType || !serviceId || !adminId) {
+    if (!serviceType || !serviceId
+      // || !adminId
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
     const result = await QRCodeService.regenerateQRCode(
       serviceType,
       serviceId,
-      adminId,
+      // adminId,
       reason,
     );
 

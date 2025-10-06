@@ -90,7 +90,7 @@ export class QRCodeService {
   static async regenerateQRCode(
     serviceType: 'convention' | 'dinner' | 'accommodation' | 'brochure',
     serviceId: string,
-    adminId: string,
+    adminId: string = '68a250d7e69fceac101570ae',
     reason?: string
   ): Promise<RegenerationResult> {
     try {
