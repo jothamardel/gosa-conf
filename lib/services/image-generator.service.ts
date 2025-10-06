@@ -1833,7 +1833,7 @@ Jos, Nigeria`;
         100,
         1050,
       );
-      ctx.fillText("• Contact contact@gosa.events for any assistance", 100, 1070);
+      ctx.fillText("• Contact gosasecretariat@gmail.com for any assistance", 100, 1070);
 
       // Draw footer
       ctx.fillStyle = "rgba(249, 250, 251, 0.9)";
@@ -1847,7 +1847,7 @@ Jos, Nigeria`;
 
       ctx.fillStyle = "#6B7280";
       ctx.font = "12px Arial";
-      ctx.fillText("www.gosa.events • contact@gosa.events", 400, 1160);
+      ctx.fillText("www.gosa.events • gosasecretariat@gmail.com", 400, 1160);
 
       // Convert canvas to PNG buffer
       return canvas.toBuffer("image/png");

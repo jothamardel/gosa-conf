@@ -2,7 +2,8 @@ import * as QRCode from 'qrcode';
 import { PDFCacheService } from './pdf-cache.service';
 import { PDFLoggerService } from './pdf-logger.service';
 import { PDFData } from '@/lib/types';
-import StorageService from '@/storage.service';
+// import StorageService from './';
+import StorageService from './storage.service';
 
 export interface PDFTemplate {
   title: string;
