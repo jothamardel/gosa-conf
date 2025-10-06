@@ -592,7 +592,7 @@ const Accommodation = () => {
 
         {/* Footer */}
         <div className="text-center text-gray-500 text-sm mt-8">
-          <p>Questions about accommodation? Contact us at bookings@company.com or (555) 123-4567</p>
+          <p>Questions about accommodation? Contact us at gosasecretariat@gmail.com or +234 816 2329 082</p>
         </div>
       </div>
     </div>

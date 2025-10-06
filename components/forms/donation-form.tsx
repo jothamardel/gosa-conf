@@ -419,7 +419,7 @@ const DonationForm = () => {
         {/* Footer */}
         <div className="text-center text-gray-500 text-sm mt-8 space-y-2">
           <p>Your donation is secure and will be processed safely</p>
-          <p>Questions? Contact us at donations@organization.org or (555) 123-4567</p>
+          <p>Questions? Contact us at gosasecretariat@gmail.com or +234 816 2329 082</p>
         </div>
 
         {/* Impact Statement */}
