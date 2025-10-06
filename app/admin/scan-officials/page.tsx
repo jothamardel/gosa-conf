@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import AdminWrapper from '@/components/admin/admin-wrapper';
 import {
   Shield,
   Plus,
@@ -29,7 +30,7 @@ const DEFAULT_OFFICIALS: Official[] = [
   { id: 'security1', name: 'Security Officer', role: 'Security', pin: '9999' },
 ];
 
-export default function ScanOfficialsPage() {
+function ScanOfficialsContent() {
   const [officials, setOfficials] = useState<Official[]>(DEFAULT_OFFICIALS);
   const [showPins, setShowPins] = useState<{ [key: string]: boolean }>({});
   const [newOfficial, setNewOfficial] = useState({
@@ -310,5 +311,13 @@ ${officials.map(o => `  '${o.pin}': { id: '${o.id}', name: '${o.name}', role: '$
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function ScanOfficialsPage() {
+  return (
+    <AdminWrapper>
+      <ScanOfficialsContent />
+    </AdminWrapper>
   );
 }

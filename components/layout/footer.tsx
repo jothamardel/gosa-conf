@@ -30,7 +30,7 @@
 //               <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-secondary-500 rounded-lg flex items-center justify-center">
 //                 <Calendar className="w-5 h-5 text-white" />
 //               </div>
-//               <span className="text-2xl font-bold">Convention 2024</span>
+//               <span className="text-2xl font-bold">Convention 2025</span>
 //             </div>
 
 //             <p className="text-gray-300 mb-6 leading-relaxed max-w-md">
@@ -75,7 +75,7 @@
 //             <div className="space-y-4">
 //               <div className="flex items-center space-x-3">
 //                 <Mail className="w-5 h-5 text-primary-400" />
-//                 <span className="text-gray-300">info@convention2024.com</span>
+//                 <span className="text-gray-300">info@convention2025.com</span>
 //               </div>
 //               <div className="flex items-center space-x-3">
 //                 <Phone className="w-5 h-5 text-primary-400" />
@@ -92,7 +92,7 @@
 //         <div className="border-t border-gray-800 mt-12 pt-8">
 //           <div className="flex flex-col md:flex-row justify-between items-center">
 //             <p className="text-gray-400 text-sm">
-//               © 2024 Convention Management System. All rights reserved.
+//               © 2025 Convention Management System. All rights reserved.
 //             </p>
 //             <div className="flex space-x-6 mt-4 md:mt-0">
 //               <Link href="/privacy" className="text-gray-400 hover:text-primary-400 text-sm transition-colors duration-300">
@@ -198,18 +198,21 @@ export function Footer() {
             <div className="space-y-3 sm:space-y-4">
               <div className="flex items-start space-x-3">
                 <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-primary-400 mt-1 flex-shrink-0" />
-                <span className="text-gray-300 text-sm sm:text-base">contact@gosa.events</span>
+                <span className="text-gray-300 text-sm sm:text-base">gosasecretariat@gmail.com</span>
               </div>
               <div className="flex items-start space-x-3">
                 <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-primary-400 mt-1 flex-shrink-0" />
-                <span className="text-gray-300 text-sm sm:text-base">+234 810 248 1754</span>
+                <span className="text-gray-300 text-sm sm:text-base">+234 816 2329 082</span>
               </div>
               <div className="flex items-start space-x-3">
                 <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-primary-400 mt-1 flex-shrink-0" />
                 <span className="text-gray-300 text-sm sm:text-base">
-                  Ulster Church
+                  J.D Gomwalk National Secretariat
+                  Ahead Mu'azu House
+                  Dogon Karfe
                   <br />
-                  Gindiri, Plateau State
+                  P.O. Box, 8126
+                  Jos, Nigeria
                 </span>
               </div>
             </div>

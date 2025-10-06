@@ -26,7 +26,7 @@
 // //               <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-secondary-500 rounded-lg flex items-center justify-center">
 // //                 <Calendar className="w-5 h-5 text-white" />
 // //               </div>
-// //               <span className="text-xl font-bold gradient-text">Convention 2024</span>
+// //               <span className="text-xl font-bold gradient-text">Convention 2025</span>
 // //             </Link>
 // //           </div>
 
@@ -207,7 +207,7 @@
 //               <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-secondary-500 rounded-lg flex items-center justify-center">
 //                 <Calendar className="w-5 h-5 text-white" />
 //               </div>
-//               <span className="text-xl font-bold gradient-text">Convention 2024</span>
+//               <span className="text-xl font-bold gradient-text">Convention 2025</span>
 //             </Link>
 //           </div>
 
@@ -554,11 +554,10 @@ export function Navigation() {
                       </p>
                       <div className="flex items-center space-x-2 mt-2">
                         <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            isAdmin
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${isAdmin
                               ? "bg-amber-100 text-amber-800"
                               : "bg-green-100 text-green-800"
-                          }`}
+                            }`}
                         >
                           {isAdmin ? (
                             <>
@@ -664,11 +663,10 @@ export function Navigation() {
                       {session?.user?.email}
                     </p>
                     <span
-                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
-                        isAdmin
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${isAdmin
                           ? "bg-amber-100 text-amber-800"
                           : "bg-green-100 text-green-800"
-                      }`}
+                        }`}
                     >
                       {isAdmin ? (
                         <>

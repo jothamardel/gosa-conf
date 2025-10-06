@@ -81,7 +81,7 @@ export function CheckInScanner() {
         name: "John Doe",
         email: "john.doe@example.com",
         ticketType: "Full Access + Dinner",
-        registrationDate: "2024-10-15",
+        registrationDate: "2025-10-15",
       };
 
       // Simulate different scenarios
@@ -104,7 +104,7 @@ export function CheckInScanner() {
           attendee: mockAttendee,
           message: "This attendee has already been checked in.",
           alreadyCheckedIn: true,
-          timestamp: "2024-11-15T09:30:00Z",
+          timestamp: "2025-11-15T09:30:00Z",
         };
         toast.error("Attendee already checked in");
       } else {
@@ -245,9 +245,8 @@ export function CheckInScanner() {
       {/* Last Result */}
       {lastResult && (
         <Card
-          className={`glass-card border-l-4 ${
-            lastResult.success ? "border-l-green-500" : "border-l-red-500"
-          }`}
+          className={`glass-card border-l-4 ${lastResult.success ? "border-l-green-500" : "border-l-red-500"
+            }`}
         >
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">

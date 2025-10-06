@@ -50,7 +50,7 @@ class AgentClass {
             - Legacy of leadership, academic excellence, and alumni contributions.
             - Notable alumni:
               - **Prof. Abubakar Musa Kundiri** (Set 1981), Vice-Chancellor of Federal University Wukari.
-              - **Prof. Ochapa C. Onazi** (d. August 1, 2024), former President of GOSA and distinguished educational leader.
+              - **Prof. Ochapa C. Onazi** (d. August 1, 2025), former President of GOSA and distinguished educational leader.
 
             ---
 

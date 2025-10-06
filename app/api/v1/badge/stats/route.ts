@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
           organization: 'First Baptist Church',
           socialMediaShared: true,
           downloadCount: 15,
-          createdAt: new Date('2024-01-15').toISOString(),
+          createdAt: new Date('2025-01-15').toISOString(),
           user: {
             name: 'John Doe',
             email: 'john.doe@example.com'
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
           organization: 'Grace Community Church',
           socialMediaShared: true,
           downloadCount: 8,
-          createdAt: new Date('2024-01-16').toISOString(),
+          createdAt: new Date('2025-01-16').toISOString(),
           user: {
             name: 'Jane Smith',
             email: 'jane.smith@example.com'
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
           organization: 'Hope Fellowship',
           socialMediaShared: true,
           downloadCount: 22,
-          createdAt: new Date('2024-01-17').toISOString(),
+          createdAt: new Date('2025-01-17').toISOString(),
           user: {
             name: 'Michael Johnson',
             email: 'michael.johnson@example.com'

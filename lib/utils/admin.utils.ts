@@ -196,7 +196,7 @@ export class AdminUtils {
           ]);
 
           const totalSpent =
-            (convention?.totalAmount || 0) +
+            (convention?.amount || 0) +
             (dinner?.totalAmount || 0) +
             (accommodation?.totalAmount || 0) +
             (brochure?.totalAmount || 0) +
@@ -267,7 +267,7 @@ export class AdminUtils {
               userName: conv.userId.name || 'Unknown User',
               userEmail: conv.userId.email || 'unknown@email.com',
               service: 'Convention Registration',
-              amount: conv.totalAmount || 0,
+              amount: conv.amount || 0,
               status: conv.confirm ? 'confirmed' : 'pending',
               paymentReference: conv.paymentReference || 'N/A',
               createdAt: conv.createdAt,
@@ -494,7 +494,7 @@ export class AdminUtils {
       ConventionRegistration.countDocuments({ confirm: true }),
       ConventionRegistration.aggregate([
         { $match: { confirm: true } },
-        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+        { $group: { _id: null, total: { $sum: '$amount' } } }
       ])
     ]);
     return { count, revenue: revenue[0]?.total || 0 };
@@ -576,7 +576,7 @@ export class AdminUtils {
       const [conventionRevenue, dinnerRevenue, accommodationRevenue, brochureRevenue, goodwillRevenue, donationRevenue] = await Promise.all([
         ConventionRegistration.aggregate([
           { $match: { confirm: true, createdAt: { $gte: date, $lt: nextDate } } },
-          { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } }
+          { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
         ]),
         DinnerReservation.aggregate([
           { $match: { confirmed: true, createdAt: { $gte: date, $lt: nextDate } } },
@@ -678,7 +678,7 @@ export class AdminUtils {
     const [convention, dinner, accommodation, brochure, goodwill, donation] = await Promise.all([
       ConventionRegistration.aggregate([
         { $match: { confirm: true, createdAt: { $gte: today, $lt: tomorrow } } },
-        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+        { $group: { _id: null, total: { $sum: '$amount' } } }
       ]),
       DinnerReservation.aggregate([
         { $match: { confirmed: true, createdAt: { $gte: today, $lt: tomorrow } } },
@@ -716,7 +716,7 @@ export class AdminUtils {
     const [convention, dinner, accommodation, brochure, goodwill, donation] = await Promise.all([
       ConventionRegistration.aggregate([
         { $match: { confirm: true } },
-        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+        { $group: { _id: null, total: { $sum: '$amount' } } }
       ]),
       DinnerReservation.aggregate([
         { $match: { confirmed: true } },
@@ -757,8 +757,8 @@ export class AdminUtils {
 
     const [convention, dinner, accommodation, brochure, goodwill, donation] = await Promise.all([
       ConventionRegistration.aggregate([
-        { $match: { confirmed: true, createdAt: { $gte: thisMonth } } },
-        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+        { $match: { confirm: true, createdAt: { $gte: thisMonth } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
       ]),
       DinnerReservation.aggregate([
         { $match: { confirmed: true, createdAt: { $gte: thisMonth } } },
@@ -821,7 +821,7 @@ export class AdminUtils {
         type: 'payment',
         description: `${payment.userId.name} completed convention payment`,
         timestamp: payment.updatedAt,
-        amount: payment.totalAmount
+        amount: payment.amount
       });
     });
 

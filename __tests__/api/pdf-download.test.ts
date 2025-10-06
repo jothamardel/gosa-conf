@@ -34,7 +34,7 @@ describe('/api/v1/pdf/download', () => {
     paymentStatus: 'confirmed',
     accommodationType: 'Standard',
     guestCount: 1,
-    createdAt: new Date('2024-01-15')
+    createdAt: new Date('2025-01-15')
   };
 
   const mockDinner = {
@@ -47,9 +47,9 @@ describe('/api/v1/pdf/download', () => {
     amount: 7500,
     paymentStatus: 'confirmed',
     guestCount: 2,
-    dinnerDate: '2024-03-16',
+    dinnerDate: '2025-03-16',
     dietaryRequirements: 'Vegetarian',
-    createdAt: new Date('2024-01-16')
+    createdAt: new Date('2025-01-16')
   };
 
   beforeEach(() => {
@@ -124,7 +124,7 @@ describe('/api/v1/pdf/download', () => {
           date: mockDinner.createdAt,
           status: 'confirmed',
           description: 'Dinner Reservation',
-          additionalInfo: 'Guests: 2, Date: March 16, 2024, Dietary Requirements: Vegetarian'
+          additionalInfo: 'Guests: 2, Date: March 16, 2025, Dietary Requirements: Vegetarian'
         },
         qrCodeData: 'REG002-DINNER'
       });
@@ -230,10 +230,10 @@ describe('/api/v1/pdf/download', () => {
         paymentStatus: 'confirmed',
         roomType: 'Premium',
         guestCount: 2,
-        checkInDate: '2024-03-15',
-        checkOutDate: '2024-03-17',
+        checkInDate: '2025-03-15',
+        checkOutDate: '2025-03-17',
         confirmationCode: 'ACC123',
-        createdAt: new Date('2024-01-17')
+        createdAt: new Date('2025-01-17')
       };
 
       mockDatabase.getRegistrationByPaymentReference.mockResolvedValue(null);
@@ -267,7 +267,7 @@ describe('/api/v1/pdf/download', () => {
         quantity: 3,
         deliveryAddress: '456 Oak St, Abuja',
         orderType: 'Physical',
-        createdAt: new Date('2024-01-18')
+        createdAt: new Date('2025-01-18')
       };
 
       mockDatabase.getRegistrationByPaymentReference.mockResolvedValue(null);

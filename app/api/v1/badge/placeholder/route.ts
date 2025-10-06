@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
         <!-- Header -->
         <rect x="0" y="0" width="400" height="80" fill="#15803D"/>
         <text x="200" y="30" text-anchor="middle" fill="white" font-size="18" font-weight="bold">GOSA CONVENTION</text>
-        <text x="200" y="55" text-anchor="middle" fill="white" font-size="14">2024</text>
+        <text x="200" y="55" text-anchor="middle" fill="white" font-size="14">2025</text>
 
         <!-- Profile Photo Placeholder -->
         <circle cx="200" cy="150" r="50" fill="white" opacity="0.9"/>

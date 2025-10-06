@@ -40,8 +40,8 @@ describe('/api/v1/accommodation', () => {
         fullName: 'John Doe',
         phoneNumber: '+1234567890',
         accommodationType: 'standard',
-        checkInDate: '2024-01-01',
-        checkOutDate: '2024-01-03',
+        checkInDate: '2025-01-01',
+        checkOutDate: '2025-01-03',
         numberOfGuests: 2,
         guestDetails: [
           { name: 'John Doe', email: 'john@example.com' },
@@ -63,7 +63,7 @@ describe('/api/v1/accommodation', () => {
         name: 'Standard Room',
         price: 100
       });
-      
+
       // Mock user creation
       UserUtils.findOrCreateUser.mockResolvedValue({
         _id: 'user-id',
@@ -96,8 +96,8 @@ describe('/api/v1/accommodation', () => {
         userId: 'user-id',
         paymentReference: expect.stringMatching(/^ACCOM_\d+_\+1234567890$/),
         accommodationType: 'standard',
-        checkInDate: new Date('2024-01-01'),
-        checkOutDate: new Date('2024-01-03'),
+        checkInDate: new Date('2025-01-01'),
+        checkOutDate: new Date('2025-01-03'),
         numberOfGuests: 2,
         guestDetails: requestBody.guestDetails,
         specialRequests: 'Late check-in',
@@ -126,8 +126,8 @@ describe('/api/v1/accommodation', () => {
         fullName: 'John Doe',
         phoneNumber: '+1234567890',
         accommodationType: 'invalid-type',
-        checkInDate: '2024-01-01',
-        checkOutDate: '2024-01-03',
+        checkInDate: '2025-01-01',
+        checkOutDate: '2025-01-03',
         numberOfGuests: 1,
         guestDetails: [{ name: 'John Doe' }]
       };
@@ -148,7 +148,7 @@ describe('/api/v1/accommodation', () => {
         phoneNumber: '+1234567890',
         accommodationType: 'standard',
         checkInDate: 'invalid-date',
-        checkOutDate: '2024-01-03',
+        checkOutDate: '2025-01-03',
         numberOfGuests: 1,
         guestDetails: [{ name: 'John Doe' }]
       };
@@ -168,8 +168,8 @@ describe('/api/v1/accommodation', () => {
         fullName: 'John Doe',
         phoneNumber: '+1234567890',
         accommodationType: 'standard',
-        checkInDate: '2024-01-01',
-        checkOutDate: '2024-01-03',
+        checkInDate: '2025-01-01',
+        checkOutDate: '2025-01-03',
         numberOfGuests: 1,
         guestDetails: [{ name: 'John Doe' }]
       };
@@ -196,8 +196,8 @@ describe('/api/v1/accommodation', () => {
         fullName: 'John Doe',
         phoneNumber: '+1234567890',
         accommodationType: 'standard',
-        checkInDate: '2024-01-01',
-        checkOutDate: '2024-01-03',
+        checkInDate: '2025-01-01',
+        checkOutDate: '2025-01-03',
         numberOfGuests: 1,
         guestDetails: [{ name: 'John Doe' }]
       };
@@ -223,7 +223,7 @@ describe('/api/v1/accommodation', () => {
       Object.entries(searchParams).forEach(([key, value]) => {
         url.searchParams.set(key, value);
       });
-      
+
       return {
         url: url.toString(),
       } as NextRequest;
@@ -286,8 +286,8 @@ describe('/api/v1/accommodation', () => {
     it('should check availability successfully', async () => {
       const requestBody = {
         accommodationType: 'standard',
-        checkInDate: '2024-01-01',
-        checkOutDate: '2024-01-03'
+        checkInDate: '2025-01-01',
+        checkOutDate: '2025-01-03'
       };
 
       const { AccommodationUtils } = require('@/lib/utils');
@@ -334,8 +334,8 @@ describe('/api/v1/accommodation', () => {
     it('should return 400 for invalid accommodation type', async () => {
       const requestBody = {
         accommodationType: 'invalid',
-        checkInDate: '2024-01-01',
-        checkOutDate: '2024-01-03'
+        checkInDate: '2025-01-01',
+        checkOutDate: '2025-01-03'
       };
 
       const request = mockRequest(requestBody);

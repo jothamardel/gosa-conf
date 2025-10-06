@@ -131,7 +131,7 @@ GET /api/v1/pdf/info?ref=payment_reference&type=convention
     "serviceType": "convention",
     "pdfUrl": "https://blob.vercel-storage.com/...",
     "pdfFilename": "GOSA_2025_Convention_John_Doe_REG001.pdf",
-    "pdfGeneratedAt": "2024-01-15T10:30:00.000Z",
+    "pdfGeneratedAt": "2025-01-15T10:30:00.000Z",
     "isAvailable": true
   }
 }

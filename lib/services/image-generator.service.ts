@@ -427,7 +427,7 @@ export class ImageGeneratorService {
       const instructions = [
         "• Save this receipt for your records",
         "• Show QR code at event registration",
-        "• Contact contact@gosa.events for help",
+        "• Contact gosasecretariat@gmail.com for help",
       ];
 
       ctx.fillStyle = "#374151";
@@ -656,7 +656,11 @@ export class ImageGeneratorService {
   }
 
   private static generateTextFallback(data: ImageData): Buffer {
-    const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ${formatDisplayPrice(data.operationDetails.amount)}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: contact@gosa.events\nPhone: +234 810 248 1754, +234 803 701 1422, +234 813 694 9036\nAddress: GOSA Secretariat Dogo Karfe`;
+    const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ${formatDisplayPrice(data.operationDetails.amount)}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: gosasecretariat@gmail.com\nPhone: +234816 2329 082\nAddress: J.D Gomwalk National Secretariat
+Ahead Mu'azu House
+Dogon Karfe
+P.O. Box, 8126
+Jos, Nigeria`;
     return Buffer.from(fallbackText, "utf-8");
   }
   //  * Helper methods

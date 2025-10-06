@@ -581,7 +581,7 @@ const GoodwillMessage = () => {
         {/* Footer */}
         <div className="text-center text-gray-500 text-sm mt-8">
           <p>Your words of encouragement mean the world to our community</p>
-          <p className="mt-1">Questions? Contact us at contact@gosa.events</p>
+          <p className="mt-1">Questions? Contact us at gosasecretariat@gmail.com</p>
         </div>
       </div>
     </div>

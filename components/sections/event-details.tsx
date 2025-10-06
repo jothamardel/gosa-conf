@@ -32,10 +32,10 @@ export function EventDetails() {
     },
     {
       title: "Re-Union",
-      date: "November 16-17, 2024",
+      date: "2nd November, 2025",
       time: "6:00 AM - 4:00 PM",
       location: "COCIN Ulster Church Gindiri",
-      description: "Re-Union, Service Gindiri, Town hall meeting",
+      description: "Re-Union service gindiri | Town hall meeting",
       type: "sessions",
     },
   ];
@@ -58,11 +58,10 @@ export function EventDetails() {
           {events.map((event, index) => (
             <div
               key={event.title}
-              className={`relative p-8 rounded-2xl border transition-all duration-300 hover-lift animate-fade-in ${
-                event.featured
-                  ? "bg-gradient-to-br from-primary-600 to-secondary-600 text-white border-transparent shadow-2xl"
-                  : "bg-white border-gray-200 hover:border-primary-200"
-              }`}
+              className={`relative p-8 rounded-2xl border transition-all duration-300 hover-lift animate-fade-in ${event.featured
+                ? "bg-gradient-to-br from-primary-600 to-secondary-600 text-white border-transparent shadow-2xl"
+                : "bg-white border-gray-200 hover:border-primary-200"
+                }`}
               style={{ animationDelay: `${index * 200}ms` }}
             >
               {event.featured && (
@@ -77,11 +76,10 @@ export function EventDetails() {
               )}
 
               <div
-                className={`inline-flex p-3 rounded-xl mb-6 ${
-                  event.featured
-                    ? "bg-white/20 backdrop-blur-sm"
-                    : "bg-gradient-to-r from-primary-100 to-secondary-100"
-                }`}
+                className={`inline-flex p-3 rounded-xl mb-6 ${event.featured
+                  ? "bg-white/20 backdrop-blur-sm"
+                  : "bg-gradient-to-r from-primary-100 to-secondary-100"
+                  }`}
               >
                 {event.type === "dinner" && (
                   <Utensils

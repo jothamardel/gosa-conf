@@ -124,7 +124,7 @@ export function BadgePreview({ badge, onShareToggle, showActions = true }: Badge
           {/* Convention Title */}
           <div className="text-center mb-4 pt-8">
             <h3 className="text-white font-bold text-lg">GOSA CONVENTION</h3>
-            <p className="text-white/90 text-sm">2024</p>
+            <p className="text-white/90 text-sm">2025</p>
           </div>
 
           {/* Badge Image */}
@@ -159,7 +159,7 @@ export function BadgePreview({ badge, onShareToggle, showActions = true }: Badge
           {/* Decorative Elements */}
           <div className="absolute bottom-4 right-4 opacity-20">
             <div className="w-16 h-16 border-2 border-white rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">2024</span>
+              <span className="text-white text-xs font-bold">2025</span>
             </div>
           </div>
         </div>

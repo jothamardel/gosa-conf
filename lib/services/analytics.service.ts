@@ -122,7 +122,7 @@ export class AnalyticsService {
         goodwillRevenue,
         donationRevenue
       ] = await Promise.all([
-        this.getServiceRevenue(ConventionRegistration, 'totalAmount'),
+        this.getServiceRevenue(ConventionRegistration, 'amount'),
         this.getServiceRevenue(DinnerReservation, 'totalAmount'),
         this.getServiceRevenue(Accommodation, 'totalAmount'),
         this.getServiceRevenue(ConventionBrochure, 'totalAmount'),
@@ -130,8 +130,8 @@ export class AnalyticsService {
         this.getServiceRevenue(Donation, 'amount')
       ]);
 
-      const total = conventionRevenue + dinnerRevenue + accommodationRevenue + 
-                   brochureRevenue + goodwillRevenue + donationRevenue;
+      const total = conventionRevenue + dinnerRevenue + accommodationRevenue +
+        brochureRevenue + goodwillRevenue + donationRevenue;
 
       const byMonth = await this.getMonthlyRevenue();
 
@@ -260,7 +260,7 @@ export class AnalyticsService {
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
     const monthlyData = [];
-    
+
     for (let i = 5; i >= 0; i--) {
       const date = new Date();
       date.setMonth(date.getMonth() - i);
@@ -269,8 +269,8 @@ export class AnalyticsService {
 
       const [convention, dinner, accommodation, brochure, goodwill, donation] = await Promise.all([
         ConventionRegistration.aggregate([
-          { $match: { confirmed: true, createdAt: { $gte: monthStart, $lte: monthEnd } } },
-          { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+          { $match: { confirm: true, createdAt: { $gte: monthStart, $lte: monthEnd } } },
+          { $group: { _id: null, total: { $sum: '$amount' } } }
         ]),
         DinnerReservation.aggregate([
           { $match: { confirmed: true, createdAt: { $gte: monthStart, $lte: monthEnd } } },
@@ -294,7 +294,7 @@ export class AnalyticsService {
         ])
       ]);
 
-      const totalAmount = 
+      const totalAmount =
         (convention[0]?.total || 0) +
         (dinner[0]?.total || 0) +
         (accommodation[0]?.total || 0) +
@@ -315,8 +315,8 @@ export class AnalyticsService {
     const [count, revenue] = await Promise.all([
       ConventionRegistration.countDocuments({ confirmed: true }),
       ConventionRegistration.aggregate([
-        { $match: { confirmed: true } },
-        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+        { $match: { confirm: true } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
       ])
     ]);
 
@@ -462,7 +462,7 @@ export class AnalyticsService {
 
       // Get total revenue and count for this day across all services
       const dayData = await this.getDayRevenue(date, nextDate);
-      
+
       trends.push({
         date: date.toISOString().split('T')[0],
         amount: dayData.amount,
@@ -482,7 +482,7 @@ export class AnalyticsService {
       startDate.setDate(startDate.getDate() - 6);
 
       const weekData = await this.getDayRevenue(startDate, endDate);
-      
+
       trends.push({
         week: `Week of ${startDate.toLocaleDateString()}`,
         amount: weekData.amount,
@@ -502,7 +502,7 @@ export class AnalyticsService {
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
       const monthData = await this.getDayRevenue(monthStart, monthEnd);
-      
+
       trends.push({
         month: date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' }),
         amount: monthData.amount,
@@ -515,8 +515,8 @@ export class AnalyticsService {
   private static async getDayRevenue(startDate: Date, endDate: Date) {
     const [convention, dinner, accommodation, brochure, goodwill, donation] = await Promise.all([
       ConventionRegistration.aggregate([
-        { $match: { confirmed: true, createdAt: { $gte: startDate, $lt: endDate } } },
-        { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } }
+        { $match: { confirm: true, createdAt: { $gte: startDate, $lt: endDate } } },
+        { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
       ]),
       DinnerReservation.aggregate([
         { $match: { confirmed: true, createdAt: { $gte: startDate, $lt: endDate } } },
@@ -540,7 +540,7 @@ export class AnalyticsService {
       ])
     ]);
 
-    const totalAmount = 
+    const totalAmount =
       (convention[0]?.total || 0) +
       (dinner[0]?.total || 0) +
       (accommodation[0]?.total || 0) +
@@ -548,7 +548,7 @@ export class AnalyticsService {
       (goodwill[0]?.total || 0) +
       (donation[0]?.total || 0);
 
-    const totalCount = 
+    const totalCount =
       (convention[0]?.count || 0) +
       (dinner[0]?.count || 0) +
       (accommodation[0]?.count || 0) +

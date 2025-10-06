@@ -62,7 +62,7 @@ describe('PDFWhatsAppUtils', () => {
         amount: 50000,
         quantity: 1,
         confirm: true,
-        createdAt: new Date('2024-01-01'),
+        createdAt: new Date('2025-01-01'),
         persons: [],
       };
 
@@ -107,7 +107,7 @@ describe('PDFWhatsAppUtils', () => {
         numberOfGuests: 2,
         totalAmount: 150000,
         confirmed: true,
-        createdAt: new Date('2024-01-01'),
+        createdAt: new Date('2025-01-01'),
         guestDetails: [
           { name: 'John Doe', email: 'john@example.com' },
           { name: 'Jane Doe', email: 'jane@example.com' },
@@ -135,8 +135,8 @@ describe('PDFWhatsAppUtils', () => {
 
   describe('getAccommodationPDFData', () => {
     it('should retrieve and format accommodation PDF data correctly', async () => {
-      const checkInDate = new Date('2024-06-01');
-      const checkOutDate = new Date('2024-06-03');
+      const checkInDate = new Date('2025-06-01');
+      const checkOutDate = new Date('2025-06-03');
 
       const mockAccommodation = {
         _id: mockServiceId,
@@ -149,7 +149,7 @@ describe('PDFWhatsAppUtils', () => {
         totalAmount: 200000,
         confirmed: true,
         confirmationCode: 'ACC-123456',
-        createdAt: new Date('2024-01-01'),
+        createdAt: new Date('2025-01-01'),
         specialRequests: 'Late check-in',
       };
 
@@ -181,7 +181,7 @@ describe('PDFWhatsAppUtils', () => {
         amount: 50000,
         quantity: 1,
         confirm: true,
-        createdAt: new Date('2024-01-01'),
+        createdAt: new Date('2025-01-01'),
         persons: [],
       };
 
@@ -215,7 +215,7 @@ describe('PDFWhatsAppUtils', () => {
         numberOfGuests: 1,
         totalAmount: 75000,
         confirmed: true,
-        createdAt: new Date('2024-01-01'),
+        createdAt: new Date('2025-01-01'),
         guestDetails: [{ name: 'John Doe' }],
       };
 
@@ -278,7 +278,7 @@ describe('PDFWhatsAppUtils', () => {
     });
 
     it('should use custom checkout date for accommodation expiration', async () => {
-      const checkOutDate = new Date('2024-12-31');
+      const checkOutDate = new Date('2025-12-31');
 
       const result = await PDFWhatsAppUtils.generateServiceQRCodeData(
         'accommodation',
@@ -320,7 +320,7 @@ describe('PDFWhatsAppUtils', () => {
         amount: 50000,
         quantity: 1,
         confirm: true,
-        createdAt: new Date('2024-01-01'),
+        createdAt: new Date('2025-01-01'),
         persons: [],
       };
 
@@ -331,7 +331,7 @@ describe('PDFWhatsAppUtils', () => {
         numberOfGuests: 1,
         totalAmount: 75000,
         confirmed: true,
-        createdAt: new Date('2024-01-01'),
+        createdAt: new Date('2025-01-01'),
         guestDetails: [{ name: 'John Doe' }],
       };
 
@@ -371,7 +371,7 @@ describe('PDFWhatsAppUtils', () => {
           type: 'convention',
           amount: 50000,
           paymentReference: 'conv_123',
-          date: new Date('2024-01-01'),
+          date: new Date('2025-01-01'),
           status: 'confirmed',
           description: 'GOSA 2025 Convention Registration',
         },
@@ -389,7 +389,7 @@ describe('PDFWhatsAppUtils', () => {
           type: 'dinner',
           amount: 75000,
           paymentReference: 'dinner_456',
-          date: new Date('2024-01-01'),
+          date: new Date('2025-01-01'),
           status: 'confirmed',
           description: 'GOSA 2025 Convention Dinner Reservation',
         },

@@ -89,7 +89,7 @@ export function GallerySection() {
             Moments That Define Us
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Relive past conventions and preview what awaits in 2024
+            Relive past conventions and preview what awaits in 2025
           </p>
         </div>
 
@@ -108,13 +108,12 @@ export function GallerySection() {
                   custom={direction}
                   variants={variants}
                   initial="enter"
-                  animate={isActive ? "center" : position === 1 ? 
-                    { x: direction === "right" ? 50 : -50, opacity: 0.7, scale: 0.9 } : 
+                  animate={isActive ? "center" : position === 1 ?
+                    { x: direction === "right" ? 50 : -50, opacity: 0.7, scale: 0.9 } :
                     { x: direction === "right" ? 100 : -100, opacity: 0.5, scale: 0.8 }}
                   exit="exit"
-                  className={`absolute inset-0 bg-white rounded-2xl shadow-xl overflow-hidden cursor-pointer transition-all duration-300 ${
-                    isActive ? "z-10" : position === 1 ? "z-5" : "z-0"
-                  }`}
+                  className={`absolute inset-0 bg-white rounded-2xl shadow-xl overflow-hidden cursor-pointer transition-all duration-300 ${isActive ? "z-10" : position === 1 ? "z-5" : "z-0"
+                    }`}
                   style={{
                     transformOrigin: "center bottom",
                     left: `${position * 20}px`,
@@ -135,7 +134,7 @@ export function GallerySection() {
                           </span>
                           <h3 className="text-2xl font-bold text-gray-900">{item.title}</h3>
                         </div>
-                        <button 
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setExpandedCard(null);
@@ -146,14 +145,14 @@ export function GallerySection() {
                         </button>
                       </div>
                       <p className="text-gray-600 mb-4">{item.description}</p>
-                      <div 
+                      <div
                         className="bg-gray-100 w-full h-full rounded-lg bg-cover bg-center"
                         style={{ backgroundImage: `url(${item.image})` }}
                       />
                     </motion.div>
                   ) : (
                     <>
-                      <div 
+                      <div
                         className="h-full bg-gray-100 bg-cover bg-center"
                         style={{ backgroundImage: `url(${item.image})` }}
                       />
@@ -195,9 +194,8 @@ export function GallerySection() {
                 setDirection(index > currentIndex ? "right" : "left");
                 setCurrentIndex(index);
               }}
-              className={`w-3 h-3 rounded-full transition-all ${
-                index === currentIndex ? "bg-primary-600 w-6" : "bg-gray-300"
-              }`}
+              className={`w-3 h-3 rounded-full transition-all ${index === currentIndex ? "bg-primary-600 w-6" : "bg-gray-300"
+                }`}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}

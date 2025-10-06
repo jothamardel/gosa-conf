@@ -2,6 +2,7 @@ import * as QRCode from 'qrcode';
 import { PDFCacheService } from './pdf-cache.service';
 import { PDFLoggerService } from './pdf-logger.service';
 import { PDFData } from '@/lib/types';
+import StorageService from './storage.service';
 
 export interface PDFTemplate {
   title: string;
@@ -567,6 +568,91 @@ export class PDFGeneratorService {
     const timestamp = new Date().toISOString().split('T')[0];
     const sanitizedName = userDetails.name.replace(/[^a-zA-Z0-9]/g, '_');
     return `GOSA_2025_${operationType}_${sanitizedName}_${timestamp}.pdf`;
+  }
+
+  /**
+   * Upload PDF to storage service
+   * @param pdfBuffer - PDF file buffer
+   * @param userDetails - User information
+   * @param operationType - Type of operation (registration, dinner, etc.)
+   * @returns Storage upload response
+   */
+  static async uploadPDFToStorage(
+    pdfBuffer: Buffer,
+    userDetails: PDFData['userDetails'],
+    operationType: string
+  ) {
+    try {
+      const fileName = this.generateFilename(userDetails, operationType);
+
+      const uploadResponse = await StorageService.uploadPDFReceipt(
+        pdfBuffer,
+        fileName.replace('.pdf', ''), // Remove extension as service adds it
+        {
+          name: userDetails.name,
+          email: userDetails.email,
+          type: operationType,
+        }
+      );
+
+      PDFLoggerService.logGenerationSuccess(
+        `PDF_UPLOAD_${Date.now()}`,
+        operationType,
+        0,
+        userDetails.registrationId || 'unknown'
+      );
+
+      return uploadResponse;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+
+      PDFLoggerService.logGenerationError(
+        `PDF_UPLOAD_${Date.now()}`,
+        operationType,
+        errorMessage,
+        0,
+        userDetails.registrationId || 'unknown'
+      );
+
+      console.error('Error uploading PDF to storage:', error);
+      throw new Error(`Failed to upload PDF: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Generate and upload PDF in one step
+   * @param data - PDF data
+   * @param pdfBuffer - Optional pre-generated PDF buffer
+   * @returns Storage upload response with PDF URL
+   */
+  static async generateAndUploadPDF(
+    data: PDFData,
+    pdfBuffer?: Buffer
+  ) {
+    try {
+      // If no buffer provided, generate HTML (actual PDF generation would need puppeteer)
+      if (!pdfBuffer) {
+        const htmlContent = await this.generatePDFHTML(data);
+        // Note: In a real implementation, you'd convert HTML to PDF buffer here
+        // For now, we'll create a simple text buffer as placeholder
+        pdfBuffer = Buffer.from(htmlContent, 'utf-8');
+      }
+
+      const uploadResponse = await this.uploadPDFToStorage(
+        pdfBuffer,
+        data.userDetails,
+        data.operationDetails.type
+      );
+
+      return {
+        ...uploadResponse,
+        downloadUrl: uploadResponse.url,
+        fileName: uploadResponse.fileName,
+      };
+    } catch (error) {
+      console.error('Error in generateAndUploadPDF:', error);
+      throw error;
+    }
   }
 
   /**

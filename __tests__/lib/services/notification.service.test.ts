@@ -72,8 +72,8 @@ describe('NotificationService', () => {
         email: 'john@example.com'
       },
       accommodationType: 'premium',
-      checkInDate: new Date('2024-03-15'),
-      checkOutDate: new Date('2024-03-17'),
+      checkInDate: new Date('2025-03-15'),
+      checkOutDate: new Date('2025-03-17'),
       numberOfGuests: 2,
       totalAmount: 400,
       confirmationCode: 'CONF123456',
@@ -324,8 +324,8 @@ describe('NotificationService', () => {
     it('should create accommodation confirmation template', () => {
       const data = {
         accommodationType: 'premium',
-        checkInDate: '2024-03-15',
-        checkOutDate: '2024-03-17',
+        checkInDate: '2025-03-15',
+        checkOutDate: '2025-03-17',
         confirmationCode: 'CONF123456'
       };
 

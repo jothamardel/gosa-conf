@@ -82,7 +82,7 @@ describe('End-to-End Payment Scenarios', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     const { UserUtils } = require('@/lib/utils');
     UserUtils.findOrCreateUser.mockResolvedValue(mockUser);
 
@@ -197,8 +197,8 @@ describe('End-to-End Payment Scenarios', () => {
         fullName: 'John Doe',
         phoneNumber: '+1234567890',
         accommodationType: 'standard',
-        checkInDate: '2024-01-01',
-        checkOutDate: '2024-01-03',
+        checkInDate: '2025-01-01',
+        checkOutDate: '2025-01-03',
         numberOfGuests: 2,
         guestDetails: [
           { name: 'John Doe', email: 'john@example.com', phone: '+1234567890' },
@@ -297,8 +297,8 @@ describe('End-to-End Payment Scenarios', () => {
         fullName: 'John Doe',
         phoneNumber: '+1234567890',
         accommodationType: 'premium',
-        checkInDate: '2024-01-01',
-        checkOutDate: '2024-01-02',
+        checkInDate: '2025-01-01',
+        checkOutDate: '2025-01-02',
         numberOfGuests: 1,
         guestDetails: [{ name: 'John Doe', email: 'john@example.com', phone: '+1234567890' }]
       };
@@ -423,7 +423,7 @@ describe('End-to-End Payment Scenarios', () => {
       } as unknown as NextRequest;
 
       const response = await WebhookPOST(webhookRequest);
-      
+
       // Webhook should still succeed even if notification fails
       expect(response.status).toBe(200);
       expect(DinnerUtils.confirmReservation).toHaveBeenCalled();
@@ -454,7 +454,7 @@ describe('End-to-End Payment Scenarios', () => {
         expect(data.userId).toBe(mockUser._id);
         expect(data.numberOfGuests).toBe(dinnerData.numberOfGuests);
         expect(data.guestDetails).toEqual(dinnerData.guestDetails);
-        
+
         return Promise.resolve({
           _id: 'reservation-123',
           ...data,

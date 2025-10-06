@@ -18,22 +18,22 @@ describe('AccommodationUtils', () => {
 
   describe('calculateTotalAmount', () => {
     it('should calculate correct total for standard room', () => {
-      const checkIn = new Date('2024-01-01');
-      const checkOut = new Date('2024-01-03'); // 2 nights
+      const checkIn = new Date('2025-01-01');
+      const checkOut = new Date('2025-01-03'); // 2 nights
       const total = AccommodationUtils.calculateTotalAmount('standard', checkIn, checkOut, 2);
       expect(total).toBe(200); // $100 * 2 nights
     });
 
     it('should calculate correct total for premium room', () => {
-      const checkIn = new Date('2024-01-01');
-      const checkOut = new Date('2024-01-04'); // 3 nights
+      const checkIn = new Date('2025-01-01');
+      const checkOut = new Date('2025-01-04'); // 3 nights
       const total = AccommodationUtils.calculateTotalAmount('premium', checkIn, checkOut, 1);
       expect(total).toBe(600); // $200 * 3 nights
     });
 
     it('should calculate correct total for luxury room', () => {
-      const checkIn = new Date('2024-01-01');
-      const checkOut = new Date('2024-01-02'); // 1 night
+      const checkIn = new Date('2025-01-01');
+      const checkOut = new Date('2025-01-02'); // 1 night
       const total = AccommodationUtils.calculateTotalAmount('luxury', checkIn, checkOut, 1);
       expect(total).toBe(350); // $350 * 1 night
     });
@@ -41,15 +41,15 @@ describe('AccommodationUtils', () => {
 
   describe('calculateNights', () => {
     it('should calculate correct number of nights', () => {
-      const checkIn = new Date('2024-01-01');
-      const checkOut = new Date('2024-01-05');
+      const checkIn = new Date('2025-01-01');
+      const checkOut = new Date('2025-01-05');
       const nights = AccommodationUtils.calculateNights(checkIn, checkOut);
       expect(nights).toBe(4);
     });
 
     it('should handle same day checkout', () => {
-      const checkIn = new Date('2024-01-01');
-      const checkOut = new Date('2024-01-01');
+      const checkIn = new Date('2025-01-01');
+      const checkOut = new Date('2025-01-01');
       const nights = AccommodationUtils.calculateNights(checkIn, checkOut);
       expect(nights).toBe(0);
     });
@@ -159,11 +159,11 @@ describe('AccommodationUtils', () => {
       const { Accommodation } = require('@/lib/schema');
       Accommodation.countDocuments.mockResolvedValue(5); // Less than capacity
 
-      const checkIn = new Date('2024-01-01');
-      const checkOut = new Date('2024-01-03');
-      
+      const checkIn = new Date('2025-01-01');
+      const checkOut = new Date('2025-01-03');
+
       const result = await AccommodationUtils.checkAvailability('standard', checkIn, checkOut);
-      
+
       expect(result.available).toBe(true);
       expect(result.availableRooms).toBe(45); // 50 - 5
     });
@@ -172,11 +172,11 @@ describe('AccommodationUtils', () => {
       const { Accommodation } = require('@/lib/schema');
       Accommodation.countDocuments.mockResolvedValue(50); // At capacity
 
-      const checkIn = new Date('2024-01-01');
-      const checkOut = new Date('2024-01-03');
-      
+      const checkIn = new Date('2025-01-01');
+      const checkOut = new Date('2025-01-03');
+
       const result = await AccommodationUtils.checkAvailability('standard', checkIn, checkOut);
-      
+
       expect(result.available).toBe(false);
       expect(result.availableRooms).toBe(0);
     });
@@ -201,8 +201,8 @@ describe('AccommodationUtils', () => {
         userId: 'user-id',
         paymentReference: 'ACCOM_123_+1234567890',
         accommodationType: 'standard' as const,
-        checkInDate: new Date('2024-01-01'),
-        checkOutDate: new Date('2024-01-03'),
+        checkInDate: new Date('2025-01-01'),
+        checkOutDate: new Date('2025-01-03'),
         numberOfGuests: 2,
         guestDetails: [
           { name: 'John Doe', email: 'john@example.com' },
@@ -212,7 +212,7 @@ describe('AccommodationUtils', () => {
       };
 
       const result = await AccommodationUtils.createBooking(bookingData);
-      
+
       expect(Accommodation.create).toHaveBeenCalledWith({
         ...bookingData,
         confirmed: false,
@@ -257,7 +257,7 @@ describe('AccommodationUtils', () => {
     it('should generate unique confirmation code', () => {
       const code1 = AccommodationUtils.generateConfirmationCode();
       const code2 = AccommodationUtils.generateConfirmationCode();
-      
+
       expect(code1).toMatch(/^ACC-[A-Z0-9]{8}$/);
       expect(code2).toMatch(/^ACC-[A-Z0-9]{8}$/);
       expect(code1).not.toBe(code2);

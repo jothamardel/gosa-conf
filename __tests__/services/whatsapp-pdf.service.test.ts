@@ -24,7 +24,7 @@ describe('WhatsAppPDFService', () => {
       type: 'convention',
       amount: 15000,
       paymentReference: 'PAY123456',
-      date: new Date('2024-01-15'),
+      date: new Date('2025-01-15'),
       status: 'confirmed',
       description: 'Convention Registration',
       additionalInfo: 'Standard accommodation included'

@@ -110,7 +110,7 @@ const agendaData = {
         title: "Public Lecture ",
         type: "keynote",
         location: "Crispan Events Centre",
-        speaker: "James Wilson, Futurist & Innovation Expert",
+        speaker: "",
         description: "AGM Business Trade Fair",
         icon: Mic,
         featured: false,

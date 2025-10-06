@@ -225,7 +225,7 @@ www.gosa.events
       <svg width="${template.width}" height="${template.height}" xmlns="http://www.w3.org/2000/svg">
         <!-- Header with logo -->
         <rect x="0" y="0" width="${template.width}" height="120" fill="${template.textColor}"/>
-        <text x="400" y="40" text-anchor="middle" fill="white" font-size="24" font-weight="bold">GOSA CONVENTION 2024</text>
+        <text x="400" y="40" text-anchor="middle" fill="white" font-size="24" font-weight="bold">GOSA CONVENTION 2025</text>
         <text x="400" y="70" text-anchor="middle" fill="white" font-size="16">ATTENDEE BADGE</text>
         
         <!-- Name -->

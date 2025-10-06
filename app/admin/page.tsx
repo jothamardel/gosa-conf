@@ -1,9 +1,10 @@
 import { AdminDashboard } from '@/components/admin/admin-dashboard';
+import AdminWrapper from '@/components/admin/admin-wrapper';
 
 export default function AdminPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <AdminWrapper>
       <AdminDashboard />
-    </div>
+    </AdminWrapper>
   );
 }

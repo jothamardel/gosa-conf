@@ -127,8 +127,8 @@ describe('NotificationService', () => {
           phoneNumber: '+1234567890'
         },
         accommodationType: 'standard',
-        checkInDate: new Date('2024-01-01'),
-        checkOutDate: new Date('2024-01-03'),
+        checkInDate: new Date('2025-01-01'),
+        checkOutDate: new Date('2025-01-03'),
         numberOfGuests: 2,
         guestDetails: [
           { name: 'John Doe', phone: '+1234567890' },
@@ -144,7 +144,7 @@ describe('NotificationService', () => {
       await NotificationService.sendAccommodationConfirmation(mockBooking);
 
       expect(WASender.sendMessage).toHaveBeenCalledTimes(2);
-      
+
       expect(WASender.sendMessage).toHaveBeenCalledWith({
         phone: '+1234567890',
         message: expect.stringContaining('Accommodation Booking Confirmed'),
@@ -154,8 +154,8 @@ describe('NotificationService', () => {
       const sentMessage = WASender.sendMessage.mock.calls[0][0].message;
       expect(sentMessage).toContain('ACC-12345678');
       expect(sentMessage).toContain('Standard Room');
-      expect(sentMessage).toContain('January 1, 2024');
-      expect(sentMessage).toContain('January 3, 2024');
+      expect(sentMessage).toContain('January 1, 2025');
+      expect(sentMessage).toContain('January 3, 2025');
     });
   });
 
@@ -182,7 +182,7 @@ describe('NotificationService', () => {
       await NotificationService.sendBrochureConfirmation(mockOrder);
 
       expect(WASender.sendMessage).toHaveBeenCalledTimes(2);
-      
+
       const sentMessage = WASender.sendMessage.mock.calls[0][0].message;
       expect(sentMessage).toContain('Convention Brochure Order Confirmed');
       expect(sentMessage).toContain('Digital Download');
@@ -335,7 +335,7 @@ describe('NotificationService', () => {
   describe('Error Handling', () => {
     it('should log errors but not throw', async () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      
+
       const mockReservation = {
         userId: { phoneNumber: '+1234567890' },
         guestDetails: [{ name: 'John Doe', phone: '+1234567890' }],

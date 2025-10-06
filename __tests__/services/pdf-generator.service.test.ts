@@ -20,7 +20,7 @@ describe('PDFGeneratorService', () => {
       type: 'convention',
       amount: 15000,
       paymentReference: 'PAY123456',
-      date: new Date('2024-01-15'),
+      date: new Date('2025-01-15'),
       status: 'confirmed',
       description: 'Convention Registration',
       additionalInfo: 'Standard accommodation included'
@@ -77,7 +77,7 @@ describe('PDFGeneratorService', () => {
     it('should format dates correctly', async () => {
       const html = await PDFGeneratorService.generatePDFHTML(mockPDFData);
 
-      expect(html).toContain('January 15, 2024');
+      expect(html).toContain('January 15, 2025');
     });
 
     it('should handle missing additional info gracefully', async () => {
@@ -135,29 +135,29 @@ describe('PDFGeneratorService', () => {
       const details = {
         accommodationType: 'Standard',
         guestCount: 1,
-        checkInDate: '2024-03-15',
-        checkOutDate: '2024-03-17'
+        checkInDate: '2025-03-15',
+        checkOutDate: '2025-03-17'
       };
 
       const formatted = (PDFGeneratorService as any).formatServiceDetails('convention', details);
 
       expect(formatted).toContain('Accommodation: Standard');
       expect(formatted).toContain('Guests: 1');
-      expect(formatted).toContain('Check-in: March 15, 2024');
-      expect(formatted).toContain('Check-out: March 17, 2024');
+      expect(formatted).toContain('Check-in: March 15, 2025');
+      expect(formatted).toContain('Check-out: March 17, 2025');
     });
 
     it('should format dinner details correctly', () => {
       const details = {
         guestCount: 3,
-        dinnerDate: '2024-03-16',
+        dinnerDate: '2025-03-16',
         dietaryRequirements: 'Vegetarian, No nuts'
       };
 
       const formatted = (PDFGeneratorService as any).formatServiceDetails('dinner', details);
 
       expect(formatted).toContain('Guests: 3');
-      expect(formatted).toContain('Date: March 16, 2024');
+      expect(formatted).toContain('Date: March 16, 2025');
       expect(formatted).toContain('Dietary Requirements: Vegetarian, No nuts');
     });
 
@@ -165,8 +165,8 @@ describe('PDFGeneratorService', () => {
       const details = {
         roomType: 'Premium',
         guestCount: 2,
-        checkInDate: '2024-03-15',
-        checkOutDate: '2024-03-17',
+        checkInDate: '2025-03-15',
+        checkOutDate: '2025-03-17',
         confirmationCode: 'ACC123'
       };
 

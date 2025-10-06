@@ -55,7 +55,7 @@ describe('PDFWhatsAppUtils Integration Tests', () => {
 
     it('should generate QR code data with correct URL format for accommodation', async () => {
       const serviceId = '507f1f77bcf86cd799439011';
-      const checkOutDate = new Date('2024-12-31T10:00:00Z');
+      const checkOutDate = new Date('2025-12-31T10:00:00Z');
       const additionalData = {
         userId: '507f1f77bcf86cd799439012',
         accommodationType: 'premium',

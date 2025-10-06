@@ -58,7 +58,7 @@ async function validatePDFUtils() {
 
     // Test 3: Validate QR code data structure for accommodation
     console.log('\n✅ Test 3: Validate accommodation QR data format');
-    const checkOutDate = new Date('2024-12-31T10:00:00Z');
+    const checkOutDate = new Date('2025-12-31T10:00:00Z');
     const accomQrData = await PDFWhatsAppUtils.generateServiceQRCodeData(
       'accommodation',
       serviceId,

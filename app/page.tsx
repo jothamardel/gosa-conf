@@ -40,7 +40,7 @@ export default function Home() {
               Convention Center
             </h3>
             <p className="text-sm sm:text-base text-gray-600">
-              Premium venue with dedicated reunion spaces
+              Crispan Events Center
             </p>
           </div>
 

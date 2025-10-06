@@ -99,7 +99,7 @@ export default function AboutSection() {
           <div className="md:flex items-center">
             <div className="md:w-1/2 mb-8 md:mb-0">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                Alumni Convention 2024
+                Alumni Convention 2025
               </h3>
               <p className="text-gray-700 mb-6">
                 This year's theme:{" "}
@@ -145,7 +145,7 @@ export default function AboutSection() {
                 </div>
                 <div className="p-4 text-center">
                   <p className="text-sm text-gray-500">
-                    2024 Convention Highlights
+                    2025 Convention Highlights
                   </p>
                 </div>
               </div>

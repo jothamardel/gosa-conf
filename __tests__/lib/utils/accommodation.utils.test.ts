@@ -17,8 +17,8 @@ describe('AccommodationUtils', () => {
       userId: new Types.ObjectId('507f1f77bcf86cd799439011'),
       paymentReference: 'ACCOM_1703123456_08012345678',
       accommodationType: 'premium' as const,
-      checkInDate: new Date('2024-03-15'),
-      checkOutDate: new Date('2024-03-17'),
+      checkInDate: new Date('2025-03-15'),
+      checkOutDate: new Date('2025-03-17'),
       numberOfGuests: 2,
       guestDetails: [
         { name: 'John Doe', email: 'john@example.com' },
@@ -72,8 +72,8 @@ describe('AccommodationUtils', () => {
     it('should throw error for invalid date range', async () => {
       const invalidData = {
         ...mockBookingData,
-        checkInDate: new Date('2024-03-17'),
-        checkOutDate: new Date('2024-03-15')
+        checkInDate: new Date('2025-03-17'),
+        checkOutDate: new Date('2025-03-15')
       };
 
       await expect(AccommodationUtils.createBooking(invalidData))
@@ -111,28 +111,28 @@ describe('AccommodationUtils', () => {
 
   describe('calculateTotalAmount', () => {
     it('should calculate correct amount for standard accommodation', () => {
-      const checkIn = new Date('2024-03-15');
-      const checkOut = new Date('2024-03-17');
+      const checkIn = new Date('2025-03-15');
+      const checkOut = new Date('2025-03-17');
       const amount = AccommodationUtils.calculateTotalAmount('standard', checkIn, checkOut, 2);
-      
+
       // 2 nights * $100 = $200
       expect(amount).toBe(200);
     });
 
     it('should calculate correct amount for premium accommodation', () => {
-      const checkIn = new Date('2024-03-15');
-      const checkOut = new Date('2024-03-17');
+      const checkIn = new Date('2025-03-15');
+      const checkOut = new Date('2025-03-17');
       const amount = AccommodationUtils.calculateTotalAmount('premium', checkIn, checkOut, 2);
-      
+
       // 2 nights * $200 = $400
       expect(amount).toBe(400);
     });
 
     it('should calculate correct amount for luxury accommodation', () => {
-      const checkIn = new Date('2024-03-15');
-      const checkOut = new Date('2024-03-17');
+      const checkIn = new Date('2025-03-15');
+      const checkOut = new Date('2025-03-17');
       const amount = AccommodationUtils.calculateTotalAmount('luxury', checkIn, checkOut, 2);
-      
+
       // 2 nights * $350 = $700
       expect(amount).toBe(700);
     });
@@ -140,8 +140,8 @@ describe('AccommodationUtils', () => {
 
   describe('validateDates', () => {
     it('should validate correct date range', () => {
-      const checkIn = new Date('2024-03-15');
-      const checkOut = new Date('2024-03-17');
+      const checkIn = new Date('2025-03-15');
+      const checkOut = new Date('2025-03-17');
       const validation = AccommodationUtils.validateDates(checkIn, checkOut);
 
       expect(validation.valid).toBe(true);
@@ -150,7 +150,7 @@ describe('AccommodationUtils', () => {
 
     it('should reject past check-in dates', () => {
       const checkIn = new Date('2020-01-01');
-      const checkOut = new Date('2024-03-17');
+      const checkOut = new Date('2025-03-17');
       const validation = AccommodationUtils.validateDates(checkIn, checkOut);
 
       expect(validation.valid).toBe(false);
@@ -158,8 +158,8 @@ describe('AccommodationUtils', () => {
     });
 
     it('should reject check-out before check-in', () => {
-      const checkIn = new Date('2024-03-17');
-      const checkOut = new Date('2024-03-15');
+      const checkIn = new Date('2025-03-17');
+      const checkOut = new Date('2025-03-15');
       const validation = AccommodationUtils.validateDates(checkIn, checkOut);
 
       expect(validation.valid).toBe(false);
@@ -171,8 +171,8 @@ describe('AccommodationUtils', () => {
     it('should return available for valid dates', async () => {
       mockAccommodation.countDocuments = jest.fn().mockResolvedValue(5);
 
-      const checkIn = new Date('2024-03-15');
-      const checkOut = new Date('2024-03-17');
+      const checkIn = new Date('2025-03-15');
+      const checkOut = new Date('2025-03-17');
       const availability = await AccommodationUtils.checkAvailability('premium', checkIn, checkOut);
 
       expect(availability.available).toBe(true);
@@ -182,8 +182,8 @@ describe('AccommodationUtils', () => {
     it('should return unavailable when fully booked', async () => {
       mockAccommodation.countDocuments = jest.fn().mockResolvedValue(20);
 
-      const checkIn = new Date('2024-03-15');
-      const checkOut = new Date('2024-03-17');
+      const checkIn = new Date('2025-03-15');
+      const checkOut = new Date('2025-03-17');
       const availability = await AccommodationUtils.checkAvailability('premium', checkIn, checkOut);
 
       expect(availability.available).toBe(false);

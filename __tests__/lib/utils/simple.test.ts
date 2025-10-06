@@ -37,7 +37,7 @@ describe('Utility Functions', () => {
       const phone = '08012345678';
       const timestamp = Date.now();
       const reference = `DINNER_${timestamp}_${phone}`;
-      
+
       expect(reference).toMatch(/^DINNER_\d+_08012345678$/);
     });
 
@@ -45,7 +45,7 @@ describe('Utility Functions', () => {
       const phone = '08012345678';
       const timestamp = Date.now();
       const reference = `ACCOM_${timestamp}_${phone}`;
-      
+
       expect(reference).toMatch(/^ACCOM_\d+_08012345678$/);
     });
 
@@ -53,7 +53,7 @@ describe('Utility Functions', () => {
       const phone = '08012345678';
       const timestamp = Date.now();
       const reference = `BROCH_${timestamp}_${phone}`;
-      
+
       expect(reference).toMatch(/^BROCH_\d+_08012345678$/);
     });
   });
@@ -63,7 +63,7 @@ describe('Utility Functions', () => {
       const pricePerPerson = 75;
       const numberOfGuests = 3;
       const total = pricePerPerson * numberOfGuests;
-      
+
       expect(total).toBe(225);
     });
 
@@ -73,12 +73,12 @@ describe('Utility Functions', () => {
         premium: 200,
         luxury: 350
       };
-      
+
       const nights = 2;
       const standardTotal = accommodationPrices.standard * nights;
       const premiumTotal = accommodationPrices.premium * nights;
       const luxuryTotal = accommodationPrices.luxury * nights;
-      
+
       expect(standardTotal).toBe(200);
       expect(premiumTotal).toBe(400);
       expect(luxuryTotal).toBe(700);
@@ -87,17 +87,17 @@ describe('Utility Functions', () => {
     it('should calculate brochure total with discounts', () => {
       const digitalPrice = 10;
       const physicalPrice = 20;
-      
+
       // No discount for less than 5
       expect(digitalPrice * 3).toBe(30);
       expect(physicalPrice * 3).toBe(60);
-      
+
       // 5% discount for 5-9 items
       const qty5 = 5;
       const base5 = physicalPrice * qty5;
       const discounted5 = base5 * 0.95;
       expect(discounted5).toBe(95);
-      
+
       // 10% discount for 10+ items
       const qty10 = 10;
       const base10 = physicalPrice * qty10;
@@ -109,7 +109,7 @@ describe('Utility Functions', () => {
   describe('Validation Functions', () => {
     it('should validate email addresses', () => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      
+
       expect(emailRegex.test('john@example.com')).toBe(true);
       expect(emailRegex.test('jane.doe@company.co.uk')).toBe(true);
       expect(emailRegex.test('invalid-email')).toBe(false);
@@ -119,7 +119,7 @@ describe('Utility Functions', () => {
 
     it('should validate phone numbers', () => {
       const phoneRegex = /^0[789][01]\d{8}$/;
-      
+
       expect(phoneRegex.test('08012345678')).toBe(true);
       expect(phoneRegex.test('07012345678')).toBe(true);
       expect(phoneRegex.test('09012345678')).toBe(true);
@@ -132,7 +132,7 @@ describe('Utility Functions', () => {
       const validateGuestCount = (count: number) => {
         return count >= 1 && count <= 10;
       };
-      
+
       expect(validateGuestCount(1)).toBe(true);
       expect(validateGuestCount(5)).toBe(true);
       expect(validateGuestCount(10)).toBe(true);
@@ -145,7 +145,7 @@ describe('Utility Functions', () => {
       const validateDonationAmount = (amount: number, minAmount: number = 5) => {
         return amount >= minAmount && amount <= 100000 && !isNaN(amount);
       };
-      
+
       expect(validateDonationAmount(10)).toBe(true);
       expect(validateDonationAmount(100)).toBe(true);
       expect(validateDonationAmount(4)).toBe(false); // below minimum
@@ -156,12 +156,12 @@ describe('Utility Functions', () => {
 
   describe('Date Utilities', () => {
     it('should calculate nights between dates', () => {
-      const checkIn = new Date('2024-03-15');
-      const checkOut = new Date('2024-03-17');
-      
+      const checkIn = new Date('2025-03-15');
+      const checkOut = new Date('2025-03-17');
+
       const timeDiff = checkOut.getTime() - checkIn.getTime();
       const nights = Math.ceil(timeDiff / (1000 * 3600 * 24));
-      
+
       expect(nights).toBe(2);
     });
 
@@ -169,16 +169,16 @@ describe('Utility Functions', () => {
       const today = new Date();
       const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
       const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-      
+
       // Check-in should be in the future
       expect(tomorrow > today).toBe(true);
       expect(yesterday > today).toBe(false);
-      
+
       // Check-out should be after check-in
-      const checkIn = new Date('2024-03-15');
-      const checkOut = new Date('2024-03-17');
-      const invalidCheckOut = new Date('2024-03-13');
-      
+      const checkIn = new Date('2025-03-15');
+      const checkOut = new Date('2025-03-17');
+      const invalidCheckOut = new Date('2025-03-13');
+
       expect(checkOut > checkIn).toBe(true);
       expect(invalidCheckOut > checkIn).toBe(false);
     });
@@ -189,10 +189,10 @@ describe('Utility Functions', () => {
       const generateConfirmationCode = () => {
         return 'CONF' + Math.random().toString(36).substr(2, 6).toUpperCase();
       };
-      
+
       const code1 = generateConfirmationCode();
       const code2 = generateConfirmationCode();
-      
+
       expect(code1).toMatch(/^CONF[A-Z0-9]{6}$/);
       expect(code2).toMatch(/^CONF[A-Z0-9]{6}$/);
       expect(code1).not.toBe(code2); // Should be unique
@@ -202,12 +202,12 @@ describe('Utility Functions', () => {
       const generateReceiptNumber = () => {
         return 'RCP' + Date.now().toString();
       };
-      
+
       const receipt1 = generateReceiptNumber();
       // Small delay to ensure different timestamps
       await new Promise(resolve => setTimeout(resolve, 1));
       const receipt2 = generateReceiptNumber();
-      
+
       expect(receipt1).toMatch(/^RCP\d+$/);
       expect(receipt2).toMatch(/^RCP\d+$/);
       expect(receipt1).not.toBe(receipt2); // Should be unique
@@ -226,7 +226,7 @@ describe('Utility Functions', () => {
         }
         return phone;
       };
-      
+
       expect(formatPhoneNumber('08012345678')).toBe('2348012345678');
       expect(formatPhoneNumber('+2348012345678')).toBe('2348012345678');
       expect(formatPhoneNumber('2348012345678')).toBe('2348012345678');

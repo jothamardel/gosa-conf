@@ -1,6 +1,7 @@
 import { ImageGeneratorService } from './image-generator.service';
 import { Wasender, WASenderImage, WASenderResult } from '../wasender-api';
 import { ImageData, WhatsAppImageData } from '@/lib/types';
+import StorageService from './storage.service';
 import {
   PDFErrorHandlerService,
   PDFErrorType,

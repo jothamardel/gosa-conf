@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         attendeeTitle: 'Pastor',
         organization: 'First Baptist Church',
         downloadCount: 15,
-        createdAt: new Date('2024-01-15').toISOString(),
+        createdAt: new Date('2025-01-15').toISOString(),
         user: {
           name: 'John Doe',
           email: 'john.doe@example.com'
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         attendeeTitle: 'Elder',
         organization: 'Grace Community Church',
         downloadCount: 8,
-        createdAt: new Date('2024-01-16').toISOString(),
+        createdAt: new Date('2025-01-16').toISOString(),
         user: {
           name: 'Jane Smith',
           email: 'jane.smith@example.com'
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
         attendeeTitle: 'Deacon',
         organization: 'Hope Fellowship',
         downloadCount: 22,
-        createdAt: new Date('2024-01-17').toISOString(),
+        createdAt: new Date('2025-01-17').toISOString(),
         user: {
           name: 'Michael Johnson',
           email: 'michael.johnson@example.com'
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
         attendeeTitle: 'Youth Leader',
         organization: 'New Life Church',
         downloadCount: 12,
-        createdAt: new Date('2024-01-18').toISOString(),
+        createdAt: new Date('2025-01-18').toISOString(),
         user: {
           name: 'Sarah Williams',
           email: 'sarah.williams@example.com'
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         attendeeTitle: 'Minister',
         organization: 'Faith Assembly',
         downloadCount: 18,
-        createdAt: new Date('2024-01-19').toISOString(),
+        createdAt: new Date('2025-01-19').toISOString(),
         user: {
           name: 'David Brown',
           email: 'david.brown@example.com'
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         attendeeTitle: 'Worship Leader',
         organization: 'Cornerstone Church',
         downloadCount: 9,
-        createdAt: new Date('2024-01-20').toISOString(),
+        createdAt: new Date('2025-01-20').toISOString(),
         user: {
           name: 'Lisa Davis',
           email: 'lisa.davis@example.com'

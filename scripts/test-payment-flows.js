@@ -81,8 +81,8 @@ class PaymentFlowTester {
         fullName: 'Test User',
         phoneNumber: '+1234567890',
         accommodationType: 'standard',
-        checkInDate: '2024-12-01',
-        checkOutDate: '2024-12-03',
+        checkInDate: '2025-12-01',
+        checkOutDate: '2025-12-03',
         numberOfGuests: 1,
         guestDetails: [
           { name: 'Test User', email: 'test@example.com', phone: '+1234567890' }
