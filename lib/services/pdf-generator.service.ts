@@ -1183,9 +1183,11 @@ export class PDFGeneratorService {
             On behalf of GOSA and all the lives you've touched through your generosity, thank you for your donation of ₦${operationDetails.amount.toLocaleString()}. This official receipt confirms your contribution and serves as documentation for tax purposes. Your support makes our mission of "Light and Truth" possible.
             <br><br>
             <strong>Contact Information:</strong><br>
-            Finance Department: contact@gosa.events<br>
-            Phone: +234 810 248 1754, +234 803 701 1422, +234 813 694 9036<br>
-            Address: GOSA Secretariat Dogo Karfe
+            Finance Department: gosasecretariat@gmail.com<br>
+            Phone: +234 816 2329 082<br>
+            Address: J.D Gomwalk National Secretariat Ahead Mu'azu House Dogon Karfe
+P.O. Box, 8126 Jos, Nigeria
+
           </div>
         </div>
       </div>

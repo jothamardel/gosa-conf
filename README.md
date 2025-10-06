@@ -46,8 +46,9 @@ Required by law or a regulatory agency, ‎ ‎ ‎you may appeal by emailing co
 
 contact:
 
- ‎📧 contact@gosa.events ‎
-📞 +234 810 248 1754, +234 803 701 1422, +234 813 694 9036
-📍 GOSA Secretariat Dogo Karfe
+ ‎📧 gosasecretariat@gmail.com ‎
+📞 +234 816 2329 082
+📍 J.D Gomwalk National Secretariat Ahead Mu'azu House Dogon Karfe
+P.O. Box, 8126 Jos, Nigeria
 
 If a complaint is not resolved within 48 hours, you may escalate to the ‎Consumer Protection Department, Central Bank of Nigeria (CBN) ‎

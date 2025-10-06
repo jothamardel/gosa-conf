@@ -320,7 +320,7 @@ describe('PDF Content Customization', () => {
       expect(html).toContain('501(c)(3) equivalent');
       expect(html).toContain('Tax ID: XX-XXXXXXX');
       expect(html).toContain('Thank You & Official Acknowledgment');
-      expect(html).toContain('contact@gosa.events');
+      expect(html).toContain('gosasecretariat@gmail.com');
     });
 
     it('should handle anonymous donations', async () => {
