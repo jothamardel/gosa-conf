@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
 
     if (format === "png" || format === "image") {
       // Generate and return image (PNG or SVG depending on what's available)
-      const imageBuffer =
+      const imageBuffer: any =
         await ImageGeneratorService.generateImageBuffer(imageData);
 
       // Detect content type from buffer
@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // Return HTML preview
-      const htmlContent =
+      const htmlContent: any =
         await ImageGeneratorService.generateImageBufferFallback(imageData);
 
       return new NextResponse(htmlContent, {
