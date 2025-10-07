@@ -46,7 +46,7 @@ class StorageService {
   }
 
   /**
-   * Upload a file with Vercel-first strategy and ImageKit fallback
+   * Upload a file with ImageKit-first strategy and Vercel fallback
    * @param file - File buffer or base64 string
    * @param fileName - Name for the uploaded file
    * @param options - Upload options
@@ -61,37 +61,37 @@ class StorageService {
     let primaryError: Error | null = null;
     let fallbackError: Error | null = null;
 
-    // Step 1: Try Vercel Blob first (primary)
-    console.log('🔄 Attempting upload to Vercel Blob (primary)...');
-    try {
-      const result = await this.uploadToVercel(file, fileName, options);
-      console.log('✅ Vercel Blob upload successful');
-      return result;
-    } catch (error) {
-      primaryError = error instanceof Error ? error : new Error('Vercel upload failed');
-      console.error('❌ Vercel Blob upload failed:', primaryError.message);
-    }
-
-    // Step 2: Try ImageKit as fallback
-    console.log('🔄 Attempting fallback to ImageKit...');
+    // Step 1: Try ImageKit first (primary)
+    console.log('🔄 Attempting upload to ImageKit (primary)...');
     try {
       const result = await this.uploadToImageKit(file, fileName, options);
-      console.log('✅ ImageKit fallback upload successful');
+      console.log('✅ ImageKit upload successful');
+      return result;
+    } catch (error) {
+      primaryError = error instanceof Error ? error : new Error('ImageKit upload failed');
+      console.error('❌ ImageKit upload failed:', primaryError.message);
+    }
+
+    // Step 2: Try Vercel Blob as fallback
+    console.log('🔄 Attempting fallback to Vercel Blob...');
+    try {
+      const result = await this.uploadToVercel(file, fileName, options);
+      console.log('✅ Vercel Blob fallback upload successful');
 
       // Log successful fallback for monitoring
       this.logFallbackSuccess(fileName, primaryError.message);
 
       return result;
     } catch (error) {
-      fallbackError = error instanceof Error ? error : new Error('ImageKit upload failed');
-      console.error('❌ ImageKit fallback upload failed:', fallbackError.message);
+      fallbackError = error instanceof Error ? error : new Error('Vercel upload failed');
+      console.error('❌ Vercel Blob fallback upload failed:', fallbackError.message);
     }
 
     // Step 3: Both failed - notify admin and throw error
     const duration = Date.now() - startTime;
     await this.notifyStorageFailure(fileName, primaryError, fallbackError, duration, options.userDetails);
 
-    throw new Error(`Complete storage failure: Vercel (${primaryError.message}) and ImageKit (${fallbackError.message}) both failed`);
+    throw new Error(`Complete storage failure: ImageKit (${primaryError.message}) and Vercel (${fallbackError.message}) both failed`);
   }
 
   /**
@@ -167,7 +167,7 @@ class StorageService {
   }
 
   /**
-   * Upload PDF receipt with Vercel-first strategy
+   * Upload PDF receipt with ImageKit-first strategy
    * @param pdfBuffer - PDF file buffer
    * @param fileName - Name for the PDF file
    * @param userDetails - User information
@@ -181,7 +181,37 @@ class StorageService {
     return this.uploadFile(pdfBuffer, `${fileName}.pdf`, {
       folder: '/receipts',
       contentType: 'application/pdf',
+      tags: ['receipt', 'pdf', userDetails.type, 'gosa-2025'],
       userDetails,
+    });
+  }
+
+  /**
+   * Upload QR regeneration receipt (optimized for WhatsApp delivery)
+   * @param pdfBuffer - PDF file buffer
+   * @param paymentReference - Payment reference for naming
+   * @param serviceType - Type of service (convention, dinner, etc.)
+   * @param userDetails - User information
+   * @returns Upload response
+   */
+  static async uploadQRRegenerationReceipt(
+    pdfBuffer: Buffer,
+    paymentReference: string,
+    serviceType: string,
+    userDetails: { name: string; email: string; phone: string }
+  ): Promise<StorageUploadResponse> {
+    const fileName = `qr-regenerated-${serviceType}-${paymentReference}-${Date.now()}`;
+
+    return this.uploadFile(pdfBuffer, `${fileName}.pdf`, {
+      folder: '/qr-regeneration',
+      contentType: 'application/pdf',
+      tags: ['qr-regeneration', 'receipt', serviceType, 'whatsapp-delivery'],
+      userDetails: {
+        name: userDetails.name,
+        email: userDetails.email,
+        type: `${serviceType}-regeneration`,
+        registrationId: paymentReference
+      },
     });
   }
 

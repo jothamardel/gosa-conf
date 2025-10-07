@@ -5,7 +5,7 @@ import { DinnerReservation } from "@/lib/schema/dinner.schema";
 import { Accommodation } from "@/lib/schema/accommodation.schema";
 import { ConventionBrochure } from "@/lib/schema/brochure.schema";
 import { QRCodeService } from "@/lib/services/qr-code.service";
-import { WhatsAppPDFService } from "@/lib/services/whatsapp-pdf.service";
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -214,9 +214,26 @@ export async function POST(request: NextRequest) {
       console.log('Test WhatsApp message result:', testMessage);
 
       if (testMessage.success) {
-        // If basic message works, try PDF
-        whatsappResult = await WhatsAppPDFService.generateAndSendPDF(whatsappData);
-        console.log('WhatsApp PDF result:', whatsappResult);
+        // If basic message works, generate proper receipt using the same format as payment success
+        console.log('Test message sent successfully, now generating receipt image...');
+
+        try {
+          // Use WhatsApp Image Service to generate PNG receipt (same format as payment receipts)
+          const { WhatsAppImageService } = await import('@/lib/services/whatsapp-image.service');
+
+          // Generate and send image receipt (PNG format) - same as successful payment receipts
+          whatsappResult = await WhatsAppImageService.generateAndSendImage(whatsappData);
+          console.log('WhatsApp Image result:', whatsappResult);
+
+        } catch (imageError) {
+          console.error('Image receipt generation failed:', imageError);
+          whatsappResult = {
+            success: false,
+            imageGenerated: false,
+            whatsappSent: false,
+            error: `Image receipt generation failed: ${imageError instanceof Error ? imageError.message : 'Unknown error'}`
+          };
+        }
       } else {
         whatsappResult = {
           success: false,
@@ -251,7 +268,7 @@ export async function POST(request: NextRequest) {
         newQRCode: newQRCode,
         whatsappDelivery: whatsappResult ? {
           success: whatsappResult.success,
-          pdfGenerated: whatsappResult.pdfGenerated,
+          imageGenerated: whatsappResult.imageGenerated,
           whatsappSent: whatsappResult.whatsappSent,
           messageId: whatsappResult.messageId,
           error: whatsappResult.error
@@ -259,7 +276,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "WhatsApp service unavailable"
         },
-        message: `QR code regenerated successfully for ${serviceType} ${serviceRecord.paymentReference}${whatsappResult?.success ? ' and receipt sent via WhatsApp' : ''}`
+        message: `QR code regenerated successfully for ${serviceType} ${serviceRecord.paymentReference}${whatsappResult?.success ? ' and receipt image sent via WhatsApp' : ''}`
       },
     });
   } catch (error: any) {

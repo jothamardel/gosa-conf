@@ -1604,29 +1604,75 @@ P.O. Box, 8126 Jos, Nigeria
   }
 
   /**
-   * Generate PDF and upload to Vercel Blob storage
+   * Generate PDF and upload to storage (ImageKit-first with Vercel fallback)
    */
   static async generateAndUploadToBlob(data: PDFData): Promise<string> {
-    const { PDFBlobService } = await import('./pdf-blob.service');
-
     try {
       // Generate PDF buffer
       const pdfBuffer = await this.generatePDFBuffer(data);
 
-      // Generate blob filename
-      const filename = PDFBlobService.generateBlobFilename(data.userDetails, data.operationDetails.type);
+      // Generate filename
+      const timestamp = Date.now();
+      const filename = `${data.operationDetails.type}-${data.operationDetails.paymentReference}-${timestamp}`;
 
-      // Upload to Vercel Blob storage
-      const blobUrl = await PDFBlobService.uploadPDFToBlob(pdfBuffer, filename);
+      // Upload using unified storage service (ImageKit-first)
+      const uploadResult = await StorageService.uploadPDFReceipt(
+        pdfBuffer,
+        filename,
+        {
+          name: data.userDetails.name,
+          email: data.userDetails.email,
+          type: data.operationDetails.type
+        }
+      );
 
-      console.log(`[PDF-GENERATOR] Successfully uploaded PDF to blob: ${filename}`);
-      return blobUrl;
+      console.log(`[PDF-GENERATOR] Successfully uploaded PDF via ${uploadResult.provider}: ${filename}`);
+      return uploadResult.url;
     } catch (error) {
-      console.error('[PDF-GENERATOR] Failed to generate and upload PDF to blob:', error);
+      console.error('[PDF-GENERATOR] Failed to generate and upload PDF:', error);
 
-      // Use fallback mechanism
-      const { PDFBlobService } = await import('./pdf-blob.service');
-      return await PDFBlobService.handleBlobUploadError(error as Error, data);
+      // Fallback to legacy blob service if available
+      try {
+        const { PDFBlobService } = await import('./pdf-blob.service');
+        const pdfBuffer = await this.generatePDFBuffer(data);
+        const filename = PDFBlobService.generateBlobFilename(data.userDetails, data.operationDetails.type);
+        return await PDFBlobService.uploadPDFToBlob(pdfBuffer, filename);
+      } catch (fallbackError) {
+        console.error('[PDF-GENERATOR] Fallback also failed:', fallbackError);
+        throw new Error(`Complete PDF generation failure: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+  }
+
+  /**
+   * Generate QR regeneration receipt and upload to storage
+   */
+  static async generateQRRegenerationReceipt(
+    data: PDFData,
+    paymentReference: string,
+    serviceType: string
+  ): Promise<string> {
+    try {
+      // Generate PDF buffer
+      const pdfBuffer = await this.generatePDFBuffer(data);
+
+      // Upload using specialized QR regeneration method
+      const uploadResult = await StorageService.uploadQRRegenerationReceipt(
+        pdfBuffer,
+        paymentReference,
+        serviceType,
+        {
+          name: data.userDetails.name,
+          email: data.userDetails.email,
+          phone: data.userDetails.phone
+        }
+      );
+
+      console.log(`[PDF-GENERATOR] QR regeneration receipt uploaded via ${uploadResult.provider}: ${paymentReference}`);
+      return uploadResult.url;
+    } catch (error) {
+      console.error('[PDF-GENERATOR] Failed to generate QR regeneration receipt:', error);
+      throw new Error(`QR regeneration receipt generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
