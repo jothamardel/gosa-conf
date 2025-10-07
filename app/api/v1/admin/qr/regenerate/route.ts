@@ -122,9 +122,9 @@ export async function POST(request: NextRequest) {
     const status: 'confirmed' | 'pending' = (serviceRecord.confirm || serviceRecord.confirmed) ? 'confirmed' : 'pending';
     const whatsappData = {
       userDetails: {
-        name: user.name,
+        name: user.fullName,
         email: user.email,
-        phone: user.phone,
+        phone: user.phoneNumber,
         registrationId: serviceRecord._id.toString()
       },
       operationDetails: {
@@ -142,10 +142,43 @@ export async function POST(request: NextRequest) {
     // Send receipt via WhatsApp
     let whatsappResult = null;
     try {
-      whatsappResult = await WhatsAppPDFService.generateAndSendPDF(whatsappData);
+      console.log('Attempting to send WhatsApp PDF with data:', {
+        userPhone: user.phoneNumber,
+        userName: user.fullName,
+        serviceType: serviceType,
+        paymentReference: serviceRecord.paymentReference
+      });
+
+      // First test basic WhatsApp connectivity
+      const { Wasender } = await import('@/lib/wasender-api');
+
+      const testMessage = await Wasender.httpSenderMessage({
+        to: user.phoneNumber,
+        text: `🔄 QR Code Regenerated!\n\nHi ${user.fullName},\n\nYour QR code for ${serviceType} registration (${serviceRecord.paymentReference}) has been regenerated.\n\nYour new receipt with QR code will be sent shortly.\n\nThank you!`
+      });
+
+      console.log('Test WhatsApp message result:', testMessage);
+
+      if (testMessage.success) {
+        // If basic message works, try PDF
+        whatsappResult = await WhatsAppPDFService.generateAndSendPDF(whatsappData);
+        console.log('WhatsApp PDF result:', whatsappResult);
+      } else {
+        whatsappResult = {
+          success: false,
+          pdfGenerated: false,
+          whatsappSent: false,
+          error: `WhatsApp connection failed: ${testMessage.error}`
+        };
+      }
     } catch (whatsappError) {
-      console.error('WhatsApp delivery failed:', whatsappError);
-      // Continue even if WhatsApp fails - QR code was still regenerated
+      console.error('WhatsApp delivery failed with error:', whatsappError);
+      whatsappResult = {
+        success: false,
+        pdfGenerated: false,
+        whatsappSent: false,
+        error: `WhatsApp service error: ${whatsappError instanceof Error ? whatsappError.message : 'Unknown error'}`
+      };
     }
 
     return NextResponse.json({
@@ -157,9 +190,9 @@ export async function POST(request: NextRequest) {
           serviceType: serviceType
         },
         user: {
-          name: user.name,
+          name: user.fullName,
           email: user.email,
-          phone: user.phone
+          phone: user.phoneNumber
         },
         newQRCode: newQRCode,
         whatsappDelivery: whatsappResult ? {
