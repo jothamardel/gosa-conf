@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
-import { ConventionRegistration } from "@/lib/schema/convention.schema";
-import { DinnerReservation } from "@/lib/schema/dinner.schema";
-import { Accommodation } from "@/lib/schema/accommodation.schema";
-import { ConventionBrochure } from "@/lib/schema/brochure.schema";
+import {
+  ConventionRegistration,
+  DinnerReservation,
+  Accommodation,
+  ConventionBrochure,
+  User
+} from "@/lib/schema";
 import { QRCodeService } from "@/lib/services/qr-code.service";
 
 
@@ -46,27 +49,39 @@ export async function POST(request: NextRequest) {
     let serviceRecord: any = null;
     let user: any = null;
 
-    switch (serviceType) {
-      case 'convention':
-        serviceRecord = await ConventionRegistration.findOne({
-          paymentReference: serviceId
-        }).populate('userId');
-        break;
-      case 'dinner':
-        serviceRecord = await DinnerReservation.findOne({
-          paymentReference: serviceId
-        }).populate('userId');
-        break;
-      case 'accommodation':
-        serviceRecord = await Accommodation.findOne({
-          paymentReference: serviceId
-        }).populate('userId');
-        break;
-      case 'brochure':
-        serviceRecord = await ConventionBrochure.findOne({
-          paymentReference: serviceId
-        }).populate('userId');
-        break;
+    console.log(`🔍 Looking for ${serviceType} record with payment reference: ${serviceId}`);
+
+    try {
+      switch (serviceType) {
+        case 'convention':
+          serviceRecord = await ConventionRegistration.findOne({
+            paymentReference: serviceId
+          }).populate('userId');
+          break;
+        case 'dinner':
+          serviceRecord = await DinnerReservation.findOne({
+            paymentReference: serviceId
+          }).populate('userId');
+          break;
+        case 'accommodation':
+          serviceRecord = await Accommodation.findOne({
+            paymentReference: serviceId
+          }).populate('userId');
+          break;
+        case 'brochure':
+          serviceRecord = await ConventionBrochure.findOne({
+            paymentReference: serviceId
+          }).populate('userId');
+          break;
+      }
+
+      console.log(`📋 Service record found:`, serviceRecord ? 'Yes' : 'No');
+      if (serviceRecord) {
+        console.log(`👤 User populated:`, serviceRecord.userId ? 'Yes' : 'No');
+      }
+    } catch (populateError) {
+      console.error('❌ Error during populate operation:', populateError);
+      throw new Error(`Database query failed: ${populateError instanceof Error ? populateError.message : 'Unknown error'}`);
     }
 
     if (!serviceRecord) {
@@ -80,6 +95,19 @@ export async function POST(request: NextRequest) {
     }
 
     user = serviceRecord.userId;
+
+    // If populate didn't work, try to fetch user separately
+    if (!user || typeof user === 'string') {
+      console.log('🔄 User not populated, fetching separately...');
+      try {
+        const userId = typeof user === 'string' ? user : serviceRecord.userId;
+        user = await User.findById(userId);
+        console.log('👤 User fetched separately:', user ? 'Success' : 'Failed');
+      } catch (userFetchError) {
+        console.error('❌ Failed to fetch user separately:', userFetchError);
+      }
+    }
+
     if (!user) {
       return NextResponse.json(
         {
@@ -221,9 +249,16 @@ export async function POST(request: NextRequest) {
           // Use WhatsApp Image Service to generate PNG receipt (same format as payment receipts)
           const { WhatsAppImageService } = await import('@/lib/services/whatsapp-image.service');
 
+          console.log('📸 Generating image receipt with data:', {
+            userName: whatsappData.userDetails.name,
+            phone: whatsappData.userDetails.phone,
+            serviceType: whatsappData.operationDetails.type,
+            amount: whatsappData.operationDetails.amount
+          });
+
           // Generate and send image receipt (PNG format) - same as successful payment receipts
           whatsappResult = await WhatsAppImageService.generateAndSendImage(whatsappData);
-          console.log('WhatsApp Image result:', whatsappResult);
+          console.log('📱 WhatsApp Image result:', whatsappResult);
 
         } catch (imageError) {
           console.error('Image receipt generation failed:', imageError);
