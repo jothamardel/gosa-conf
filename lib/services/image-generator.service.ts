@@ -1484,11 +1484,13 @@ Jos, Nigeria`;
   }
 
   /**
-   * Generate image and upload to Vercel Blob storage
+   * Generate image and upload to storage (ImageKit-first with Vercel fallback)
+   * Replaces the old Vercel Blob-only method with unified storage service
    */
   static async generateAndUploadToBlob(data: ImageData): Promise<string> {
     try {
-      const { ImageBlobService } = await import("./image-blob.service");
+      // Import unified storage service
+      const StorageService = (await import("./storage.service")).default;
 
       // Generate image buffer
       const imageBuffer = await this.generateImageBuffer(data);
@@ -1505,46 +1507,50 @@ Jos, Nigeria`;
         .toString("utf8", 0, Math.min(100, imageBuffer.length))
         .includes("<svg");
 
-      // Generate blob filename with correct extension
-      const baseFilename = ImageBlobService.generateBlobFilename(
-        data.userDetails,
-        data.operationDetails.type,
-      );
+      // Generate filename with correct extension
+      const timestamp = Date.now();
+      const baseFilename = `gosa-2025-${data.operationDetails.type}-${data.userDetails.name.toLowerCase().replace(/\s+/g, '-')}-${timestamp}`;
       const filename = isPNG
-        ? baseFilename.replace(/\.(svg|png)$/, ".png")
+        ? `${baseFilename}.png`
         : isSVG
-          ? baseFilename.replace(/\.(svg|png)$/, ".svg")
-          : baseFilename;
+          ? `${baseFilename}.svg`
+          : `${baseFilename}.png`;
 
       console.log(
         `[IMAGE-GENERATOR] Generated ${isPNG ? "PNG" : isSVG ? "SVG" : "unknown"} image (${imageBuffer.length} bytes)`,
       );
 
-      // Upload to Vercel Blob storage
-      const blobUrl = await ImageBlobService.uploadImageToBlob(
+      // Upload using unified storage service (ImageKit-first)
+      const uploadResult = await StorageService.uploadImageReceipt(
         imageBuffer,
-        filename,
+        filename.replace(/\.(png|svg)$/, ''), // Remove extension as StorageService adds it
+        {
+          name: data.userDetails.name,
+          email: data.userDetails.email,
+          type: data.operationDetails.type
+        }
       );
 
       console.log(
-        `[IMAGE-GENERATOR] Successfully uploaded image to blob: ${filename}`,
+        `[IMAGE-GENERATOR] Successfully uploaded image via ${uploadResult.provider}: ${filename}`,
       );
-      return blobUrl;
+      return uploadResult.url;
     } catch (error) {
       console.error(
-        "[IMAGE-GENERATOR] Failed to generate and upload image to blob:",
+        "[IMAGE-GENERATOR] Failed to generate and upload image:",
         error,
       );
 
+      // Fallback to legacy blob service if available
       try {
         const { ImageBlobService } = await import("./image-blob.service");
-        return await ImageBlobService.handleBlobUploadError(
-          error as Error,
-          data,
-        );
+        const imageBuffer = await this.generateImageBuffer(data);
+        const timestamp = Date.now();
+        const fallbackFilename = `fallback-${data.operationDetails.type}-${timestamp}.png`;
+        return await ImageBlobService.uploadImageToBlob(imageBuffer, fallbackFilename);
       } catch (fallbackError) {
         console.error("[IMAGE-GENERATOR] Fallback also failed:", fallbackError);
-        throw new Error("Image generation and all fallbacks failed");
+        throw new Error(`Image generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   }
