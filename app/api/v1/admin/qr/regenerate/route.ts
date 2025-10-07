@@ -123,6 +123,23 @@ export async function POST(request: NextRequest) {
     const qrData = `https://gosa.events/scan?id=${serviceRecord._id}`;
     newQRCode = await QRCodeService.generateQRCode(qrData);
 
+    // Create structured QR code data for WhatsApp receipt (matches test pattern)
+    const structuredQRData = JSON.stringify({
+      type: serviceType,
+      id: serviceRecord._id.toString(),
+      paymentRef: serviceRecord.paymentReference
+    });
+
+    console.log('🔗 QR Code data (for scanning):', qrData);
+    console.log('📋 Structured QR data (for receipt):', structuredQRData);
+    console.log('📏 QR Code data length:', qrData.length, 'characters');
+    console.log('📱 QR Code image generated:', newQRCode ? 'Success' : 'Failed');
+
+    // Validate QR data length (QR codes have limits)
+    if (qrData.length > 200) {
+      console.warn('⚠️ QR Code data might be too long:', qrData.length, 'characters');
+    }
+
     // Update the service record with new QR code
     switch (serviceType) {
       case 'convention':
@@ -190,7 +207,7 @@ export async function POST(request: NextRequest) {
         description: `${serviceType.charAt(0).toUpperCase() + serviceType.slice(1)} Registration`,
         additionalInfo: reason ? `QR Code regenerated: ${reason}` : 'QR Code regenerated'
       },
-      qrCodeData: newQRCode
+      qrCodeData: structuredQRData
     };
 
     // Send receipt via WhatsApp
@@ -300,7 +317,8 @@ export async function POST(request: NextRequest) {
           email: user.email,
           phone: formattedPhone
         },
-        newQRCode: newQRCode,
+        qrCodeData: qrData,
+        qrCodeImage: newQRCode,
         whatsappDelivery: whatsappResult ? {
           success: whatsappResult.success,
           imageGenerated: whatsappResult.imageGenerated,
