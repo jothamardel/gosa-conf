@@ -118,13 +118,39 @@ export async function POST(request: NextRequest) {
         break;
     }
 
+    // Format phone number for WhatsApp JID
+    let formattedPhone = user.phoneNumber;
+
+    // Remove any spaces, dashes, or other characters
+    formattedPhone = formattedPhone.replace(/[\s\-\(\)]/g, '');
+
+    // Ensure it starts with + and country code
+    if (!formattedPhone.startsWith('+')) {
+      // If it starts with 0, replace with +234 (Nigeria)
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = '+234' + formattedPhone.substring(1);
+      }
+      // If it starts with 234, replace with +234
+      else if (formattedPhone.startsWith('234')) {
+        formattedPhone = '+' + formattedPhone;
+      }
+      // If it's just the local number (like 7033680280), add +234
+      else if (formattedPhone.length === 10 && formattedPhone.match(/^[0-9]+$/)) {
+        formattedPhone = '+234' + formattedPhone;
+      }
+      // Default fallback - add +234
+      else {
+        formattedPhone = '+234' + formattedPhone;
+      }
+    }
+
     // Prepare WhatsApp PDF data
     const status: 'confirmed' | 'pending' = (serviceRecord.confirm || serviceRecord.confirmed) ? 'confirmed' : 'pending';
     const whatsappData = {
       userDetails: {
         name: user.fullName,
         email: user.email,
-        phone: user.phoneNumber,
+        phone: formattedPhone,
         registrationId: serviceRecord._id.toString()
       },
       operationDetails: {
@@ -143,7 +169,7 @@ export async function POST(request: NextRequest) {
     let whatsappResult = null;
     try {
       console.log('Attempting to send WhatsApp PDF with data:', {
-        userPhone: user.phoneNumber,
+        originalPhone: user.phoneNumber,
         userName: user.fullName,
         serviceType: serviceType,
         paymentReference: serviceRecord.paymentReference
@@ -152,8 +178,36 @@ export async function POST(request: NextRequest) {
       // First test basic WhatsApp connectivity
       const { Wasender } = await import('@/lib/wasender-api');
 
+      // Format phone number for WhatsApp JID
+      let formattedPhone = user.phoneNumber;
+
+      // Remove any spaces, dashes, or other characters
+      formattedPhone = formattedPhone.replace(/[\s\-\(\)]/g, '');
+
+      // Ensure it starts with + and country code
+      if (!formattedPhone.startsWith('+')) {
+        // If it starts with 0, replace with +234 (Nigeria)
+        if (formattedPhone.startsWith('0')) {
+          formattedPhone = '+234' + formattedPhone.substring(1);
+        }
+        // If it starts with 234, add +
+        else if (formattedPhone.startsWith('234')) {
+          formattedPhone = '+' + formattedPhone;
+        }
+        // If it's just the local number (like 7033680280), add +234
+        else if (formattedPhone.length === 10 && formattedPhone.match(/^[0-9]+$/)) {
+          formattedPhone = '+234' + formattedPhone;
+        }
+        // Default fallback - add +234
+        else {
+          formattedPhone = '+234' + formattedPhone;
+        }
+      }
+
+      console.log('Original phone:', user.phoneNumber, 'Formatted phone:', formattedPhone);
+
       const testMessage = await Wasender.httpSenderMessage({
-        to: user.phoneNumber,
+        to: formattedPhone,
         text: `🔄 QR Code Regenerated!\n\nHi ${user.fullName},\n\nYour QR code for ${serviceType} registration (${serviceRecord.paymentReference}) has been regenerated.\n\nYour new receipt with QR code will be sent shortly.\n\nThank you!`
       });
 
@@ -192,7 +246,7 @@ export async function POST(request: NextRequest) {
         user: {
           name: user.fullName,
           email: user.email,
-          phone: user.phoneNumber
+          phone: formattedPhone
         },
         newQRCode: newQRCode,
         whatsappDelivery: whatsappResult ? {
