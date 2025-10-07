@@ -141,22 +141,22 @@ export async function POST(request: NextRequest) {
       console.warn('⚠️ QR Code data might be too long:', qrData.length, 'characters');
     }
 
-    // Update the service record with new QR code
+    // Update the service record with new QR code URL (not the base64 image)
     switch (serviceType) {
       case 'convention':
         await ConventionRegistration.findByIdAndUpdate(serviceRecord._id, {
-          qrCode: newQRCode
+          qrCode: qrData  // Store the scannable URL, not the base64 image
         });
         break;
       case 'dinner':
         // Update the first QR code (main attendee)
         await DinnerReservation.findByIdAndUpdate(serviceRecord._id, {
-          $set: { 'qrCodes.0.qrCode': newQRCode }
+          $set: { 'qrCodes.0.qrCode': qrData }  // Store the scannable URL
         });
         break;
       case 'brochure':
         await ConventionBrochure.findByIdAndUpdate(serviceRecord._id, {
-          qrCode: newQRCode
+          qrCode: qrData  // Store the scannable URL, not the base64 image
         });
         break;
       case 'accommodation':
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
         description: `${serviceType.charAt(0).toUpperCase() + serviceType.slice(1)} Registration`,
         additionalInfo: reason ? `QR Code regenerated: ${reason}` : 'QR Code regenerated'
       },
-      qrCodeData: structuredQRData
+      qrCodeData: qrData
     };
 
     // Send receipt via WhatsApp
@@ -320,6 +320,7 @@ export async function POST(request: NextRequest) {
         },
         qrCodeData: qrData,
         qrCodeImage: newQRCode,
+        qrCodeStructuredData: structuredQRData,
         whatsappDelivery: whatsappResult ? {
           success: whatsappResult.success,
           imageGenerated: whatsappResult.imageGenerated,
