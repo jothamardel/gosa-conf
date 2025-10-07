@@ -120,7 +120,8 @@ export async function POST(request: NextRequest) {
 
     // Generate new QR code for the service
     let newQRCode: string;
-    const qrData = `https://gosa.events/scan?id=${serviceRecord._id}`;
+    const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://gosa.events';
+    const qrData = `${baseUrl}/scan?id=${serviceRecord._id}`;
     newQRCode = await QRCodeService.generateQRCode(qrData);
 
     // Create structured QR code data for WhatsApp receipt (matches test pattern)

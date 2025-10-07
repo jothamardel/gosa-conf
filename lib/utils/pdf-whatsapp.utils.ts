@@ -573,7 +573,8 @@ export class PDFWhatsAppUtils {
   ): Promise<string> {
     try {
       // Generate the URL format for QR code scanning
-      return `https://gosa.events/scan?id=${serviceId}`;
+      const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://gosa.events';
+      return `${baseUrl}/scan?id=${serviceId}`;
     } catch (error) {
       console.error('Error generating service QR code data:', error);
       throw new Error('Failed to generate QR code data');

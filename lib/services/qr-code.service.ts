@@ -278,7 +278,8 @@ export class QRCodeService {
   // Private helper methods
   private static generateQRCodeData(data: QRCodeData): string {
     // Generate the URL format for QR code scanning
-    return `https://gosa.events/scan?id=${data.id}`;
+    const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://gosa.events';
+    return `${baseUrl}/scan?id=${data.id}`;
   }
 
   private static async getServiceRecord(serviceType: string, serviceId: string): Promise<any> {
@@ -324,7 +325,8 @@ export class QRCodeService {
    */
   static generateUniqueQRData(type: string, id: string, additionalData?: any): string {
     // Generate the URL format for QR code scanning
-    return `https://gosa.events/scan?id=${id}`;
+    const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://gosa.events';
+    return `${baseUrl}/scan?id=${id}`;
   }
 
   /**
@@ -332,8 +334,9 @@ export class QRCodeService {
    */
   static parseQRCodeData(qrDataString: string): any {
     try {
-      // Handle URL format: https://gosa.events/scan?id=xxxxxxxxxx
-      if (qrDataString.startsWith('https://gosa.events/scan?id=')) {
+      // Handle URL format: https://gosa.events/scan?id=xxxxxxxxxx or custom domain
+      const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://gosa.events';
+      if (qrDataString.startsWith(`${baseUrl}/scan?id=`) || qrDataString.startsWith('https://gosa.events/scan?id=')) {
         const url = new URL(qrDataString);
         const id = url.searchParams.get('id');
         return {
