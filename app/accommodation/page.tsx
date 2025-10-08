@@ -1,19 +1,18 @@
 "use client";
 
-import { Navigation } from '@/components/layout/navigation';
-import { Footer } from '@/components/layout/footer';
-import Accommodation from '@/components/forms/accommodation-form';
+import { Navigation } from "@/components/layout/navigation";
+import { Footer } from "@/components/layout/footer";
+import Accommodation from "@/components/forms/accommodation-form";
 
 export default function AccommodationBookingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50">
       <Navigation />
-      
+
       <main className="py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-        
-          <Accommodation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2>Coming soon.</h2>
+          {/*<Accommodation />*/}
         </div>
       </main>
 
