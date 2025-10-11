@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Format phone number for WhatsApp JID
-    let formattedPhone = user.phoneNumber;
+    let formattedPhone = serviceRecord.paymentReference?.split("_")[1] || user.phoneNumber;
 
     // Remove any spaces, dashes, or other characters
     formattedPhone = formattedPhone.replace(/[\s\-\(\)]/g, '');
@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
       const { Wasender } = await import('@/lib/wasender-api');
 
       // Format phone number for WhatsApp JID
-      let formattedPhone = user.phoneNumber;
+      let formattedPhone = serviceRecord?.paymentReference?.split("_")[1] || user.phoneNumber;
 
       // Remove any spaces, dashes, or other characters
       formattedPhone = formattedPhone.replace(/[\s\-\(\)]/g, '');
@@ -256,6 +256,8 @@ export async function POST(request: NextRequest) {
         to: formattedPhone,
         text: `🔄 QR Code Regenerated!\n\nHi ${user.fullName},\n\nYour QR code for ${serviceType} registration (${serviceRecord.paymentReference}) has been regenerated.\n\nYour new receipt with QR code will be sent shortly.\n\nThank you!`
       });
+
+
 
       console.log('Test WhatsApp message result:', testMessage);
 
