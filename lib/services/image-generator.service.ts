@@ -39,6 +39,7 @@ export class ImageGeneratorService {
    * Generate image using Canvas API - works reliably on Vercel
    */
   private static async generateCanvasImage(data: ImageData): Promise<Buffer> {
+
     try {
       const { createCanvas, loadImage, registerFont } = require("canvas");
 
@@ -301,7 +302,7 @@ export class ImageGeneratorService {
       ctx.fillText("Phone:", 420, 360);
       ctx.fillStyle = "#374151";
       ctx.font = getFontString("13", "normal");
-      ctx.fillText(data.userDetails.phone, 420, 375);
+      ctx.fillText(data?.operationDetails?.paymentReference?.split("_")[1] || data.userDetails.phone, 420, 375);
 
       // Transaction details
       ctx.fillStyle = "#FAFAFA";
@@ -622,7 +623,7 @@ export class ImageGeneratorService {
   <text x="100" y="400" font-family="Arial" font-size="11" fill="#6B7280">Email:</text>
   <text x="100" y="415" font-family="Arial" font-size="12" fill="#374151">${this.escapeXML(this.truncateText(data.userDetails.email, 40))}</text>
   <text x="420" y="365" font-family="Arial" font-size="11" fill="#6B7280">Phone:</text>
-  <text x="420" y="380" font-family="Arial" font-size="14" fill="#374151">${this.escapeXML(data.userDetails.phone)}</text>
+  <text x="420" y="380" font-family="Arial" font-size="14" fill="#374151">${this.escapeXML(data?.operationDetails?.paymentReference?.split("_")[1] || data.userDetails.phone)}</text>
 
   <rect x="80" y="620" width="640" height="200" rx="10" fill="white" stroke="#16A34A" stroke-width="2"/>
   <text x="400" y="645" text-anchor="middle" font-family="Arial" font-size="18" font-weight="bold" fill="#16A34A">Event Access QR Code</text>
@@ -656,7 +657,7 @@ export class ImageGeneratorService {
   }
 
   private static generateTextFallback(data: ImageData): Buffer {
-    const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ${formatDisplayPrice(data.operationDetails.amount)}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: gosasecretariat@gmail.com\nPhone: +234816 2329 082\nAddress: J.D Gomwalk National Secretariat
+    const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ${formatDisplayPrice(data.operationDetails.amount)}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data?.operationDetails?.paymentReference?.split("_")[1] || data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: gosasecretariat@gmail.com\nPhone: +234816 2329 082\nAddress: J.D Gomwalk National Secretariat
 Ahead Mu'azu House
 Dogon Karfe
 P.O. Box, 8126
