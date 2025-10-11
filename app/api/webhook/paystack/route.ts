@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         const conventionRecords = Array.isArray(record) ? record : [record];
         const imageResults: any = [];
 
-        console.log({ conventionRecords  })
+        console.log({ conventionRecords })
 
         // Group records by unique phone numbers to avoid duplicate notifications
         const phoneGroups = new Map<string, any[]>();
@@ -422,7 +422,7 @@ async function sendServiceNotification(
     }
 
     const phoneNumber =
-      record.userId?.phoneNumber || record.paymentReference?.split("_")[1];
+      record.paymentReference?.split("_")[1] || record.userId?.phoneNumber
 
     if (!phoneNumber) {
       throw new Error("No phone number found for notification");

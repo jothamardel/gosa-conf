@@ -233,14 +233,14 @@ export function RegistrationForm() {
 
                 <div className="form-group sm:col-span-2">
                   <Label htmlFor="phone" className="mobile-form-label">
-                    Phone Number *
+                    Phone Number (Whatsapp) *
                   </Label>
                   <Input
                     id="phone"
                     type="tel"
                     {...register("phone")}
                     className="mobile-form-input"
-                    placeholder="Enter your phone number"
+                    placeholder="Enter your phone whatsapp number"
                   />
                   {errors.phone && (
                     <p className="text-sm text-red-600 mt-1">
@@ -376,8 +376,8 @@ export function RegistrationForm() {
                   </Label>
                   <Input
                     id="quantity"
-                    type="number"
-                    min="1"
+                    type="text"
+                    // min="1"
                     // max="100"
                     // defaultValue={1}
                     {...register("quantity", { valueAsNumber: true })}
@@ -436,14 +436,14 @@ export function RegistrationForm() {
                               htmlFor={`person-${index}-phone`}
                               className="mobile-form-label"
                             >
-                              Phone Number *
+                              Phone Number (Whatsapp number)*
                             </Label>
                             <Input
                               id={`person-${index}-phone`}
                               type="tel"
                               {...register(`persons.${index}.phoneNumber`)}
                               className="mobile-form-input"
-                              placeholder="Enter phone number"
+                              placeholder="Enter whatsapp phone number"
                             />
                           </div>
                           <div className="form-group">
