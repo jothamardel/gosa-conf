@@ -378,8 +378,8 @@ export function RegistrationForm() {
                     id="quantity"
                     type="number"
                     min="1"
-                    max="10"
-                    defaultValue={1}
+                    // max="100"
+                    // defaultValue={1}
                     {...register("quantity", { valueAsNumber: true })}
                     className="mobile-form-input"
                     placeholder=""

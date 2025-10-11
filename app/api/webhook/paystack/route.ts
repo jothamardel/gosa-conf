@@ -60,13 +60,16 @@ export async function POST(req: NextRequest) {
         const conventionRecords = Array.isArray(record) ? record : [record];
         const imageResults: any = [];
 
+        console.log({ conventionRecords  })
+
         // Group records by unique phone numbers to avoid duplicate notifications
         const phoneGroups = new Map<string, any[]>();
 
         for (const conventionRecord of conventionRecords) {
-          const phoneNumber =
-            conventionRecord.userId?.phoneNumber ||
-            conventionRecord.paymentReference?.split("_")[1];
+          const phoneNumber = conventionRecord.paymentReference?.split("_")[1] || conventionRecord.userId?.phoneNumber
+          // const phoneNumber =
+          //   conventionRecord.userId?.phoneNumber ||
+          //   conventionRecord.paymentReference?.split("_")[1];
           if (phoneNumber) {
             if (!phoneGroups.has(phoneNumber)) {
               phoneGroups.set(phoneNumber, []);
