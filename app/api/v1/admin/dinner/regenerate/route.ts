@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DinnerUtils } from "@/lib/utils/dinner.utils";
 import { UserUtils } from "@/lib/utils/user.utils";
+// Import User model to ensure schema is registered in serverless environment
+import { User } from "@/lib/schema/user.schema";
 
 interface RegenerateTicketsRequest {
   reservationId: string;

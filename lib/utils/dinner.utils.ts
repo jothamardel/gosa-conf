@@ -2,6 +2,8 @@ import connectDB from "../mongodb";
 import { DinnerReservation, IDinnerReservation, IGuestDetail, IQRCode } from "../schema/dinner.schema";
 import { Types } from "mongoose";
 import { QRCodeService } from "../services/qr-code.service";
+// Import User model to ensure schema is registered
+import { User } from "../schema/user.schema";
 
 // Type assertion to bypass Mongoose typing issues
 const DinnerModel = DinnerReservation as any;
@@ -254,8 +256,11 @@ export class DinnerUtils {
 
       console.log(`🔄 Starting ticket regeneration for reservation: ${reservationId}`);
 
-      // Find the original reservation
-      const originalReservation = await DinnerModel.findById(reservationId).populate('userId');
+      // Ensure User model is registered
+      const { User } = await import("../schema/user.schema");
+
+      // Find the original reservation (without populate to avoid schema issues)
+      const originalReservation = await DinnerModel.findById(reservationId);
       if (!originalReservation) {
         throw new Error(`Reservation not found: ${reservationId}`);
       }
@@ -298,7 +303,7 @@ export class DinnerUtils {
           // Check if individual reservation already exists
           let individualReservation = await DinnerModel.findOne({
             paymentReference: individualPaymentRef
-          }).populate('userId');
+          });
 
           if (individualReservation) {
             console.log(`✅ Individual reservation exists: ${individualReservation._id}`);
