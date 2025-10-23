@@ -53,11 +53,39 @@ const DinnerPayment = () => {
       newErrors.agreeToTerms = "You must agree to the terms"
     }
 
-    // Validate guest details
+    // Enhanced validation for guest details
     if (formData.dinnerTicket) {
       formData.guestDetails.forEach((guest, index) => {
+        const errors: string[] = []
+
         if (!guest.name.trim()) {
-          guestErrors[index] = "Guest name is required"
+          errors.push("Name is required")
+        }
+
+        if (!guest.email?.trim()) {
+          errors.push("Email is required")
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guest.email)) {
+          errors.push("Valid email is required")
+        }
+
+        if (!guest.phone?.trim()) {
+          errors.push("Phone number is required")
+        } else {
+          // Basic phone validation for Nigerian numbers
+          const cleanPhone = guest.phone.replace(/\D/g, "")
+          if (cleanPhone.length < 10 || cleanPhone.length > 13) {
+            errors.push("Valid Nigerian phone number required (e.g., 07033680280 or +2347033680280)")
+          } else if (cleanPhone.startsWith("0") && cleanPhone.length !== 11) {
+            errors.push("Nigerian number with 0 should be 11 digits (e.g., 07033680280)")
+          } else if (cleanPhone.startsWith("234") && cleanPhone.length !== 13) {
+            errors.push("International format should be 13 digits (e.g., +2347033680280)")
+          } else if (!cleanPhone.startsWith("0") && !cleanPhone.startsWith("234") && cleanPhone.length !== 10) {
+            errors.push("Nigerian number without 0 should be 10 digits (e.g., 7033680280)")
+          }
+        }
+
+        if (errors.length > 0) {
+          guestErrors[index] = errors.join(", ")
         }
       })
 
@@ -301,7 +329,7 @@ const DinnerPayment = () => {
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Email {index === 0 ? '*' : '(Optional)'}
+                              Email *
                             </label>
                             <input
                               type="email"
@@ -309,12 +337,12 @@ const DinnerPayment = () => {
                               onChange={(e) => updateGuestDetail(index, 'email', e.target.value)}
                               className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                               placeholder="Enter email address"
-
+                              required
                             />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Phone {index === 0 ? '*' : '(Optional)'}
+                              Phone *
                             </label>
                             <input
                               type="tel"
@@ -322,7 +350,7 @@ const DinnerPayment = () => {
                               onChange={(e) => updateGuestDetail(index, 'phone', e.target.value)}
                               className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-gray-700 placeholder-gray-400 focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                               placeholder="Enter phone number"
-
+                              required
                             />
                           </div>
                           <div>

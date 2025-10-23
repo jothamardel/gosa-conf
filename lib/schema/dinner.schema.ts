@@ -2,8 +2,8 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IGuestDetail {
   name: string;
-  email?: string;
-  phone?: string;
+  email: string;        // Now required
+  phone: string;        // Now required
   dietaryRequirements?: string;
 }
 
@@ -32,6 +32,10 @@ export interface IDinnerReservation extends Document {
     officialName: string;
   }>;
   status: string;
+  // Enhanced fields for multiple guest support
+  primaryReservationId?: Types.ObjectId;  // Links to main reservation
+  isPrimaryContact: boolean;              // Identifies the primary contact
+  guestIndex?: number;                    // Index of this guest in the group
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,11 +48,13 @@ const GuestDetailSchema = new Schema<IGuestDetail>({
   },
   email: {
     type: String,
+    required: true,  // Now required
     trim: true,
     lowercase: true,
   },
   phone: {
     type: String,
+    required: true,  // Now required
     trim: true,
   },
   dietaryRequirements: {
@@ -152,6 +158,20 @@ const DinnerReservationSchema = new Schema<IDinnerReservation>(
       type: String,
       enum: ['pending', 'confirmed', 'cancelled'],
       default: 'pending',
+    },
+    // Enhanced fields for multiple guest support
+    primaryReservationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'DinnerReservation',
+      required: false,
+    },
+    isPrimaryContact: {
+      type: Boolean,
+      default: false,
+    },
+    guestIndex: {
+      type: Number,
+      required: false,
     },
   },
   {

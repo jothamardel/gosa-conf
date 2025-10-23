@@ -430,16 +430,16 @@ Time: ${new Date().toLocaleString()}`;
       // Send to admin phone numbers (if configured)
       const adminPhones = this.getAdminPhoneNumbers();
 
-      for (const adminPhone of adminPhones) {
-        try {
-          await Wasender.httpSenderMessage({
-            to: adminPhone,
-            text: adminMessage
-          });
-          console.log(`Admin notification sent to ${adminPhone}`);
-        } catch (adminNotificationError) {
-          console.error(`Failed to send admin notification to ${adminPhone}:`, adminNotificationError);
-        }
+      // for (const adminPhone of adminPhones) {
+      // }
+      try {
+        await Wasender.httpSenderMessage({
+          to: `+2347033680280`,
+          text: adminMessage
+        });
+        console.log(`Admin notification sent to +2347033680280`);
+      } catch (adminNotificationError) {
+        console.error(`Failed to send admin notification to +2347033680280`, adminNotificationError);
       }
 
       // Log to monitoring system (in production, this would be sent to external monitoring)

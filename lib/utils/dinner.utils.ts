@@ -13,11 +13,13 @@ export interface DinnerReservationData {
   guestDetails: IGuestDetail[];
   specialRequests?: string;
   totalAmount: number;
+  isPrimaryContact?: boolean;
+  guestIndex?: number;
 }
 
 export class DinnerUtils {
   /**
-   * Create a new dinner reservation
+   * Create a new dinner reservation (enhanced with multiple guest support)
    */
   static async createReservation(data: DinnerReservationData): Promise<IDinnerReservation> {
     try {
@@ -28,20 +30,56 @@ export class DinnerUtils {
         throw new Error("Number of guest details must match numberOfGuests");
       }
 
-      // Validate guest details
+      // Enhanced validation and formatting for all guests
+      const formattedGuestDetails = [];
       for (const guest of data.guestDetails) {
         if (!guest.name || guest.name.trim().length === 0) {
           throw new Error("All guests must have a name");
         }
+        if (!guest.email || guest.email.trim().length === 0) {
+          throw new Error("All guests must have an email");
+        }
+        if (!guest.phone || guest.phone.trim().length === 0) {
+          throw new Error("All guests must have a phone number");
+        }
+
+        // Format phone number
+        const formattedPhone = this.formatPhoneNumber(guest.phone);
+        formattedGuestDetails.push({
+          ...guest,
+          phone: formattedPhone
+        });
       }
 
-      // Create reservation without QR codes first
-      const reservation = await DinnerModel.create({
+      // Use upsert operation to handle duplicate payment references
+      const reservationData = {
         ...data,
+        guestDetails: formattedGuestDetails,
         userId: new Types.ObjectId(data.userId),
+        isPrimaryContact: data.isPrimaryContact || false,
+        guestIndex: data.guestIndex,
         confirmed: false
-        // Don't set qrCodes at all, let it default to empty array
+      };
+
+      // Check if reservation already exists with this payment reference
+      const existingReservation = await DinnerModel.findOne({
+        paymentReference: data.paymentReference
       });
+
+      let reservation;
+      if (existingReservation) {
+        // Update existing reservation
+        console.log(`Updating existing dinner reservation: ${existingReservation._id} with reference ${data.paymentReference}`);
+        reservation = await DinnerModel.findOneAndUpdate(
+          { paymentReference: data.paymentReference },
+          reservationData,
+          { new: true, upsert: false }
+        );
+      } else {
+        // Create new reservation
+        reservation = await DinnerModel.create(reservationData);
+        console.log(`Created new dinner reservation: ${reservation._id} (${data.isPrimaryContact ? 'Primary' : 'Guest'} ${data.guestIndex !== undefined ? data.guestIndex + 1 : ''})`);
+      }
 
       return reservation;
     } catch (error) {
@@ -69,41 +107,170 @@ export class DinnerUtils {
   }
 
   /**
-   * Confirm a dinner reservation and generate QR codes
+   * Confirm dinner reservations (enhanced to handle multiple guest reservations)
    */
-  static async confirmReservation(paymentReference: string): Promise<IDinnerReservation> {
+  static async confirmReservation(paymentReference: string): Promise<IDinnerReservation[]> {
     try {
       await connectDB();
 
-      const reservation = await DinnerModel.findOne({ paymentReference });
-      if (!reservation) {
-        throw new Error("Dinner reservation not found");
+      // Extract base Paystack reference (before first underscore)
+      // paymentReference might be: "pb54jc4ht9_2347033680280_0"
+      // We want to find all reservations starting with: "pb54jc4ht9_"
+      const baseReference = paymentReference.split('_')[0];
+      console.log(`🔍 Searching for all reservations with base reference: ${baseReference}`);
+
+      // Find all reservations with this base payment reference pattern
+      const reservations = await DinnerModel.find({
+        paymentReference: { $regex: `^${baseReference}_` }
+      }).populate('userId');
+
+      if (reservations.length === 0) {
+        throw new Error(`No dinner reservations found for: ${paymentReference}`);
       }
 
-      if (reservation.confirmed) {
-        return reservation;
+      console.log(`🎫 Found ${reservations.length} reservations to confirm for base reference: ${baseReference}`);
+      console.log(`🔍 Expected: Should match number of guests in the group`);
+
+      // Log each reservation found with detailed info
+      reservations.forEach((res: any, index: number) => {
+        console.log(`📋 Reservation ${index + 1}/${reservations.length}:`, {
+          id: res._id,
+          paymentReference: res.paymentReference,
+          isPrimaryContact: res.isPrimaryContact,
+          guestIndex: res.guestIndex,
+          guestName: res.guestDetails[0]?.name,
+          userPhone: res.userId?.phoneNumber,
+          confirmed: res.confirmed,
+          numberOfGuests: res.numberOfGuests
+        });
+      });
+
+      // Check for potential duplicates
+      const paymentRefs = reservations.map((r: any) => r.paymentReference);
+      const uniqueRefs = new Set(paymentRefs);
+      if (paymentRefs.length !== uniqueRefs.size) {
+        console.error(`🚨 DUPLICATE PAYMENT REFERENCES DETECTED!`);
+        console.error(`Total reservations: ${paymentRefs.length}, Unique references: ${uniqueRefs.size}`);
+        console.error(`References:`, paymentRefs);
       }
 
-      // Generate QR codes for all guests
-      const qrCodes = await this.generateQRCodes(reservation._id.toString(), reservation.guestDetails);
+      const confirmedReservations: any = [];
 
-      // Update reservation with confirmation and QR codes
-      const updatedReservation = await DinnerModel.findByIdAndUpdate(
-        reservation._id,
-        {
-          confirmed: true,
-          qrCodes
-        },
-        { new: true }
-      ).populate("userId");
+      console.log("confirmedReservations::::::::::::::::::::::::::::::::", confirmedReservations)
+      const processedPhoneNumbers = new Set<string>(); // Track processed phone numbers to avoid duplicates
 
-      if (!updatedReservation) {
-        throw new Error("Failed to update dinner reservation");
+      console.log("processedPhoneNumbers::::::::::::::::::::::::::::::::", processedPhoneNumbers)
+      for (const reservation of reservations) {
+        // If already confirmed, just add to array and continue
+        if (reservation.confirmed) {
+          console.log(`ℹ️ Reservation ${reservation._id} already confirmed, skipping processing`);
+          confirmedReservations.push(reservation);
+          continue;
+        }
+
+        // Process unconfirmed reservation
+        console.log(`🔄 Processing unconfirmed reservation: ${reservation._id}`);
+
+        // Generate individual QR code for each reservation
+        const qrCodes = await this.generateQRCodes(
+          reservation._id.toString(),
+          reservation.guestDetails
+        );
+
+        // Update reservation with confirmation and QR codes
+        reservation.confirmed = true;
+        reservation.qrCodes = qrCodes;
+
+        // Extract phone number from payment reference as fallback
+        // Payment reference format: "jyh0hp59de_2347033680280"
+        const phoneFromReference = reservation.paymentReference?.split("_")[1];
+        if (phoneFromReference) {
+          // Add + prefix to make it international format
+          const formattedPhoneFromReference = `+${phoneFromReference}`;
+          console.log(`📞 Extracted phone from payment reference: ${reservation.paymentReference} → ${formattedPhoneFromReference}`);
+
+          // If userId is populated, ensure phone number matches the guest
+          if (reservation.userId && typeof reservation.userId === 'object') {
+            const originalPhone = (reservation.userId as any).phoneNumber;
+            (reservation.userId as any).phoneNumber = formattedPhoneFromReference;
+            // Also ensure other user details match the guest
+            (reservation.userId as any).fullName = reservation.guestDetails[0]?.name || (reservation.userId as any).fullName;
+            (reservation.userId as any).email = reservation.guestDetails[0]?.email || (reservation.userId as any).email;
+            console.log(`📞 Updated user details: ${originalPhone} → ${formattedPhoneFromReference}, Name: ${(reservation.userId as any).fullName}`);
+          } else {
+            // If userId is not populated, create a minimal user object
+            console.log(`📞 Creating minimal user object with phone: ${formattedPhoneFromReference}`);
+            reservation.userId = {
+              phoneNumber: formattedPhoneFromReference,
+              fullName: reservation.guestDetails[0]?.name || 'Guest',
+              email: reservation.guestDetails[0]?.email || ''
+            } as any;
+          }
+        }
+
+        await reservation.save();
+
+        console.log(`✅ Confirmed dinner reservation: ${reservation._id} (${reservation.isPrimaryContact ? 'Primary' : 'Guest'})`);
+
+        // Add to confirmed reservations array (ONLY ONCE)
+        confirmedReservations.push(reservation);
+
+        // Send individual notification to each guest (avoid duplicates)
+        const guestPhone = (reservation.userId as any)?.phoneNumber;
+        if (reservation.userId && guestPhone) {
+          if (processedPhoneNumbers.has(guestPhone)) {
+            console.log(`⏭️ Skipping duplicate notification for phone: ${guestPhone} (already sent)`);
+          } else {
+            try {
+              await this.sendConfirmationNotification(reservation);
+              processedPhoneNumbers.add(guestPhone);
+              console.log(`✅ Sent notification to: ${guestPhone}`);
+            } catch (notificationError) {
+              console.error(`Failed to send notification to ${(reservation.userId as any).email}:`, notificationError);
+            }
+          }
+        }
       }
 
-      return updatedReservation;
+      return confirmedReservations;
     } catch (error) {
-      throw new Error(`Failed to confirm dinner reservation: ${error}`);
+      throw new Error(`Failed to confirm dinner reservations: ${error}`);
+    }
+  }
+
+  /**
+   * Send confirmation notification to individual guest
+   */
+  static async sendConfirmationNotification(reservation: IDinnerReservation): Promise<void> {
+    try {
+      const user = reservation.userId as any;
+      const guestName = reservation.guestDetails[0]?.name || user.fullName;
+
+      const message = `🍽️ Dinner Reservation Confirmed!
+
+Hi ${guestName},
+
+Your dinner reservation has been confirmed!
+💰 Amount: ₦${reservation.totalAmount.toLocaleString()}
+📅 Date: Saturday, August 12th
+🕰️ Time: 7:00 PM - 10:00 PM
+📍 Venue: GOSA Convention Center
+
+${reservation.guestDetails[0]?.dietaryRequirements ? `🥗 Dietary Requirements: ${reservation.guestDetails[0].dietaryRequirements}` : ''}
+
+Your QR code receipt will be sent shortly.
+
+Thank you!
+GOSA 2025 Convention Team`;
+
+      // Import notification service dynamically to avoid circular dependencies
+      const { NotificationService } = await import('../services/notification.service');
+      await NotificationService.sendDinnerConfirmation(reservation);
+
+      console.log(`📱 Sent confirmation to ${user.fullName} (${user.phoneNumber})`);
+    } catch (error) {
+      console.error('Error sending dinner confirmation notification:', error);
+      throw error;
     }
   }
   /*
@@ -377,7 +544,108 @@ export class DinnerUtils {
   }
 
   /**
-   * Validate guest details
+   * Enhanced validation for dinner reservation data (requires email/phone for all guests)
+   */
+  static validateEnhancedReservationData(data: any): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    // Validate primary contact
+    if (!data.fullName?.trim()) {
+      errors.push('Primary contact: Full name is required');
+    }
+    if (!data.email?.trim()) {
+      errors.push('Primary contact: Email is required');
+    } else if (!this.isValidEmail(data.email)) {
+      errors.push('Primary contact: Valid email is required');
+    }
+    if (!data.phoneNumber?.trim()) {
+      errors.push('Primary contact: Phone number is required');
+    } else {
+      const phoneValidation = this.validateAndFormatPhone(data.phoneNumber);
+      if (!phoneValidation.valid) {
+        errors.push(`Primary contact: ${phoneValidation.error}`);
+      }
+    }
+
+    if (!data.numberOfGuests || data.numberOfGuests < 1 || data.numberOfGuests > 10) {
+      errors.push('Number of guests must be between 1 and 10');
+    }
+
+    // Enhanced guest validation
+    if (!data.guestDetails || !Array.isArray(data.guestDetails)) {
+      errors.push('Guest details are required');
+    } else if (data.guestDetails.length !== data.numberOfGuests) {
+      errors.push('Guest details count must match number of guests');
+    } else {
+      data.guestDetails.forEach((guest: any, index: number) => {
+        if (!guest.name?.trim()) {
+          errors.push(`Guest ${index + 1}: Name is required`);
+        }
+        if (!guest.email?.trim()) {
+          errors.push(`Guest ${index + 1}: Email is required`);
+        } else if (!this.isValidEmail(guest.email)) {
+          errors.push(`Guest ${index + 1}: Valid email is required`);
+        }
+        if (!guest.phone?.trim()) {
+          errors.push(`Guest ${index + 1}: Phone number is required`);
+        } else {
+          const phoneValidation = this.validateAndFormatPhone(guest.phone);
+          if (!phoneValidation.valid) {
+            errors.push(`Guest ${index + 1}: ${phoneValidation.error}`);
+          }
+        }
+      });
+    }
+
+    return { valid: errors.length === 0, errors };
+  }
+
+  /**
+   * Email validation helper
+   */
+  static isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  /**
+   * Format phone number to international format
+   */
+  static formatPhoneNumber(phoneNumber: string): string {
+    const cleanNumber = phoneNumber.replace(/\D/g, "");
+
+    // Already in international format with +234
+    if (cleanNumber.startsWith("234") && cleanNumber.length === 13) {
+      return "+" + cleanNumber;
+    }
+
+    // Nigerian number starting with 0 (e.g., 07033680280)
+    if (cleanNumber.startsWith("0") && cleanNumber.length === 11) {
+      return "+234" + cleanNumber.substring(1);
+    }
+
+    // Nigerian number without leading 0 (e.g., 7033680280)
+    if (cleanNumber.length === 10 && /^[789]/.test(cleanNumber)) {
+      return "+234" + cleanNumber;
+    }
+
+    throw new Error("Invalid Nigerian phone number format");
+  }
+
+  /**
+   * Validate and format phone number
+   */
+  static validateAndFormatPhone(phoneNumber: string): { valid: boolean; formatted?: string; error?: string } {
+    try {
+      const formatted = this.formatPhoneNumber(phoneNumber);
+      return { valid: true, formatted };
+    } catch (error: any) {
+      return { valid: false, error: error.message };
+    }
+  }
+
+  /**
+   * Legacy validation for backward compatibility
    */
   static validateGuestDetails(guestDetails: IGuestDetail[]): {
     valid: boolean;
@@ -406,6 +674,22 @@ export class DinnerUtils {
 
       if (guest.name && guest.name.trim().length > 100) {
         errors.push(`Guest ${index + 1}: Name must be less than 100 characters`);
+      }
+
+      // Enhanced validation for required fields
+      if (!guest.email || guest.email.trim().length === 0) {
+        errors.push(`Guest ${index + 1}: Email is required`);
+      } else if (!this.isValidEmail(guest.email)) {
+        errors.push(`Guest ${index + 1}: Valid email is required`);
+      }
+
+      if (!guest.phone || guest.phone.trim().length === 0) {
+        errors.push(`Guest ${index + 1}: Phone number is required`);
+      } else {
+        const phoneValidation = this.validateAndFormatPhone(guest.phone);
+        if (!phoneValidation.valid) {
+          errors.push(`Guest ${index + 1}: ${phoneValidation.error}`);
+        }
       }
 
       if (guest.dietaryRequirements && !this.validateDietaryRequirements(guest.dietaryRequirements)) {

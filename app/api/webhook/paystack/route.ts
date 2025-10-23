@@ -213,15 +213,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Handle other service types with notifications
+    // Skip main notification for dinner since we handle individual receipts above
     let notificationResult = null;
-    try {
-      notificationResult = await sendServiceNotification(serviceType, record);
-    } catch (notificationError: any) {
-      console.error(
-        `Error sending ${serviceType} notification:`,
-        notificationError,
-      );
-      // Don't fail the webhook if notification fails
+    if (serviceType !== 'dinner') {
+      try {
+        notificationResult = await sendServiceNotification(serviceType, record);
+      } catch (notificationError: any) {
+        console.error(
+          `Error sending ${serviceType} notification:`,
+          notificationError,
+        );
+        // Don't fail the webhook if notification fails
+      }
+    } else {
+      console.log(`ℹ️ Skipping main notification for dinner - individual receipts already sent`);
     }
 
     return NextResponse.json({
@@ -268,13 +273,34 @@ async function findAndConfirmPaymentByReference(reference: string): Promise<{
       console.log(
         `Found dinner reservation with reference pattern: ${reference}`,
       );
-      const confirmedRecord = await DinnerUtils.confirmReservation(
+      // Enhanced dinner confirmation returns array of reservations
+      const dinnerReservations = await DinnerUtils.confirmReservation(
         dinnerRecord.paymentReference,
       );
-      if (confirmedRecord) {
+
+
+      if (dinnerReservations && dinnerReservations.length > 0) {
+        console.log(`🍽️ Confirmed ${dinnerReservations.length} dinner reservations for ${reference}`);
+
+        // Send individual receipts to all guests (clean approach - 1 guest = 1 document)
+        console.log(`📱 About to send ${dinnerReservations.length} individual receipts`);
+
+        for (let i = 0; i < dinnerReservations.length; i++) {
+          const reservation = dinnerReservations[i];
+          try {
+            console.log(`📱 Sending receipt ${i + 1}/${dinnerReservations.length} to guest: ${reservation.guestDetails[0]?.name} (Index: ${reservation.guestIndex}, ID: ${reservation._id})`);
+            await sendIndividualDinnerReceipt(reservation, reference);
+            console.log(`✅ Successfully sent receipt ${i + 1}/${dinnerReservations.length}`);
+          } catch (receiptError) {
+            console.error(`❌ Failed to send receipt ${i + 1}/${dinnerReservations.length} to ${(reservation.userId as any).email}:`, receiptError);
+          }
+        }
+
+        console.log(`📱 Completed sending ${dinnerReservations.length} receipts`);
+
         return {
           serviceType: "dinner",
-          record: confirmedRecord,
+          record: dinnerReservations[0], // Use primary reservation for main processing
           success: true,
         };
       }
@@ -593,4 +619,95 @@ function convertToInternationalFormat(phoneNumber: string) {
   }
 
   throw new Error("Invalid Nigerian phone number format");
+}
+/**
+ * Send individual dinner receipt to each guest
+ */
+async function sendIndividualDinnerReceipt(reservation: any, mainPaymentReference: string): Promise<void> {
+  try {
+    const user = reservation.userId;
+    if (!user || !user.phoneNumber) {
+      console.log(`⚠️ Skipping receipt for reservation ${reservation._id} - no user phone`);
+      return;
+    }
+
+    // Generate QR code data for this specific reservation
+    let qrCodeData = reservation.qrCodes?.[0]?.qrCode;
+    if (!qrCodeData) {
+      const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://gosa.events';
+      qrCodeData = `${baseUrl}/scan?id=${reservation._id}`;
+    }
+
+    // Format phone number using the same utility as DinnerUtils
+    let formattedPhone = reservation.paymentReference?.split("_")[1] || user.phoneNumber;
+    console.log(`📞 Original phone number: "${formattedPhone}"`);
+
+    try {
+      // Use the same phone formatting logic as in DinnerUtils
+      const { DinnerUtils } = await import("@/lib/utils/dinner.utils");
+      formattedPhone = DinnerUtils.formatPhoneNumber(formattedPhone);
+      console.log(`📞 Formatted phone number: "${formattedPhone}"`);
+    } catch (formatError: any) {
+      console.error(`❌ Phone formatting failed: ${formatError.message}`);
+      // Fallback formatting
+      if (formattedPhone && !formattedPhone.startsWith('+')) {
+        formattedPhone = '+' + formattedPhone;
+      }
+      formattedPhone = formattedPhone.replace(/[^\+\d]/g, '');
+      console.log(`📞 Fallback formatted phone: "${formattedPhone}"`);
+    }
+
+    // Validate against the expected regex (should handle Nigerian numbers like +2347033680280)
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    const isValidFormat = phoneRegex.test(formattedPhone);
+
+    console.log(`📞 Phone validation: "${formattedPhone}" matches regex: ${isValidFormat}`);
+
+    if (!isValidFormat) {
+      console.error(`❌ Phone number validation failed: "${formattedPhone}" does not match regex ${phoneRegex}`);
+      console.error(`📞 Phone details: length=${formattedPhone.length}, starts with +: ${formattedPhone.startsWith('+')}, first digit after +: ${formattedPhone.charAt(1)}`);
+
+      // Try to provide more specific error information
+      if (formattedPhone.length > 15) {
+        throw new Error(`Phone number too long: ${formattedPhone} (${formattedPhone.length} characters, max 15)`);
+      }
+      if (formattedPhone.startsWith('+0')) {
+        throw new Error(`Phone number cannot start with +0: ${formattedPhone}`);
+      }
+      if (!/^\+/.test(formattedPhone)) {
+        throw new Error(`Phone number must start with +: ${formattedPhone}`);
+      }
+
+      throw new Error(`Invalid phone number format: ${formattedPhone}`);
+    }
+
+    // Prepare WhatsApp image data for individual guest
+    const whatsappImageData = {
+      userDetails: {
+        name: user.fullName,
+        email: user.email,
+        phone: formattedPhone,
+        registrationId: reservation._id.toString(),
+      },
+      operationDetails: {
+        type: 'dinner' as const,
+        amount: reservation.totalAmount,
+        paymentReference: reservation.paymentReference,
+        date: reservation.createdAt || new Date(),
+        status: 'confirmed' as const,
+        description: 'Dinner Reservation',
+        additionalInfo: `Guest: ${reservation.guestDetails[0]?.name || user.fullName}${reservation.guestDetails[0]?.dietaryRequirements ? ` | Dietary: ${reservation.guestDetails[0].dietaryRequirements}` : ''} | Main Reference: ${mainPaymentReference}`,
+      },
+      qrCodeData,
+    };
+
+    // Send individual receipt
+    const { WhatsAppImageService } = await import("@/lib/services/whatsapp-image.service");
+    const imageResult = await WhatsAppImageService.generateAndSendImage(whatsappImageData);
+
+    console.log(`📱 Individual dinner receipt sent to ${user.fullName} (${user.phoneNumber}):`, imageResult.success ? 'Success' : 'Failed');
+  } catch (error) {
+    console.error('Error sending individual dinner receipt:', error);
+    throw error;
+  }
 }

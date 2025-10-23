@@ -2,7 +2,7 @@ import { Wasender } from "@/lib/wasender-api";
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import QRCode from "qrcode";
-import {Agent} from "@/lib/agent"
+import { Agent } from "@/lib/agent"
 
 
 export const dynamic = "force-dynamic";
@@ -10,20 +10,29 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    console.log( body?.data?.messages?.message?.conversation )
+    if (body?.event?.includes('group')) {
+      console.log("Whatsapp body: ", { body })
+      console.log("Whatsapp body message: ", body?.data?.messages)
+      return NextResponse.json({
+        message: "Webhook Whatsapp",
+        success: true,
+      });
+    }
+    // console.log("Whatsapp events: ", req)
+    console.log(body?.data?.messages?.message?.conversation)
     const message = body?.data?.messages?.message?.conversation
     const response = await Agent.httpSendMessage(message);
-    
+
     console.log({ response })
-    
+
     await Wasender.httpSenderMessage({
       to: body?.data?.messages?.key?.remoteJid,
       // @ts-ignore
       text: response?.response as string || response as string
     })
-    
-    
-   
+
+
+
     return NextResponse.json({
       message: "Webhook Whatsapp",
       success: true,

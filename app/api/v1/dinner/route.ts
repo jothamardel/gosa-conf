@@ -16,49 +16,31 @@ interface DinnerReservationRequest {
 export async function POST(req: NextRequest) {
   try {
     const body: DinnerReservationRequest = await req.json();
+    console.log('Enhanced dinner reservation request:', body);
 
-    // Validate required fields
-    if (!body?.email || !body?.fullName || !body?.phoneNumber || !body?.numberOfGuests || !body?.guestDetails) {
+    // Enhanced validation for all guests
+    const validation = DinnerUtils.validateEnhancedReservationData(body);
+    if (!validation.valid) {
       return NextResponse.json({
         success: false,
-        message: "Please provide email, fullName, phoneNumber, numberOfGuests, and guestDetails",
+        message: "Validation failed",
+        errors: validation.errors,
       }, { status: 400 });
     }
 
-    // Validate number of guests
-    if (body.numberOfGuests < 1 || body.numberOfGuests > 10) {
-      return NextResponse.json({
-        success: false,
-        message: "Number of guests must be between 1 and 10",
-      }, { status: 400 });
-    }
-
-    // Validate guest details count matches numberOfGuests
-    if (body.guestDetails.length !== body.numberOfGuests) {
-      return NextResponse.json({
-        success: false,
-        message: "Number of guest details must match numberOfGuests",
-      }, { status: 400 });
-    }
-
-    // Validate guest details
-    const guestValidation = DinnerUtils.validateGuestDetails(body.guestDetails);
-    if (!guestValidation.valid) {
-      return NextResponse.json({
-        success: false,
-        message: "Guest details validation failed",
-        errors: guestValidation.errors,
-      }, { status: 400 });
-    }
-
-    // Calculate total amount
+    // Calculate total amount and per-guest amount
     const totalAmount = DinnerUtils.calculateTotalAmount(body.numberOfGuests);
+    const amountPerGuest = totalAmount / body.numberOfGuests;
+    console.log(`💰 Total: ₦${totalAmount}, Per Guest: ₦${amountPerGuest}`);
 
-    // Find or create user
-    const user = await UserUtils.findOrCreateUser({
+    // Format primary contact phone number
+    const formattedPrimaryPhone = DinnerUtils.formatPhoneNumber(body.phoneNumber);
+
+    // Create primary contact user
+    const primaryUser = await UserUtils.findOrCreateUser({
       fullName: body.fullName,
       email: body.email,
-      phoneNumber: body.phoneNumber,
+      phoneNumber: formattedPrimaryPhone,
     });
 
     // Initialize payment with Paystack
@@ -68,8 +50,8 @@ export async function POST(req: NextRequest) {
       callback_url: `${process.env.NEXTAUTH_URL}/api/webhook/paystack`,
       metadata: {
         type: 'dinner',
-        userId: (user as any)._id.toString(),
         numberOfGuests: body.numberOfGuests,
+        primaryUserId: (primaryUser as any)._id.toString(),
       },
     };
 
@@ -82,33 +64,87 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
-    // Create payment reference with pattern: PaystackReference_phoneNumber
-    const paymentReference = `${paymentResponse.data.reference}_${body.phoneNumber}`;
+    // CLEAN APPROACH: Create only individual reservations (1 guest = 1 document)
+    const allReservations = [];
 
-    // Create dinner reservation record
-    const reservation = await DinnerUtils.createReservation({
-      userId: (user as any)._id,
-      paymentReference,
-      numberOfGuests: body.numberOfGuests,
-      guestDetails: body.guestDetails,
-      specialRequests: body.specialRequests,
-      totalAmount,
+    for (let i = 0; i < body.guestDetails.length; i++) {
+      const guest = body.guestDetails[i];
+      console.log(`🎫 Creating reservation ${i + 1}/${body.numberOfGuests} for: ${guest.name}`);
+
+      // Format guest phone number
+      const formattedGuestPhone = DinnerUtils.formatPhoneNumber(guest.phone);
+
+      // Create user record for each guest
+      const guestUser = await UserUtils.findOrCreateUser({
+        fullName: guest.name,
+        email: guest.email,
+        phoneNumber: formattedGuestPhone,
+      });
+
+      // Clean payment reference: PaystackRef_PhoneNumber (no index needed)
+      const guestPaymentReference = `${paymentResponse.data.reference}_${formattedGuestPhone.replace('+', '')}`;
+
+      console.log(`📋 Guest ${i + 1} details:`, {
+        name: guest.name,
+        phone: formattedGuestPhone,
+        paymentReference: guestPaymentReference,
+        amount: amountPerGuest
+      });
+
+      // Create individual reservation (1 guest = 1 document)
+      const guestReservation = await DinnerUtils.createReservation({
+        userId: (guestUser as any)._id,
+        paymentReference: guestPaymentReference,
+        numberOfGuests: 1,  // Always 1 for individual reservations
+        guestDetails: [guest],  // Only this guest's details
+        specialRequests: body.specialRequests,
+        totalAmount: amountPerGuest,  // Individual amount (₦3,200)
+        isPrimaryContact: i === 0,  // First guest is primary contact
+        guestIndex: i,  // Track position in group
+      });
+
+      console.log(`✅ Created reservation for ${guest.name}:`, {
+        id: guestReservation._id,
+        paymentReference: guestReservation.paymentReference,
+        amount: guestReservation.totalAmount
+      });
+
+      allReservations.push(guestReservation);
+    }
+
+    console.log(`✅ Created ${allReservations.length} individual reservations (1 guest = 1 document)`);
+    console.log(`🔍 Verification: Expected ${body.numberOfGuests} reservations, Created ${allReservations.length} reservations`);
+
+    // Log all created reservations for debugging
+    allReservations.forEach((res, index) => {
+      console.log(`📄 Created reservation ${index + 1}:`, {
+        id: res._id,
+        paymentReference: res.paymentReference,
+        guestName: res.guestDetails[0]?.name,
+        amount: res.totalAmount
+      });
     });
+
+    if (allReservations.length !== body.numberOfGuests) {
+      console.error(`🚨 MISMATCH: Expected ${body.numberOfGuests} reservations but created ${allReservations.length}!`);
+    }
 
     return NextResponse.json({
       success: true,
-      message: "Dinner reservation created and payment initialized",
+      message: `Created ${body.numberOfGuests} individual dinner reservations`,
       data: {
-        user,
-        reservation,
         paymentLink: paymentResponse.data.authorization_url,
-        paymentReference: paymentResponse.data.reference,
+        reservations: allReservations,
         totalAmount,
+        amountPerGuest,
+        paystackReference: paymentResponse.data.reference,
+        numberOfGuests: body.numberOfGuests,
+        createdCount: allReservations.length,
       },
     });
 
   } catch (error: any) {
-    console.error("Error creating dinner reservation:", error);
+    console.error("Enhanced dinner reservation error:", error);
     return NextResponse.json({
       success: false,
       message: "Something went wrong",
