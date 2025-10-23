@@ -239,6 +239,174 @@ export class DinnerUtils {
   }
 
   /**
+   * Regenerate and send tickets for all guests in a legacy reservation
+   * Converts legacy group reservations to individual reservations
+   */
+  static async regenerateAndSendTickets(reservationId: string): Promise<{
+    totalGuests: number;
+    newReservations: number;
+    existingReservations: number;
+    ticketsSent: number;
+    errors: string[];
+  }> {
+    try {
+      await connectDB();
+
+      console.log(`🔄 Starting ticket regeneration for reservation: ${reservationId}`);
+
+      // Find the original reservation
+      const originalReservation = await DinnerModel.findById(reservationId).populate('userId');
+      if (!originalReservation) {
+        throw new Error(`Reservation not found: ${reservationId}`);
+      }
+
+      console.log(`📋 Found original reservation:`, {
+        id: originalReservation._id,
+        paymentReference: originalReservation.paymentReference,
+        numberOfGuests: originalReservation.numberOfGuests,
+        guestCount: originalReservation.guestDetails.length
+      });
+
+      const result = {
+        totalGuests: originalReservation.guestDetails.length,
+        newReservations: 0,
+        existingReservations: 0,
+        ticketsSent: 0,
+        errors: [] as string[]
+      };
+
+      // Extract base payment reference (remove phone number if present)
+      const basePaymentRef = originalReservation.paymentReference.split('_')[0];
+      const amountPerGuest = Math.round(originalReservation.totalAmount / originalReservation.numberOfGuests);
+
+      console.log(`💰 Amount per guest: ₦${amountPerGuest}`);
+
+      // Process each guest
+      for (let i = 0; i < originalReservation.guestDetails.length; i++) {
+        const guest = originalReservation.guestDetails[i];
+
+        try {
+          console.log(`👤 Processing guest ${i + 1}/${originalReservation.guestDetails.length}: ${guest.name}`);
+
+          // Format phone number
+          const formattedPhone = this.formatPhoneNumber(guest.phone);
+          const individualPaymentRef = `${basePaymentRef}_${formattedPhone.replace('+', '')}`;
+
+          console.log(`📞 Guest phone: ${guest.phone} → ${formattedPhone}`);
+          console.log(`🔗 Individual payment reference: ${individualPaymentRef}`);
+
+          // Check if individual reservation already exists
+          let individualReservation = await DinnerModel.findOne({
+            paymentReference: individualPaymentRef
+          }).populate('userId');
+
+          if (individualReservation) {
+            console.log(`✅ Individual reservation exists: ${individualReservation._id}`);
+            result.existingReservations++;
+          } else {
+            console.log(`🆕 Creating new individual reservation for: ${guest.name}`);
+
+            // Create or find user for this guest
+            const { UserUtils } = await import("./user.utils");
+            const guestUser = await UserUtils.findOrCreateUser({
+              fullName: guest.name,
+              email: guest.email,
+              phoneNumber: formattedPhone,
+            });
+
+            // Create individual reservation
+            individualReservation = await this.createReservation({
+              userId: (guestUser as any)._id,
+              paymentReference: individualPaymentRef,
+              numberOfGuests: 1,
+              guestDetails: [guest],
+              specialRequests: originalReservation.specialRequests,
+              totalAmount: amountPerGuest,
+              isPrimaryContact: i === 0,
+              guestIndex: i,
+            });
+
+            // Confirm the reservation and generate QR codes
+            const qrCodes = await this.generateQRCodes(
+              individualReservation._id.toString(),
+              [guest]
+            );
+
+            individualReservation.confirmed = true;
+            individualReservation.qrCodes = qrCodes;
+            await individualReservation.save();
+
+            console.log(`✅ Created and confirmed individual reservation: ${individualReservation._id}`);
+            result.newReservations++;
+          }
+
+          // Ensure reservation is confirmed and has QR codes
+          if (!individualReservation.confirmed || !individualReservation.qrCodes.length) {
+            console.log(`🔧 Ensuring reservation is confirmed with QR codes`);
+
+            const qrCodes = await this.generateQRCodes(
+              individualReservation._id.toString(),
+              [guest]
+            );
+
+            individualReservation.confirmed = true;
+            individualReservation.qrCodes = qrCodes;
+            await individualReservation.save();
+          }
+
+          // Send individual ticket
+          console.log(`📱 Sending ticket to: ${guest.name} (${formattedPhone})`);
+
+          // Prepare WhatsApp image data
+          const whatsappImageData = {
+            userDetails: {
+              name: guest.name,
+              email: guest.email,
+              phone: formattedPhone,
+              registrationId: individualReservation._id.toString(),
+            },
+            operationDetails: {
+              type: 'dinner' as const,
+              amount: amountPerGuest,
+              paymentReference: individualPaymentRef,
+              date: individualReservation.createdAt || new Date(),
+              status: 'confirmed' as const,
+              description: 'Dinner Reservation',
+              additionalInfo: `Guest: ${guest.name}${guest.dietaryRequirements ? ` | Dietary: ${guest.dietaryRequirements}` : ''} | Regenerated Ticket`,
+            },
+            qrCodeData: individualReservation.qrCodes[0]?.qrCode || `${process.env.GOSA_PUBLIC_URL || 'https://gosa.events'}/scan?id=${individualReservation._id}`,
+          };
+
+          // Send ticket via WhatsApp
+          const { WhatsAppImageService } = await import("@/lib/services/whatsapp-image.service");
+          const imageResult = await WhatsAppImageService.generateAndSendImage(whatsappImageData);
+
+          if (imageResult.success) {
+            console.log(`✅ Ticket sent successfully to: ${guest.name} (${formattedPhone})`);
+            result.ticketsSent++;
+          } else {
+            const errorMsg = `Failed to send ticket to ${guest.name} (${formattedPhone}): ${imageResult.error}`;
+            console.error(`❌ ${errorMsg}`);
+            result.errors.push(errorMsg);
+          }
+
+        } catch (guestError: any) {
+          const errorMsg = `Error processing guest ${guest.name}: ${guestError.message}`;
+          console.error(`❌ ${errorMsg}`);
+          result.errors.push(errorMsg);
+        }
+      }
+
+      console.log(`🎯 Regeneration complete:`, result);
+      return result;
+
+    } catch (error) {
+      console.error('Error in regenerateAndSendTickets:', error);
+      throw new Error(`Failed to regenerate tickets: ${error}`);
+    }
+  }
+
+  /**
    * Send confirmation notification to individual guest
    */
   static async sendConfirmationNotification(reservation: IDinnerReservation): Promise<void> {
