@@ -691,7 +691,7 @@ GOSA 2025 Convention Team`;
   /**
    * Calculate dinner reservation total amount
    */
-  static calculateTotalAmount(numberOfGuests: number, pricePerPerson: number = 3200): number {
+  static calculateTotalAmount(numberOfGuests: number, pricePerPerson: number = 2200): number {
     return numberOfGuests * pricePerPerson;
   }
 
