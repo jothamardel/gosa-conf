@@ -44,7 +44,7 @@ export default function AdminDinnerPage() {
   const fetchReservations = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/v1/dinner?limit=50');
+      const response = await fetch('/api/v1/dinner?limit=500');
       const result = await response.json();
 
       if (result.success) {
