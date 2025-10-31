@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate PDF with performance optimization and error handling
-    const pdfBuffer = await PDFErrorHandlerService.executeWithRetry(
+    const pdfBuffer: any = await PDFErrorHandlerService.executeWithRetry(
       () => PDFPerformanceService.generateOptimizedPDF(pdfData, 7), // Higher priority for direct downloads
       PDFErrorHandlerService['PDF_GENERATION_RETRY_CONFIG'],
       {
