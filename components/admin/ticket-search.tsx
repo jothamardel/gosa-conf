@@ -301,7 +301,7 @@ export function TicketSearch() {
                 </>
               )}
             </Button>
-            {(searchReference || tickets.length > 0) && (
+            {(searchReference || ticketGroups.length > 0) && (
               <Button
                 variant="outline"
                 onClick={handleClearSearch}
