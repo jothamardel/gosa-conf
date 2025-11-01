@@ -9,12 +9,14 @@ import { AnalyticsCards } from './analytics-cards';
 import { AttendeeTable } from './attendee-table';
 import { PaymentHistory } from './payment-history';
 import { QRCodeManager } from './qr-code-manager';
+import { TicketSearch } from './ticket-search';
 import {
   BarChart3,
   Users,
   CreditCard,
   QrCode,
-  AlertCircle
+  AlertCircle,
+  Search
 } from 'lucide-react';
 
 interface DashboardData {
@@ -214,6 +216,7 @@ export function AdminDashboard() {
           <TabsTrigger value="attendees">Attendees</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="qr-codes">QR Codes</TabsTrigger>
+          <TabsTrigger value="tickets">Ticket Search</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -256,6 +259,10 @@ export function AdminDashboard() {
 
         <TabsContent value="qr-codes">
           <QRCodeManager />
+        </TabsContent>
+
+        <TabsContent value="tickets">
+          <TicketSearch />
         </TabsContent>
       </Tabs>
     </div>
