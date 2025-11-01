@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     console.log(`Searching for tickets with reference pattern: ${searchPattern}`);
 
-    const tickets = [];
+    const ticketGroups: { [key: string]: any } = {};
 
     // Search in all collections for matching payment references
     const searchRegex = new RegExp(`^${searchPattern}`, 'i');
@@ -38,11 +38,27 @@ export async function GET(request: NextRequest) {
     }).populate('userId');
 
     for (const ticket of conventionTickets) {
-      tickets.push({
+      const baseReference = ticket.paymentReference.split('_')[0];
+
+      if (!ticketGroups[baseReference]) {
+        ticketGroups[baseReference] = {
+          baseReference,
+          type: 'convention',
+          totalTickets: 0,
+          totalAmount: 0,
+          mainTicket: null,
+          secondaryTickets: [],
+          status: ticket.status || (ticket.confirm ? 'confirmed' : 'pending'),
+          createdAt: ticket.createdAt
+        };
+      }
+
+      const ticketData = {
         _id: ticket._id,
         type: 'convention',
         paymentReference: ticket.paymentReference,
         amount: ticket.amount,
+        quantity: ticket.quantity,
         status: ticket.status || (ticket.confirm ? 'confirmed' : 'pending'),
         checkedIn: ticket.checkedIn || false,
         checkedInAt: ticket.checkedInAt,
@@ -55,8 +71,22 @@ export async function GET(request: NextRequest) {
           phone: ticket.userId?.phoneNumber || 'Unknown',
         },
         createdAt: ticket.createdAt,
-        checkInHistory: ticket.checkInHistory || []
-      });
+        checkInHistory: ticket.checkInHistory || [],
+        persons: ticket.persons || []
+      };
+
+      // Determine if this is the main ticket (usually has quantity > 1 or contains main phone number)
+      const isMainTicket = ticket.quantity > 1 ||
+        ticket.paymentReference.includes(ticket.userId?.phoneNumber || '');
+
+      if (isMainTicket || !ticketGroups[baseReference].mainTicket) {
+        ticketGroups[baseReference].mainTicket = ticketData;
+      } else {
+        ticketGroups[baseReference].secondaryTickets.push(ticketData);
+      }
+
+      ticketGroups[baseReference].totalTickets += 1;
+      ticketGroups[baseReference].totalAmount += ticket.amount;
     }
 
     // Search Dinner Reservations
@@ -65,7 +95,22 @@ export async function GET(request: NextRequest) {
     }).populate('userId');
 
     for (const ticket of dinnerTickets) {
-      tickets.push({
+      const baseReference = ticket.paymentReference.split('_')[0];
+
+      if (!ticketGroups[baseReference]) {
+        ticketGroups[baseReference] = {
+          baseReference,
+          type: 'dinner',
+          totalTickets: 0,
+          totalAmount: 0,
+          mainTicket: null,
+          secondaryTickets: [],
+          status: ticket.status || (ticket.confirmed ? 'confirmed' : 'pending'),
+          createdAt: ticket.createdAt
+        };
+      }
+
+      const ticketData = {
         _id: ticket._id,
         type: 'dinner',
         paymentReference: ticket.paymentReference,
@@ -84,7 +129,16 @@ export async function GET(request: NextRequest) {
         createdAt: ticket.createdAt,
         checkInHistory: ticket.checkInHistory || [],
         guestDetails: ticket.guestDetails || []
-      });
+      };
+
+      if (!ticketGroups[baseReference].mainTicket) {
+        ticketGroups[baseReference].mainTicket = ticketData;
+      } else {
+        ticketGroups[baseReference].secondaryTickets.push(ticketData);
+      }
+
+      ticketGroups[baseReference].totalTickets += 1;
+      ticketGroups[baseReference].totalAmount += ticket.totalAmount;
     }
 
     // Search Brochure Orders
@@ -93,7 +147,22 @@ export async function GET(request: NextRequest) {
     }).populate('userId');
 
     for (const ticket of brochureTickets) {
-      tickets.push({
+      const baseReference = ticket.paymentReference.split('_')[0];
+
+      if (!ticketGroups[baseReference]) {
+        ticketGroups[baseReference] = {
+          baseReference,
+          type: 'brochure',
+          totalTickets: 0,
+          totalAmount: 0,
+          mainTicket: null,
+          secondaryTickets: [],
+          status: ticket.status || (ticket.confirmed ? 'confirmed' : 'pending'),
+          createdAt: ticket.createdAt
+        };
+      }
+
+      const ticketData = {
         _id: ticket._id,
         type: 'brochure',
         paymentReference: ticket.paymentReference,
@@ -111,7 +180,16 @@ export async function GET(request: NextRequest) {
         },
         createdAt: ticket.createdAt,
         checkInHistory: ticket.checkInHistory || []
-      });
+      };
+
+      if (!ticketGroups[baseReference].mainTicket) {
+        ticketGroups[baseReference].mainTicket = ticketData;
+      } else {
+        ticketGroups[baseReference].secondaryTickets.push(ticketData);
+      }
+
+      ticketGroups[baseReference].totalTickets += 1;
+      ticketGroups[baseReference].totalAmount += ticket.totalAmount;
     }
 
     // Search Accommodation Bookings
@@ -120,7 +198,22 @@ export async function GET(request: NextRequest) {
     }).populate('userId');
 
     for (const ticket of accommodationTickets) {
-      tickets.push({
+      const baseReference = ticket.paymentReference.split('_')[0];
+
+      if (!ticketGroups[baseReference]) {
+        ticketGroups[baseReference] = {
+          baseReference,
+          type: 'accommodation',
+          totalTickets: 0,
+          totalAmount: 0,
+          mainTicket: null,
+          secondaryTickets: [],
+          status: ticket.status || (ticket.confirmed ? 'confirmed' : 'pending'),
+          createdAt: ticket.createdAt
+        };
+      }
+
+      const ticketData = {
         _id: ticket._id,
         type: 'accommodation',
         paymentReference: ticket.paymentReference,
@@ -138,17 +231,29 @@ export async function GET(request: NextRequest) {
         },
         createdAt: ticket.createdAt,
         checkInHistory: ticket.checkInHistory || []
-      });
+      };
+
+      if (!ticketGroups[baseReference].mainTicket) {
+        ticketGroups[baseReference].mainTicket = ticketData;
+      } else {
+        ticketGroups[baseReference].secondaryTickets.push(ticketData);
+      }
+
+      ticketGroups[baseReference].totalTickets += 1;
+      ticketGroups[baseReference].totalAmount += ticket.totalAmount;
     }
 
-    // Sort tickets by creation date (newest first)
-    tickets.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Convert to array and sort by creation date (newest first)
+    const ticketGroupsArray = Object.values(ticketGroups).sort((a: any, b: any) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
     return NextResponse.json({
       success: true,
-      tickets,
+      ticketGroups: ticketGroupsArray,
       searchPattern,
-      totalFound: tickets.length
+      totalGroups: ticketGroupsArray.length,
+      totalTickets: ticketGroupsArray.reduce((sum: number, group: any) => sum + group.totalTickets, 0)
     });
 
   } catch (error) {

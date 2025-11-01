@@ -18,7 +18,10 @@ import {
   Calendar,
   DollarSign,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Users
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -27,6 +30,7 @@ interface Ticket {
   type: 'convention' | 'dinner' | 'brochure' | 'accommodation';
   paymentReference: string;
   amount: number;
+  quantity?: number;
   status: string;
   checkedIn: boolean;
   checkedInAt?: string;
@@ -46,19 +50,40 @@ interface Ticket {
     officialName: string;
   }>;
   guestDetails?: Array<any>;
+  persons?: Array<any>;
+}
+
+interface TicketGroup {
+  baseReference: string;
+  type: 'convention' | 'dinner' | 'brochure' | 'accommodation';
+  totalTickets: number;
+  totalAmount: number;
+  mainTicket: Ticket;
+  secondaryTickets: Ticket[];
+  status: string;
+  createdAt: string;
 }
 
 export function TicketSearch() {
   const [searchReference, setSearchReference] = useState('');
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [ticketGroups, setTicketGroups] = useState<TicketGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchPattern, setSearchPattern] = useState('');
   const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({});
+  const [expandedGroups, setExpandedGroups] = useState<{ [key: string]: boolean }>({});
 
   const handleClearSearch = () => {
     setSearchReference('');
-    setTickets([]);
+    setTicketGroups([]);
     setSearchPattern('');
+    setExpandedGroups({});
+  };
+
+  const toggleGroupExpansion = (baseReference: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [baseReference]: !prev[baseReference]
+    }));
   };
 
   const handleSearch = async () => {
@@ -73,22 +98,22 @@ export function TicketSearch() {
       const data = await response.json();
 
       if (data.success) {
-        setTickets(data.tickets);
+        setTicketGroups(data.ticketGroups);
         setSearchPattern(data.searchPattern);
-        if (data.totalFound === 0) {
+        if (data.totalGroups === 0) {
           toast.info('No tickets found matching the search criteria');
         } else {
-          toast.success(`Found ${data.totalFound} ticket(s)`);
+          toast.success(`Found ${data.totalGroups} payment group(s) with ${data.totalTickets} total ticket(s)`);
         }
       } else {
         toast.error(data.error || 'Search failed');
-        setTickets([]);
+        setTicketGroups([]);
         setSearchPattern('');
       }
     } catch (error) {
       console.error('Search error:', error);
       toast.error('Search failed');
-      setTickets([]);
+      setTicketGroups([]);
       setSearchPattern('');
     } finally {
       setLoading(false);
@@ -298,105 +323,303 @@ export function TicketSearch() {
       </Card>
 
       {/* Results Section */}
-      {tickets.length > 0 && (
+      {ticketGroups.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">
-            Search Results ({tickets.length} ticket{tickets.length !== 1 ? 's' : ''})
+            Search Results ({ticketGroups.length} payment group{ticketGroups.length !== 1 ? 's' : ''})
           </h2>
 
-          {tickets.map((ticket) => (
-            <Card key={ticket._id} className="overflow-hidden">
+          {ticketGroups.map((group) => (
+            <Card key={group.baseReference} className="overflow-hidden">
+              {/* Group Header */}
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{getTypeIcon(ticket.type)}</span>
+                    <span className="text-2xl">{getTypeIcon(group.type)}</span>
                     <div>
                       <CardTitle className="text-lg">
-                        {ticket.type.charAt(0).toUpperCase() + ticket.type.slice(1)} Ticket
+                        {group.type.charAt(0).toUpperCase() + group.type.slice(1)} Registration
                       </CardTitle>
                       <p className="text-sm text-gray-600 font-mono">
-                        {ticket.paymentReference}
+                        {group.baseReference}*
                       </p>
+                      <div className="flex items-center gap-4 mt-1">
+                        <div className="flex items-center gap-1">
+                          <Users className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm font-medium">
+                            {group.totalTickets} ticket{group.totalTickets !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm font-medium">
+                            ₦{group.totalAmount.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {getStatusBadge(ticket.status, ticket.checkedIn)}
-                    {ticket.collected && (
+                    {getStatusBadge(group.status, group.mainTicket.checkedIn)}
+                    {group.mainTicket.collected && (
                       <Badge className="bg-purple-100 text-purple-800">Collected</Badge>
+                    )}
+                    {group.secondaryTickets.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleGroupExpansion(group.baseReference)}
+                        className="p-1"
+                      >
+                        {expandedGroups[group.baseReference] ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </Button>
                     )}
                   </div>
                 </div>
               </CardHeader>
 
               <CardContent className="space-y-4">
-                {/* User Information */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium">{ticket.user.fullName}</span>
+                {/* Main Ticket */}
+                <div className="border rounded-lg p-4 bg-blue-50">
+                  <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Main Ticket Holder
+                  </h4>
+
+                  {/* User Information */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium">{group.mainTicket.user.fullName}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">{group.mainTicket.user.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">{group.mainTicket.user.phone}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm">{ticket.user.email}</span>
+
+                  {/* Ticket Details */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">
+                        <strong>Amount:</strong> ₦{group.mainTicket.amount?.toLocaleString() || 0}
+                      </span>
+                    </div>
+                    {group.mainTicket.quantity && (
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm">
+                          <strong>Quantity:</strong> {group.mainTicket.quantity}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">
+                        <strong>Created:</strong> {new Date(group.mainTicket.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {group.mainTicket.checkedInAt && (
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span className="text-sm">
+                          <strong>Checked In:</strong> {new Date(group.mainTicket.checkedInAt).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm">{ticket.user.phone}</span>
+
+                  {/* Guest Details for Dinner Tickets */}
+                  {group.mainTicket.type === 'dinner' && group.mainTicket.guestDetails && group.mainTicket.guestDetails.length > 0 && (
+                    <div className="p-3 bg-amber-50 rounded-lg mb-4">
+                      <h5 className="font-medium text-amber-800 mb-2">Guest Details:</h5>
+                      <div className="space-y-1">
+                        {group.mainTicket.guestDetails.map((guest, index) => (
+                          <p key={index} className="text-sm text-amber-700">
+                            {index + 1}. {guest.name} ({guest.dietaryRequirements || 'No dietary requirements'})
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons for Main Ticket */}
+                  <div className="flex flex-wrap gap-2 pt-2 border-t">
+                    {!group.mainTicket.checkedIn ? (
+                      <Button
+                        size="sm"
+                        onClick={() => handleCheckIn(group.mainTicket._id)}
+                        disabled={actionLoading[`checkin-${group.mainTicket._id}`]}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {actionLoading[`checkin-${group.mainTicket._id}`] ? (
+                          <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                        )}
+                        Check In
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCheckOut(group.mainTicket._id)}
+                        disabled={actionLoading[`checkout-${group.mainTicket._id}`]}
+                      >
+                        {actionLoading[`checkout-${group.mainTicket._id}`] ? (
+                          <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                        ) : (
+                          <XCircle className="w-4 h-4 mr-2" />
+                        )}
+                        Check Out
+                      </Button>
+                    )}
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleRegenerateQR(group.mainTicket)}
+                      disabled={actionLoading[`regenerate-${group.mainTicket._id}`]}
+                    >
+                      {actionLoading[`regenerate-${group.mainTicket._id}`] ? (
+                        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                      )}
+                      Regenerate & Send
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownloadPDF(group.mainTicket.paymentReference)}
+                      disabled={actionLoading[`download-${group.mainTicket.paymentReference}`]}
+                    >
+                      {actionLoading[`download-${group.mainTicket.paymentReference}`] ? (
+                        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <Download className="w-4 h-4 mr-2" />
+                      )}
+                      Download PDF
+                    </Button>
                   </div>
                 </div>
 
-                {/* Ticket Details */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm">
-                      <strong>Amount:</strong> ₦{ticket.amount?.toLocaleString() || 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm">
-                      <strong>Created:</strong> {new Date(ticket.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  {ticket.checkedInAt && (
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span className="text-sm">
-                        <strong>Checked In:</strong> {new Date(ticket.checkedInAt).toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-                  {ticket.checkedOutAt && (
-                    <div className="flex items-center gap-2">
-                      <XCircle className="w-4 h-4 text-red-500" />
-                      <span className="text-sm">
-                        <strong>Checked Out:</strong> {new Date(ticket.checkedOutAt).toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                {/* Secondary Tickets */}
+                {group.secondaryTickets.length > 0 && expandedGroups[group.baseReference] && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-800 flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Additional Tickets ({group.secondaryTickets.length})
+                    </h4>
 
-                {/* Guest Details for Dinner Tickets */}
-                {ticket.type === 'dinner' && ticket.guestDetails && ticket.guestDetails.length > 0 && (
-                  <div className="p-3 bg-amber-50 rounded-lg">
-                    <h4 className="font-medium text-amber-800 mb-2">Guest Details:</h4>
-                    <div className="space-y-1">
-                      {ticket.guestDetails.map((guest, index) => (
-                        <p key={index} className="text-sm text-amber-700">
-                          {index + 1}. {guest.name} ({guest.dietaryRequirements || 'No dietary requirements'})
-                        </p>
-                      ))}
-                    </div>
+                    {group.secondaryTickets.map((ticket, index) => (
+                      <div key={ticket._id} className="border rounded-lg p-4 bg-gray-50">
+                        <div className="flex items-center justify-between mb-3">
+                          <h5 className="font-medium text-gray-700">
+                            Ticket #{index + 2} - {ticket.user.fullName}
+                          </h5>
+                          <div className="flex items-center gap-2">
+                            {getStatusBadge(ticket.status, ticket.checkedIn)}
+                          </div>
+                        </div>
+
+                        {/* Secondary Ticket User Info */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm">{ticket.user.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm">{ticket.user.phone}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm">₦{ticket.amount?.toLocaleString() || 0}</span>
+                          </div>
+                        </div>
+
+                        {/* Secondary Ticket Actions */}
+                        <div className="flex flex-wrap gap-2 pt-2 border-t">
+                          {!ticket.checkedIn ? (
+                            <Button
+                              size="sm"
+                              onClick={() => handleCheckIn(ticket._id)}
+                              disabled={actionLoading[`checkin-${ticket._id}`]}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              {actionLoading[`checkin-${ticket._id}`] ? (
+                                <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                              ) : (
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                              )}
+                              Check In
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCheckOut(ticket._id)}
+                              disabled={actionLoading[`checkout-${ticket._id}`]}
+                            >
+                              {actionLoading[`checkout-${ticket._id}`] ? (
+                                <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                              ) : (
+                                <XCircle className="w-4 h-4 mr-2" />
+                              )}
+                              Check Out
+                            </Button>
+                          )}
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRegenerateQR(ticket)}
+                            disabled={actionLoading[`regenerate-${ticket._id}`]}
+                          >
+                            {actionLoading[`regenerate-${ticket._id}`] ? (
+                              <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                            ) : (
+                              <MessageSquare className="w-4 h-4 mr-2" />
+                            )}
+                            Regenerate & Send
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDownloadPDF(ticket.paymentReference)}
+                            disabled={actionLoading[`download-${ticket.paymentReference}`]}
+                          >
+                            {actionLoading[`download-${ticket.paymentReference}`] ? (
+                              <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                            ) : (
+                              <Download className="w-4 h-4 mr-2" />
+                            )}
+                            Download PDF
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
 
-                {/* Check-in History */}
-                {ticket.checkInHistory && ticket.checkInHistory.length > 0 && (
+                {/* Check-in History for Main Ticket */}
+                {group.mainTicket.checkInHistory && group.mainTicket.checkInHistory.length > 0 && (
                   <div className="p-3 bg-blue-50 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-2">Check-in History:</h4>
+                    <h4 className="font-medium text-blue-800 mb-2">Recent Check-in History:</h4>
                     <div className="space-y-1">
-                      {ticket.checkInHistory.slice(-3).map((entry, index) => (
+                      {group.mainTicket.checkInHistory.slice(-3).map((entry, index) => (
                         <p key={index} className="text-sm text-blue-700">
                           <strong>{entry.action}:</strong> {new Date(entry.timestamp).toLocaleString()}
                           by {entry.officialName}
@@ -405,67 +628,6 @@ export function TicketSearch() {
                     </div>
                   </div>
                 )}
-
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-2 pt-2 border-t">
-                  {!ticket.checkedIn ? (
-                    <Button
-                      size="sm"
-                      onClick={() => handleCheckIn(ticket._id)}
-                      disabled={actionLoading[`checkin-${ticket._id}`]}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      {actionLoading[`checkin-${ticket._id}`] ? (
-                        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                      ) : (
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                      )}
-                      Check In
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleCheckOut(ticket._id)}
-                      disabled={actionLoading[`checkout-${ticket._id}`]}
-                    >
-                      {actionLoading[`checkout-${ticket._id}`] ? (
-                        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                      ) : (
-                        <XCircle className="w-4 h-4 mr-2" />
-                      )}
-                      Check Out
-                    </Button>
-                  )}
-
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleRegenerateQR(ticket)}
-                    disabled={actionLoading[`regenerate-${ticket._id}`]}
-                  >
-                    {actionLoading[`regenerate-${ticket._id}`] ? (
-                      <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                    )}
-                    Regenerate & Send
-                  </Button>
-
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDownloadPDF(ticket.paymentReference)}
-                    disabled={actionLoading[`download-${ticket.paymentReference}`]}
-                  >
-                    {actionLoading[`download-${ticket.paymentReference}`] ? (
-                      <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <Download className="w-4 h-4 mr-2" />
-                    )}
-                    Download PDF
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           ))}
@@ -473,7 +635,7 @@ export function TicketSearch() {
       )}
 
       {/* No Results */}
-      {!loading && searchPattern && tickets.length === 0 && (
+      {!loading && searchPattern && ticketGroups.length === 0 && (
         <Card>
           <CardContent className="text-center py-8">
             <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
