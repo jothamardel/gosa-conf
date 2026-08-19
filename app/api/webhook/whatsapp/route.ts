@@ -649,8 +649,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Process using wani yaro agent
-    const agentResponse = await Agent.httpSendMessage(messageText);
+    // Process using wani yaro agent with conversation memory context
+    const senderName = body?.data?.messages?.pushName || "User";
+    const agentResponse = await Agent.httpSendMessage(messageText, remoteJid, senderName);
 
     if (agentResponse.intent === 'general_query') {
       const formattedText = isGroup ? formatGroupResponse(agentResponse.response) : sanitizeMessage(agentResponse.response);

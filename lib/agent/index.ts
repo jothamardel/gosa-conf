@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import mongoose from "mongoose";
+import { ConversationHistory } from "../schema";
 
 export interface AgentResponse {
   intent: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query';
@@ -102,14 +104,39 @@ class AgentClass {
     this.openAI = new OpenAI();
   }
 
-  async httpSendMessage(message: string): Promise<AgentResponse> {
+  async httpSendMessage(message: string, jid?: string, senderName?: string): Promise<AgentResponse> {
     try {
-      const response = await this.openAI.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `
+      const isDbConnected = mongoose.connection.readyState === 1;
+      let historyMessages: any[] = [];
+      let historyRecord: any = null;
+
+      // Fetch conversation history if JID provided and DB is connected
+      if (jid && isDbConnected) {
+        try {
+          historyRecord = await ConversationHistory.findOne({ jid });
+          if (historyRecord) {
+            historyMessages = historyRecord.messages || [];
+          }
+        } catch (dbErr) {
+          console.warn("Failed to fetch conversation history:", dbErr);
+        }
+      }
+
+      // Format history messages to match OpenAI schema: name must only contain a-zA-Z0-9_-
+      const formattedHistory = historyMessages.map((m: any) => ({
+        role: m.role as "user" | "assistant" | "system",
+        content: m.content,
+        name: m.name ? m.name.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64) : undefined,
+      }));
+
+      // Sanitize the current sender's name if provided
+      const currentSenderName = senderName ? senderName.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64) : undefined;
+
+      // Prepare payload messages
+      const apiMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+        {
+          role: "system",
+          content: `
             # GOSA – Gindiri Old Students Association: wani yaro Assistant Context
 
             ## Chatbot Identity & Personality
@@ -118,7 +145,7 @@ class AgentClass {
             - **Tone**: Extremely polite, respectful, and eager to serve. You MUST address the user as "sir" (or "ma'am" if appropriate) in your responses (e.g., "Yes sir, I have processed the request, sir").
             - **Motto**: Rooted in GOSA's value of "Light and Truth".
             - Maintain WhatsApp formatting style (use *bold* using single asterisks for key terms, keep messages concise, use emojis).
-            - **Proper Spacing**: Always use double newlines (\n\n) between paragraphs, instructions, list items, and sections to ensure the message is clean and easy to read. Do not bunch text together.
+            - **Proper Spacing**: Always use double newlines (\\n\\n) between paragraphs, instructions, list items, and sections to ensure the message is clean and easy to read. Do not bunch text together.
 
             ---
 
@@ -142,10 +169,19 @@ class AgentClass {
             - Address the user as "sir" in your text replies.
             - **CRITICAL**: Never include or expose any raw WhatsApp JIDs, LIDs, or internal database IDs (like 234xxx@s.whatsapp.net, 123xxx@g.us, or @lid) in your response, sir.
             - **CRITICAL**: Never expose, mention, or print any website links or URLs (including "gosanigeria.ng" or "v2.gosanigeria.ng") in your response, sir.
-            `,
-          },
-          { role: "user", content: message },
-        ],
+          `,
+        },
+        ...formattedHistory,
+        {
+          role: "user",
+          content: message,
+          name: currentSenderName,
+        },
+      ];
+
+      const response = await this.openAI.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: apiMessages,
         tools,
         max_tokens: 400,
       });
@@ -153,14 +189,26 @@ class AgentClass {
       const messageObj = response.choices[0]?.message;
       const toolCalls = messageObj?.tool_calls;
 
+      let intentVal: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query' = 'general_query';
+      let dataVal: any = {};
+      let politeResponse = "";
+
       if (toolCalls && toolCalls.length > 0) {
         const toolCall = toolCalls[0] as any;
         const functionName = toolCall.function.name as 'buy_tickets' | 'buy_product' | 'donation' | 'view_history';
         const args = JSON.parse(toolCall.function.arguments || "{}");
-
         const targets = args.targets || [];
-        
-        let politeResponse = "";
+
+        intentVal = functionName;
+        dataVal = {
+          ticketType: args.ticketType,
+          productType: args.productType,
+          quantity: args.quantity,
+          targets: targets,
+          amount: args.amount,
+          email: null
+        };
+
         if (functionName === 'buy_tickets') {
           politeResponse = `Right away, sir! I am generating the Paystack payment link for the ${args.ticketType} tickets, sir.`;
         } else if (functionName === 'buy_product') {
@@ -170,27 +218,45 @@ class AgentClass {
         } else if (functionName === 'view_history') {
           politeResponse = `Right away, sir! Retrieving your transaction history, sir.`;
         }
-
-        return {
-          intent: functionName,
-          data: {
-            ticketType: args.ticketType,
-            productType: args.productType,
-            quantity: args.quantity,
-            targets: targets,
-            amount: args.amount,
-            email: null
-          },
-          response: politeResponse
-        };
+      } else {
+        politeResponse = messageObj?.content || "I apologize, sir. I didn't quite get that, sir. Could you please rephrase, sir?";
       }
 
-      // Default to general query if no tools called
-      const content = messageObj?.content || "I apologize, sir. I didn't quite get that, sir. Could you please rephrase, sir?";
+      // Save conversation messages to history (last 15 messages)
+      if (jid && isDbConnected) {
+        try {
+          const userMsg = {
+            role: 'user' as const,
+            content: message,
+            name: currentSenderName,
+            timestamp: new Date()
+          };
+          const assistantMsg = {
+            role: 'assistant' as const,
+            content: politeResponse,
+            timestamp: new Date()
+          };
+
+          if (!historyRecord) {
+            historyRecord = new ConversationHistory({ jid, messages: [] });
+          }
+          historyRecord.messages.push(userMsg);
+          historyRecord.messages.push(assistantMsg);
+
+          const maxHistory = 15;
+          if (historyRecord.messages.length > maxHistory) {
+            historyRecord.messages = historyRecord.messages.slice(-maxHistory);
+          }
+          await historyRecord.save();
+        } catch (dbSaveErr) {
+          console.error("Failed to save conversation history:", dbSaveErr);
+        }
+      }
+
       return {
-        intent: "general_query",
-        data: {},
-        response: content
+        intent: intentVal,
+        data: dataVal,
+        response: politeResponse
       };
     } catch (err) {
       console.error("Error in AgentClass.httpSendMessage:", err);
