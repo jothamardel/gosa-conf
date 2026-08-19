@@ -162,7 +162,7 @@ async function handlePaymentFlow(
   const prefix = action.type === 'buy_tickets'
     ? action.ticketType
     : (action.type === 'donation' ? 'donation' : action.productType);
-
+    
   const paymentReference = `${prefix}_${Date.now()}_${senderUser.phoneNumber.replace('+', '')}`;
 
   const paystackRes = await Payment.httpInitializePayment({
@@ -384,18 +384,19 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    console.log(body)
+    // Prevent duplicate processing by only listening to the primary 'messages.received' event
+    if (body?.event && body.event !== 'messages.received') {
+      return NextResponse.json({ message: `Ignoring event ${body.event} to prevent duplicate processing`, success: true });
+    }
+
     // Self-message prevention
     if (body?.data?.messages?.key?.fromMe) {
       return NextResponse.json({ message: "Ignore self message", success: true });
     }
 
-
-
     const remoteJid = body?.data?.messages?.key?.remoteJid;
     const senderJid = body?.data?.messages?.key?.participant || remoteJid;
 
-    
     if (!remoteJid || !senderJid) {
       return NextResponse.json({ message: "No JID provided", success: false });
     }
@@ -491,18 +492,18 @@ export async function POST(req: NextRequest) {
 
     // Payment intents: buy_tickets, buy_product, donation
     if (
-      agentResponse.intent === 'buy_tickets' ||
+      agentResponse.intent === 'buy_tickets' || 
       agentResponse.intent === 'buy_product' ||
       agentResponse.intent === 'donation'
     ) {
       const mentionedJids = msgObj?.extendedTextMessage?.contextInfo?.mentionedJid || [];
       const rawTargets = agentResponse.data.targets || [];
-
+      
       let targetJids: string[] = [];
       if (rawTargets.length > 0) {
         targetJids = await resolveMentionsToJids(rawTargets, remoteJid, mentionedJids);
       }
-
+      
       // Default to sender if no targets resolved
       if (targetJids.length === 0) {
         targetJids = [senderJid];
