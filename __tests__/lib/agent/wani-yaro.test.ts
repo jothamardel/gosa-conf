@@ -219,4 +219,40 @@ describe('Wani Yaro Agent Integration', () => {
     mockFindOne.mockRestore();
     Object.defineProperty(mongoose.connection, 'readyState', { value: originalReadyState, writable: true });
   });
+
+  it('should parse combined cart purchases for multiple items/targets correctly', async () => {
+    const mockLLMResponse = {
+      choices: [
+        {
+          message: {
+            tool_calls: [
+              {
+                function: {
+                  name: 'checkout_cart',
+                  arguments: JSON.stringify({
+                    items: [
+                      { type: 'convention', quantity: 1, targets: ['@john'] },
+                      { type: 'dinner', quantity: 1, targets: ['@mary'] },
+                      { type: 'uniform', quantity: 2 }
+                    ]
+                  })
+                }
+              }
+            ]
+          }
+        }
+      ]
+    };
+
+    mockCreateFn.mockResolvedValue(mockLLMResponse);
+
+    const result = await Agent.httpSendMessage('buy convention ticket for @john, dinner ticket for @mary, and 2 uniforms');
+
+    expect(result.intent).toBe('checkout_cart');
+    expect(result.data.items).toHaveLength(3);
+    expect(result.data.items![0]).toEqual({ type: 'convention', quantity: 1, targets: ['@john'] });
+    expect(result.data.items![1]).toEqual({ type: 'dinner', quantity: 1, targets: ['@mary'] });
+    expect(result.data.items![2]).toEqual({ type: 'uniform', quantity: 2 });
+    expect(result.response).toContain('sir');
+  });
 });

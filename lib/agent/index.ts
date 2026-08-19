@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 export interface AgentResponse {
-  intent: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query';
+  intent: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query' | 'checkout_cart';
   data: {
     ticketType?: 'convention' | 'dinner';
     productType?: 'uniform' | 'emblem' | 'magazine' | 'brochure';
@@ -9,6 +9,12 @@ export interface AgentResponse {
     targets?: string[];
     amount?: number; // only for donation
     email?: string | null;
+    items?: Array<{
+      type: 'convention' | 'dinner' | 'brochure' | 'uniform' | 'emblem' | 'magazine' | 'donation';
+      quantity: number;
+      amount?: number;
+      targets?: string[];
+    }>;
   };
   response: string;
 }
@@ -91,6 +97,49 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
       parameters: {
         type: "object",
         properties: {}
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "checkout_cart",
+      description: "Initialize a single Paystack checkout link for a combined cart of tickets, shop products, and/or donations for one or more people.",
+      parameters: {
+        type: "object",
+        properties: {
+          items: {
+            type: "array",
+            description: "The list of items in the cart.",
+            items: {
+              type: "object",
+              properties: {
+                type: {
+                  type: "string",
+                  enum: ["convention", "dinner", "brochure", "uniform", "emblem", "magazine", "donation"],
+                  description: "The type of service or product."
+                },
+                quantity: {
+                  type: "integer",
+                  description: "The quantity of this item. Defaults to 1."
+                },
+                amount: {
+                  type: "number",
+                  description: "The amount (only required for donation type)."
+                },
+                targets: {
+                  type: "array",
+                  description: "The list of member JIDs or names/mentions to purchase this item for.",
+                  items: {
+                    type: "string"
+                  }
+                }
+              },
+              required: ["type"]
+            }
+          }
+        },
+        required: ["items"]
       }
     }
   }
@@ -190,34 +239,43 @@ class AgentClass {
       const messageObj = response.choices[0]?.message;
       const toolCalls = messageObj?.tool_calls;
 
-      let intentVal: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query' = 'general_query';
+      let intentVal: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query' | 'checkout_cart' = 'general_query';
       let dataVal: any = {};
       let politeResponse = "";
 
       if (toolCalls && toolCalls.length > 0) {
         const toolCall = toolCalls[0] as any;
-        const functionName = toolCall.function.name as 'buy_tickets' | 'buy_product' | 'donation' | 'view_history';
+        const functionName = toolCall.function.name as 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'checkout_cart';
         const args = JSON.parse(toolCall.function.arguments || "{}");
         const targets = args.targets || [];
 
         intentVal = functionName;
-        dataVal = {
-          ticketType: args.ticketType,
-          productType: args.productType,
-          quantity: args.quantity,
-          targets: targets,
-          amount: args.amount,
-          email: null
-        };
 
-        if (functionName === 'buy_tickets') {
-          politeResponse = `Right away, sir! I am generating the Paystack payment link for the ${args.ticketType} tickets, sir.`;
-        } else if (functionName === 'buy_product') {
-          politeResponse = `Yes sir, I have initialized the checkout for the GOSA ${args.productType}, sir.`;
-        } else if (functionName === 'donation') {
-          politeResponse = `Yes sir, I have initialized a GOSA donation checkout for ₦${args.amount.toLocaleString()}, sir.`;
-        } else if (functionName === 'view_history') {
-          politeResponse = `Right away, sir! Retrieving your transaction history, sir.`;
+        if (functionName === 'checkout_cart') {
+          politeResponse = `Right away, sir! I am generating the Paystack checkout link for your combined cart items, sir.`;
+          dataVal = {
+            items: args.items,
+            email: null
+          };
+        } else {
+          dataVal = {
+            ticketType: args.ticketType,
+            productType: args.productType,
+            quantity: args.quantity,
+            targets: targets,
+            amount: args.amount,
+            email: null
+          };
+
+          if (functionName === 'buy_tickets') {
+            politeResponse = `Right away, sir! I am generating the Paystack payment link for the ${args.ticketType} tickets, sir.`;
+          } else if (functionName === 'buy_product') {
+            politeResponse = `Yes sir, I have initialized the checkout for the GOSA ${args.productType}, sir.`;
+          } else if (functionName === 'donation') {
+            politeResponse = `Yes sir, I have initialized a GOSA donation checkout for ₦${args.amount.toLocaleString()}, sir.`;
+          } else if (functionName === 'view_history') {
+            politeResponse = `Right away, sir! Retrieving your transaction history, sir.`;
+          }
         }
       } else {
         politeResponse = messageObj?.content || "I apologize, sir. I didn't quite get that, sir. Could you please rephrase, sir?";

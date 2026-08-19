@@ -282,10 +282,51 @@ async function findAndConfirmPaymentByReference(reference: string): Promise<{
 } | null> {
   console.log(`Searching for payment reference: ${reference}`);
 
-  // Since Paystack sends us "xp0hxfljal" but we store "xp0hxfljal_09065577709",
-  // we need to search using a partial match (startsWith pattern)
-
   try {
+    if (reference.startsWith('cart')) {
+      const { Transaction } = await import("@/lib/schema");
+      const tx = await Transaction.findOne({ paymentReference: { $regex: `^${reference}` }, type: 'cart' });
+      if (tx) {
+        console.log(`Found combined cart transaction: ${tx.paymentReference}`);
+        
+        // Confirm all items in other tables that share this prefix
+        const hasProduct = await ProductPurchaseUtils.findByReferencePattern(reference);
+        if (hasProduct) {
+          await ProductPurchaseUtils.confirmPurchase(hasProduct.paymentReference);
+        }
+        const hasDinner = await DinnerUtils.findByReferencePattern(reference);
+        if (hasDinner) {
+          await DinnerUtils.confirmReservation(hasDinner.paymentReference);
+        }
+        const hasAccommodation = await AccommodationUtils.findByReferencePattern(reference);
+        if (hasAccommodation) {
+          await AccommodationUtils.confirmBooking(hasAccommodation.paymentReference);
+        }
+        const hasBrochure = await BrochureUtils.findByReferencePattern(reference);
+        if (hasBrochure) {
+          await BrochureUtils.confirmOrder(hasBrochure.paymentReference);
+        }
+        const hasGoodwill = await GoodwillUtils.findByReferencePattern(reference);
+        if (hasGoodwill) {
+          await GoodwillUtils.confirmMessage(hasGoodwill.paymentReference);
+        }
+        const hasDonation = await DonationUtils.findByReferencePattern(reference);
+        if (hasDonation) {
+          await DonationUtils.confirmDonation(hasDonation.paymentReference);
+        }
+        const hasConvention = await ConventionUtils.findByReferencePattern(reference);
+        if (hasConvention && hasConvention.length > 0) {
+          await ConventionUtils.confirmByReferencePattern(reference);
+        }
+
+        return {
+          serviceType: "cart",
+          record: tx,
+          success: true
+        };
+      }
+    }
+
     // Try product purchases (uniform, emblem, magazine)
     const productRecord = await ProductPurchaseUtils.findByReferencePattern(reference);
     if (productRecord) {
@@ -537,6 +578,48 @@ async function sendServiceNotification(
     };
 
     const isGroup = targetJid.endsWith('@g.us');
+
+    if (serviceType === 'cart') {
+      const cartItems = record.metadata?.items || [];
+      let cartSummary = "";
+      for (const item of cartItems) {
+        const label = item.type.charAt(0).toUpperCase() + item.type.slice(1);
+        const qty = item.targetJids?.length || item.quantity || 1;
+        cartSummary += `• ${qty}x GOSA ${label}\n`;
+      }
+
+      const textMessage = `🎉 *GOSA Combined Purchase Confirmation*
+For Light and Truth
+
+Dear ${userDetails.name},
+
+Your combined purchase/registration has been confirmed! ✅
+
+📦 *Confirmed Items:*
+${cartSummary.trim()}
+
+💳 *Payment Details:*
+• Total Amount: ₦${record.amount.toLocaleString()}
+• Reference: ${record.paymentReference}
+• Status: Confirmed ✅
+
+Thank you for supporting the GOSA community, sir!`;
+
+      const formattedText = isGroup ? formatGroupResponse(textMessage) : sanitizeMessage(textMessage);
+
+      const wasenderRes = await Wasender.httpSenderMessage({
+        to: targetJid,
+        text: formattedText
+      });
+
+      return {
+        success: wasenderRes.success,
+        serviceType,
+        phoneNumber: targetJid,
+        whatsappSent: wasenderRes.success,
+        error: wasenderRes.error
+      };
+    }
 
     if (isGroup) {
       let typeLabel = serviceType.charAt(0).toUpperCase() + serviceType.slice(1);

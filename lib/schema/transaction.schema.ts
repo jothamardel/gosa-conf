@@ -4,7 +4,7 @@ export interface ITransaction extends Document {
   userId: Types.ObjectId;
   paymentReference: string;
   amount: number;
-  type: 'ticket_convention' | 'ticket_dinner' | 'product_uniform' | 'product_emblem' | 'product_magazine' | 'product_brochure' | 'donation';
+  type: 'ticket_convention' | 'ticket_dinner' | 'product_uniform' | 'product_emblem' | 'product_magazine' | 'product_brochure' | 'donation' | 'cart';
   status: 'pending' | 'completed' | 'failed';
   source?: string;
   metadata?: any;
@@ -40,7 +40,8 @@ const TransactionSchema = new Schema<ITransaction>(
         'product_emblem',
         'product_magazine',
         'product_brochure',
-        'donation'
+        'donation',
+        'cart'
       ],
     },
     status: {

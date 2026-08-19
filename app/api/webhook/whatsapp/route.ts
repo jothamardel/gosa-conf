@@ -148,10 +148,246 @@ async function handlePaymentFlow(
     quantity?: number;
     amount?: number;
     targetJids: string[];
+    items?: Array<{
+      type: 'convention' | 'dinner' | 'brochure' | 'uniform' | 'emblem' | 'magazine' | 'donation';
+      quantity: number;
+      amount?: number;
+      targetJids?: string[];
+    }>;
   },
   remoteJid: string,
   senderJid: string
 ) {
+  if (action.type === 'checkout_cart') {
+    let cartBaseTotalAmount = 0;
+    const cartItems = action.items || [];
+    
+    for (const item of cartItems) {
+      let itemUnitPrice = 0;
+      if (item.type === 'convention') itemUnitPrice = 1000;
+      else if (item.type === 'dinner') itemUnitPrice = 2500;
+      else if (item.type === 'brochure') itemUnitPrice = 2000;
+      else if (item.type === 'uniform') itemUnitPrice = 15000;
+      else if (item.type === 'emblem') itemUnitPrice = 2000;
+      else if (item.type === 'magazine') itemUnitPrice = 3000;
+      else if (item.type === 'donation') itemUnitPrice = item.amount || 0;
+
+      const itemQuantity = (item.type === 'convention' || item.type === 'dinner' || item.type === 'donation')
+        ? (item.targetJids || []).length
+        : (item.quantity || 1);
+      
+      cartBaseTotalAmount += itemUnitPrice * itemQuantity;
+    }
+
+    const cartTotalAmount = calculatePaystackTotal(cartBaseTotalAmount);
+    const paymentReference = `cart_${Date.now()}_${senderUser.phoneNumber.replace('+', '')}`;
+
+    const paystackRes = await Payment.httpInitializePayment({
+      email: senderUser.email,
+      amount: cartTotalAmount,
+      reference: paymentReference
+    });
+
+    if (!paystackRes?.status || !paystackRes?.data?.authorization_url) {
+      throw new Error("Failed to initialize payment with Paystack, sir.");
+    }
+
+    const checkoutUrl = paystackRes.data.authorization_url;
+    const isGroup = remoteJid.endsWith('@g.us');
+
+    // Create the unified transaction
+    await Transaction.create({
+      userId: senderUser._id,
+      paymentReference: paymentReference,
+      amount: cartTotalAmount,
+      type: 'cart',
+      status: 'pending',
+      source: remoteJid,
+      metadata: {
+        items: cartItems,
+        baseTotalAmount: cartBaseTotalAmount,
+        groupJid: isGroup ? remoteJid : null
+      }
+    });
+
+    // Create pending records in respective collections
+    for (let index = 0; index < cartItems.length; index++) {
+      const item = cartItems[index];
+      let itemUnitPrice = 0;
+      if (item.type === 'convention') itemUnitPrice = 1000;
+      else if (item.type === 'dinner') itemUnitPrice = 2500;
+      else if (item.type === 'brochure') itemUnitPrice = 2000;
+      else if (item.type === 'uniform') itemUnitPrice = 15000;
+      else if (item.type === 'emblem') itemUnitPrice = 2000;
+      else if (item.type === 'magazine') itemUnitPrice = 3000;
+      else if (item.type === 'donation') itemUnitPrice = item.amount || 0;
+
+      const itemQuantity = (item.type === 'convention' || item.type === 'dinner' || item.type === 'donation')
+        ? (item.targetJids || []).length
+        : (item.quantity || 1);
+      
+      const itemBaseTotalAmount = itemUnitPrice * itemQuantity;
+      const itemRef = `${paymentReference}_${index}`;
+
+      if (item.type === 'convention' || item.type === 'dinner') {
+        const itemTargetJids = item.targetJids || [senderJid];
+        for (let i = 0; i < itemTargetJids.length; i++) {
+          const targetJid = itemTargetJids[i];
+          const targetPhone = targetJid.split('@')[0];
+
+          let targetUser = await User.findOne({
+            phoneNumber: { $regex: targetPhone }
+          });
+          if (!targetUser) {
+            const targetEmail = `${targetPhone}@gosa.events`;
+            const existingEmailUser = await User.findOne({ email: targetEmail });
+            if (existingEmailUser) {
+              targetUser = existingEmailUser;
+              if (targetUser.phoneNumber !== `+${targetPhone}`) {
+                targetUser.phoneNumber = `+${targetPhone}`;
+                await targetUser.save();
+              }
+            } else {
+              targetUser = await User.create({
+                fullName: `GOSA Member (${targetPhone})`,
+                phoneNumber: `+${targetPhone}`,
+                email: targetEmail
+              });
+            }
+          }
+
+          const individualRef = `${itemRef}_${i}`;
+
+          if (item.type === 'dinner') {
+            await DinnerReservation.create({
+              userId: targetUser._id,
+              paymentReference: individualRef,
+              numberOfGuests: 1,
+              guestDetails: [{
+                name: targetUser.fullName,
+                email: targetUser.email,
+                phone: targetUser.phoneNumber,
+              }],
+              totalAmount: itemUnitPrice,
+              confirmed: false,
+              status: 'pending',
+              isPrimaryContact: i === 0,
+            });
+          } else {
+            await ConventionRegistration.create({
+              userId: targetUser._id,
+              paymentReference: individualRef,
+              amount: itemUnitPrice,
+              quantity: 1,
+              confirm: false,
+              status: 'pending',
+            });
+          }
+        }
+      } else if (item.type === 'donation') {
+        const itemTargetJids = item.targetJids || [senderJid];
+        for (let i = 0; i < itemTargetJids.length; i++) {
+          const targetJid = itemTargetJids[i];
+          const targetPhone = targetJid.split('@')[0];
+
+          let targetUser = await User.findOne({
+            phoneNumber: { $regex: targetPhone }
+          });
+          if (!targetUser) {
+            const targetEmail = `${targetPhone}@gosa.events`;
+            const existingEmailUser = await User.findOne({ email: targetEmail });
+            if (existingEmailUser) {
+              targetUser = existingEmailUser;
+              if (targetUser.phoneNumber !== `+${targetPhone}`) {
+                targetUser.phoneNumber = `+${targetPhone}`;
+                await targetUser.save();
+              }
+            } else {
+              targetUser = await User.create({
+                fullName: `GOSA Member (${targetPhone})`,
+                phoneNumber: `+${targetPhone}`,
+                email: targetEmail
+              });
+            }
+          }
+
+          const individualRef = `${itemRef}_${i}`;
+
+          await Donation.create({
+            userId: targetUser._id,
+            paymentReference: individualRef,
+            amount: itemUnitPrice,
+            donorName: senderUser.fullName,
+            donorEmail: senderUser.email,
+            donorPhone: senderUser.phoneNumber,
+            anonymous: false,
+            confirmed: false,
+            receiptNumber: `DON-${Date.now()}-${targetPhone.slice(-4)}-${index}-${i}`
+          });
+        }
+      } else if (item.type === 'brochure') {
+        await ConventionBrochure.create({
+          userId: senderUser._id,
+          paymentReference: itemRef,
+          quantity: itemQuantity,
+          brochureType: 'physical',
+          recipientDetails: [{
+            name: senderUser.fullName,
+            email: senderUser.email,
+            phone: senderUser.phoneNumber,
+          }],
+          totalAmount: itemBaseTotalAmount,
+          confirmed: false,
+          qrCode: `GOSA-BRO-${Date.now()}-${senderUser.phoneNumber.slice(-4)}`,
+          collected: false,
+          status: 'pending',
+        });
+      } else {
+        await ProductPurchase.create({
+          userId: senderUser._id,
+          productType: item.type as any,
+          quantity: itemQuantity,
+          totalAmount: itemBaseTotalAmount,
+          paymentReference: itemRef,
+          status: 'pending',
+          confirmed: false,
+        });
+      }
+    }
+
+    const feeAmount = cartTotalAmount - cartBaseTotalAmount;
+    let cartItemsSummaryText = "";
+    for (const item of cartItems) {
+      const typeLabel = item.type.charAt(0).toUpperCase() + item.type.slice(1);
+      const itemQuantity = (item.type === 'convention' || item.type === 'dinner' || item.type === 'donation')
+        ? (item.targetJids || []).length
+        : (item.quantity || 1);
+      cartItemsSummaryText += `• ${itemQuantity}x GOSA ${typeLabel}\n`;
+    }
+
+    const responseText = `🛒 *Combined Cart Checkout*
+
+Items in Cart:
+${cartItemsSummaryText.trim()}
+
+Amount: ₦${cartBaseTotalAmount.toLocaleString()}
+Fee: ₦${feeAmount.toLocaleString()}
+Email: ${senderUser.email}
+Type: Combined Purchase
+
+👉 Tap the link below to make payment, sir:
+${checkoutUrl}`;
+
+    const formattedText = isGroup ? formatGroupResponse(responseText) : sanitizeMessage(responseText);
+
+    await Wasender.httpSenderMessage({
+      to: remoteJid,
+      text: formattedText
+    });
+
+    return;
+  }
+
   let unitPrice = 0;
   let serviceName = "";
 
@@ -679,12 +915,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "History query handled", success: true });
     }
 
-    // Payment intents: buy_tickets, buy_product, donation
+    // Payment intents: buy_tickets, buy_product, donation, checkout_cart
     if (
       agentResponse.intent === 'buy_tickets' || 
       agentResponse.intent === 'buy_product' ||
-      agentResponse.intent === 'donation'
+      agentResponse.intent === 'donation' ||
+      agentResponse.intent === 'checkout_cart'
     ) {
+      let resolvedItems = [];
+      if (agentResponse.intent === 'checkout_cart') {
+        const cartItems = agentResponse.data.items || [];
+        for (const item of cartItems) {
+          const itemTargets = item.targets || [];
+          let itemTargetJids: string[] = [];
+          if (itemTargets.length > 0) {
+            itemTargetJids = await resolveMentionsToJids(itemTargets, remoteJid, mentionedJids);
+          }
+          if (itemTargetJids.length === 0) {
+            itemTargetJids = [senderJid];
+          }
+          resolvedItems.push({
+            type: item.type,
+            quantity: item.quantity || 1,
+            amount: item.amount,
+            targetJids: itemTargetJids
+          });
+        }
+      }
+
       const rawTargets = agentResponse.data.targets || [];
       
       let targetJids: string[] = [];
@@ -693,7 +951,7 @@ export async function POST(req: NextRequest) {
       }
       
       // Default to sender if no targets resolved
-      if (targetJids.length === 0) {
+      if (targetJids.length === 0 && agentResponse.intent !== 'checkout_cart') {
         targetJids = [senderJid];
       }
 
@@ -712,12 +970,15 @@ export async function POST(req: NextRequest) {
             productType: agentResponse.data.productType,
             quantity: agentResponse.data.quantity || 1,
             amount: agentResponse.data.amount,
-            targetJids: targetJids
+            targetJids: targetJids,
+            items: resolvedItems // Save the items for cart session continuation
           },
           expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
         });
 
-        const responseText = `Yes sir! I see you want to make a purchase, sir. However, I don't have your email address on file to process the receipt. Could you please reply with your email address, sir?`;
+        const responseText = agentResponse.intent === 'checkout_cart'
+          ? `Yes sir! I see you want to make a combined checkout, sir. However, I don't have your email address on file to process the receipt. Could you please reply with your email address, sir?`
+          : `Yes sir! I see you want to make a purchase, sir. However, I don't have your email address on file to process the receipt. Could you please reply with your email address, sir?`;
         const formattedText = isGroup ? formatGroupResponse(responseText) : sanitizeMessage(responseText);
 
         await Wasender.httpSenderMessage({
@@ -729,14 +990,22 @@ export async function POST(req: NextRequest) {
       }
 
       // Execute payment link generation
-      await handlePaymentFlow(senderUser, {
-        type: agentResponse.intent,
-        ticketType: agentResponse.data.ticketType,
-        productType: agentResponse.data.productType,
-        quantity: agentResponse.data.quantity || 1,
-        amount: agentResponse.data.amount,
-        targetJids: targetJids
-      }, remoteJid, senderJid);
+      if (agentResponse.intent === 'checkout_cart') {
+        await handlePaymentFlow(senderUser, {
+          type: 'checkout_cart',
+          items: resolvedItems,
+          targetJids: []
+        } as any, remoteJid, senderJid);
+      } else {
+        await handlePaymentFlow(senderUser, {
+          type: agentResponse.intent,
+          ticketType: agentResponse.data.ticketType,
+          productType: agentResponse.data.productType,
+          quantity: agentResponse.data.quantity || 1,
+          amount: agentResponse.data.amount,
+          targetJids: targetJids
+        }, remoteJid, senderJid);
+      }
 
       return NextResponse.json({ message: "Checkout generated", success: true });
     }
