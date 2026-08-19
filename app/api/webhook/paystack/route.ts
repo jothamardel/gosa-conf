@@ -480,35 +480,56 @@ async function sendServiceNotification(
       };
     }
 
-    const phoneNumber =
-      record.paymentReference?.split("_")[1] || record.userId?.phoneNumber
-
-    if (!phoneNumber) {
-      throw new Error("No phone number found for notification");
+    let targetJid = "";
+    try {
+      const { Transaction } = await import("@/lib/schema");
+      const tx = await Transaction.findOne({ paymentReference: { $regex: `^${record.paymentReference.split('_')[0]}` } });
+      if (tx && tx.metadata?.groupJid) {
+        targetJid = tx.metadata.groupJid;
+        console.log(`[PAYSTACK-WEBHOOK] Routing confirmation to group JID: ${targetJid}`);
+      }
+    } catch (e) {
+      console.error("Failed to query transaction for routing:", e);
     }
 
-    internationalPhone = convertToInternationalFormat(phoneNumber);
-    console.log({ internationalPhone });
+    if (!targetJid) {
+      const phoneNumber =
+        record.paymentReference?.split("_")[1] || record.userId?.phoneNumber;
+
+      if (!phoneNumber) {
+        throw new Error("No phone number found for notification");
+      }
+
+      targetJid = convertToInternationalFormat(phoneNumber);
+      console.log(`[PAYSTACK-WEBHOOK] Routing confirmation privately to JID: ${targetJid}`);
+    }
+
+    // Set internationalPhone to targetJid so that it maps correctly throughout the rest of the function (for result payloads)
+    internationalPhone = targetJid;
 
     // Prepare user details for image generation
     const userDetails = {
       name: record.userId?.fullName || record.fullName || "Unknown User",
       email: record.userId?.email || record.email || "unknown@email.com",
-      phone: internationalPhone,
+      phone: targetJid,
       registrationId: record._id?.toString(),
     };
 
     if (serviceType === 'uniform' || serviceType === 'emblem' || serviceType === 'magazine') {
       const typeLabel = serviceType.charAt(0).toUpperCase() + serviceType.slice(1);
       const textMessage = `🎉 GOSA Shop Confirmation\nFor Light and Truth\n\nDear ${userDetails.name},\n\nYour purchase of *${record.quantity}x GOSA ${typeLabel}* has been confirmed! ✅\n\n💳 Payment Details:\n• Amount: ₦${record.totalAmount.toLocaleString()}\n• Reference: ${record.paymentReference}\n• Status: Confirmed ✅\n\nThank you for supporting the GOSA community, sir!`;
+      
+      const isGroup = targetJid.endsWith('@g.us');
+      const formattedText = isGroup ? formatGroupResponse(textMessage) : sanitizeMessage(textMessage);
+
       const wasenderRes = await Wasender.httpSenderMessage({
-        to: internationalPhone,
-        text: textMessage
+        to: targetJid,
+        text: formattedText
       });
       return {
         success: wasenderRes.success,
         serviceType,
-        phoneNumber: internationalPhone,
+        phoneNumber: targetJid,
         whatsappSent: wasenderRes.success,
         error: wasenderRes.error
       };
@@ -759,4 +780,18 @@ async function sendIndividualDinnerReceipt(reservation: any, mainPaymentReferenc
     console.error('Error sending individual dinner receipt:', error);
     throw error;
   }
+}
+
+function formatGroupResponse(text: string): string {
+  const cleanText = sanitizeMessage(text);
+  return `┏━━━━━━━━━━━━━━━━━━┓\n👦🏽 *Wani Yaro (Junior Boy)*\n┗━━━━━━━━━━━━━━━━━━┛\n\n${cleanText}`;
+}
+
+function sanitizeMessage(text: string): string {
+  let cleanText = text.replace(/\*\*/g, "*");
+  cleanText = cleanText.replace(/([0-9\-]+)@(s\.whatsapp\.net|g\.us|lid)/g, (match, phone) => {
+    return `+${phone}`;
+  });
+  cleanText = cleanText.replace(/[0-9a-fA-F]{24}/g, "");
+  return cleanText;
 }

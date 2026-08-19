@@ -350,8 +350,11 @@ async function handlePaymentFlow(
     }
   }
 
-  const itemsText = quantity > 1 ? `${quantity}x ${serviceName}s` : `1x ${serviceName}`;
-  const responseText = `Right away, sir! I have generated the Paystack payment link for the purchase of *${itemsText}* (Total base: *₦${baseTotalAmount.toLocaleString()}* plus transaction charge: *₦${(totalAmount - baseTotalAmount).toLocaleString()}*, payable: *₦${totalAmount.toLocaleString()}*), sir.\n\n👉 Please click here to complete the payment, sir: ${checkoutUrl}\n\nOnce completed, your receipt will be processed and sent to your email (${senderUser.email}), sir!`;
+  const feeAmount = totalAmount - baseTotalAmount;
+  const responseText = `Amount: NGN${baseTotalAmount.toLocaleString()}
+Fee: NGN${feeAmount.toLocaleString()}
+Email: ${senderUser.email}
+link: ${checkoutUrl}`;
 
   const isGroup = remoteJid.endsWith('@g.us');
   const formattedText = isGroup ? formatGroupResponse(responseText) : sanitizeMessage(responseText);
@@ -493,15 +496,15 @@ export async function POST(req: NextRequest) {
       mentionedJids.push(await resolveJidToPn(rawJid));
     }
 
-    // Fetch bot profile details and cache them to identify native mentions
+    // Fetch bot profile details and cache them to identify native mentions using the session ID
     if (!cachedBotJid) {
       try {
-        const profile = await Wasender.getProfile();
-        if (profile && profile.jid) {
-          cachedBotJid = profile.jid;
+        const botJid = await Wasender.getBotJidFromSession(body.sessionId);
+        if (botJid) {
+          cachedBotJid = botJid;
         }
       } catch (err) {
-        console.error("Error fetching bot JID profile:", err);
+        console.error("Error fetching bot JID from session:", err);
       }
     }
     if (cachedBotJid && !cachedBotLid) {

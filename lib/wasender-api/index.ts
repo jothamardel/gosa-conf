@@ -288,23 +288,53 @@ class Sender {
     }
   };
 
-  getProfile = async (): Promise<{ jid?: string; lid?: string; [key: string]: any } | null> => {
+  getBotJidFromSession = async (sessionId: string): Promise<string | null> => {
+    console.log("Fetching session info for JID resolution:", sessionId);
     try {
-      const response = await WasenderAxiosInstance.get(`/get/users/profile`);
-      if (response.data?.success && response.data?.data) {
-        return response.data.data;
+      const response = await WasenderAxiosInstance.get(`/whatsapp-sessions/${sessionId}`);
+      if (response.data?.success && response.data?.data?.jid) {
+        return response.data.data.jid;
       }
-      return null;
-    } catch (err: any) {
-      console.warn("Failed to get profile from WASender API /get/users/profile:", err?.response?.data || err?.message);
-      try {
-        const response = await WasenderAxiosInstance.get(`/profile`);
-        if (response.data?.success && response.data?.data) {
-          return response.data.data;
+      if (response.data?.data?.phone) {
+        return `${response.data.data.phone.replace('+', '')}@s.whatsapp.net`;
+      }
+    } catch (err: any) {}
+
+    try {
+      const response = await WasenderAxiosInstance.get(`/whatsapp/${sessionId}`);
+      if (response.data?.success && response.data?.data?.jid) {
+        return response.data.data.jid;
+      }
+    } catch (err: any) {}
+
+    try {
+      const response = await WasenderAxiosInstance.get(`/whatsapp-sessions`);
+      if (response.data?.success && Array.isArray(response.data?.data)) {
+        const session = response.data.data.find((s: any) => s.id === sessionId || s.sessionId === sessionId);
+        if (session) {
+          if (session.jid) return session.jid;
+          if (session.phone) return `${session.phone.replace('+', '')}@s.whatsapp.net`;
+          if (session.number) return `${session.number.replace('+', '')}@s.whatsapp.net`;
         }
-      } catch (err2) {}
-      return null;
-    }
+      }
+    } catch (err: any) {}
+
+    try {
+      const response = await WasenderAxiosInstance.get(`/whatsapp`);
+      if (response.data?.success && Array.isArray(response.data?.data)) {
+        const session = response.data.data.find((s: any) => s.id === sessionId || s.sessionId === sessionId);
+        if (session) {
+          if (session.jid) return session.jid;
+          if (session.phone) return `${session.phone.replace('+', '')}@s.whatsapp.net`;
+        }
+      }
+    } catch (err: any) {}
+
+    return null;
+  };
+
+  getProfile = async (): Promise<{ jid?: string; lid?: string; [key: string]: any } | null> => {
+    return null;
   };
 
   getLidFromPn = async (phoneJid: string): Promise<string | null> => {

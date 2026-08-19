@@ -255,22 +255,28 @@ describe('WASender API Integration', () => {
   });
 
   describe('getProfile', () => {
-    it('should successfully fetch user profile details', async () => {
+    it('should return null as getProfile is stubbed', async () => {
+      const result = await Wasender.getProfile();
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getBotJidFromSession', () => {
+    it('should successfully fetch JID using direct session endpoint', async () => {
       const mockResponse = {
         data: {
           success: true,
           data: {
-            jid: '2348162329082@s.whatsapp.net',
-            lid: '2348162329082@lid'
+            jid: '2348162329082@s.whatsapp.net'
           }
         }
       };
       mockAxiosInstance.get.mockResolvedValue(mockResponse);
 
-      const result = await Wasender.getProfile();
+      const result = await Wasender.getBotJidFromSession('session123');
 
-      expect(result).toEqual(mockResponse.data.data);
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/get/users/profile');
+      expect(result).toBe('2348162329082@s.whatsapp.net');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/whatsapp-sessions/session123');
     });
   });
 

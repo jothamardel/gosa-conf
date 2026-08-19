@@ -217,7 +217,7 @@ export class WhatsAppImageService {
     const { userDetails, operationDetails } = data;
     const serviceTitle = this.getServiceTitle(operationDetails.type);
 
-    return `🎉 GOSA 2025 Convention
+    const baseText = `🎉 GOSA 2025 Convention
 For Light and Truth
 
 Dear ${userDetails.name},
@@ -238,6 +238,23 @@ Your ${serviceTitle} has been confirmed!
 
 GOSA 2025 Convention Team
 www.gosa.events`;
+
+    const isGroup = userDetails.phone.endsWith('@g.us');
+    return isGroup ? this.formatGroupResponse(baseText) : this.sanitizeMessage(baseText);
+  }
+
+  private static formatGroupResponse(text: string): string {
+    const cleanText = this.sanitizeMessage(text);
+    return `┏━━━━━━━━━━━━━━━━━━┓\n👦🏽 *Wani Yaro (Junior Boy)*\n┗━━━━━━━━━━━━━━━━━━┛\n\n${cleanText}`;
+  }
+
+  private static sanitizeMessage(text: string): string {
+    let cleanText = text.replace(/\*\*/g, "*");
+    cleanText = cleanText.replace(/([0-9\-]+)@(s\.whatsapp\.net|g\.us|lid)/g, (match, phone) => {
+      return `+${phone}`;
+    });
+    cleanText = cleanText.replace(/[0-9a-fA-F]{24}/g, "");
+    return cleanText;
   }
 
   /**
