@@ -351,10 +351,12 @@ async function handlePaymentFlow(
   }
 
   const feeAmount = totalAmount - baseTotalAmount;
+  const typeLabel = quantity > 1 ? `${serviceName}s` : serviceName;
   const responseText = `Amount: NGN${baseTotalAmount.toLocaleString()}
 Fee: NGN${feeAmount.toLocaleString()}
 Email: ${senderUser.email}
-link: ${checkoutUrl}`;
+Link: ${checkoutUrl}
+Type: ${typeLabel}`;
 
   const isGroup = remoteJid.endsWith('@g.us');
   const formattedText = isGroup ? formatGroupResponse(responseText) : sanitizeMessage(responseText);
