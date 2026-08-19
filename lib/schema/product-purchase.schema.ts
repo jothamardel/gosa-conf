@@ -57,7 +57,7 @@ const ProductPurchaseSchema = new Schema<IProductPurchase>(
 );
 
 ProductPurchaseSchema.index({ userId: 1 });
-ProductPurchaseSchema.index({ paymentReference: 1 });
+// paymentReference index is already created by unique: true in field definition
 ProductPurchaseSchema.index({ confirmed: 1 });
 
 export const ProductPurchase =
