@@ -580,13 +580,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Group Syncing
+    // Group Syncing (Non-blocking background promise)
     if (isGroup) {
-      const groupRecord = await WhatsAppGroup.findOne({ groupId: remoteJid });
-      const oneDay = 24 * 60 * 60 * 1000;
-      if (!groupRecord || Date.now() - new Date(groupRecord.lastSyncedAt).getTime() > oneDay) {
-        await syncGroupParticipants(remoteJid, body?.data?.messages?.pushName || "GOSA Group");
-      }
+      WhatsAppGroup.findOne({ groupId: remoteJid }).then((groupRecord) => {
+        const oneDay = 24 * 60 * 60 * 1000;
+        if (!groupRecord || Date.now() - new Date(groupRecord.lastSyncedAt).getTime() > oneDay) {
+          syncGroupParticipants(remoteJid, body?.data?.messages?.pushName || "GOSA Group").catch((err) => {
+            console.error("Failed to sync group participants in background:", err);
+          });
+        }
+      }).catch((err) => {
+        console.error("Failed to query group in background:", err);
+      });
     }
 
     // Active conversational session (capturing email)
