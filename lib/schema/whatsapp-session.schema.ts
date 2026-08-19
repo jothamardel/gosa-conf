@@ -39,7 +39,6 @@ const WhatsAppSessionSchema = new Schema<IWhatsAppSession>(
 
 // TTL index to automatically expire sessions
 WhatsAppSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-WhatsAppSessionSchema.index({ jid: 1 });
 
 export const WhatsAppSession =
   mongoose.models.WhatsAppSession ||

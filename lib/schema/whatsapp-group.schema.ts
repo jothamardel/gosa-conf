@@ -36,8 +36,6 @@ const WhatsAppGroupSchema = new Schema<IWhatsAppGroup>(
   }
 );
 
-WhatsAppGroupSchema.index({ groupId: 1 });
-
 export const WhatsAppGroup =
   mongoose.models.WhatsAppGroup ||
   mongoose.model<IWhatsAppGroup>("WhatsAppGroup", WhatsAppGroupSchema);
