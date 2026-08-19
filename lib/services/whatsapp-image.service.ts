@@ -257,7 +257,7 @@ ${cleanText}
 • *Venue:* Crispan
 • *Website:* event.gosanigeria.ng
 
-📢 *Ad:* Sponsor a student project! Contact us at *+234 803 123 4567*`;
+📢 *Ad:* Advertise your business here! Contact us at *+234 803 123 4567*`;
   }
 
   private static sanitizeMessage(text: string): string {

@@ -100,7 +100,7 @@ ${cleanText}
 • *Venue:* Crispan
 • *Website:* event.gosanigeria.ng
 
-📢 *Ad:* Sponsor a student project! Contact us at *+234 803 123 4567*`;
+📢 *Ad:* Advertise your business here! Contact us at *+234 803 123 4567*`;
 }
 
 async function resolveMentionsToJids(
@@ -276,11 +276,11 @@ async function handlePaymentFlow(
               userId: senderUser._id,
               paymentReference: itemRef,
               numberOfGuests: itemQuantity,
-              guestDetails: [{
+              guestDetails: Array(itemQuantity).fill({
                 name: senderUser.fullName,
                 email: senderUser.email,
                 phone: senderUser.phoneNumber,
-              }],
+              }),
               totalAmount: itemBaseTotalAmount,
               confirmed: false,
               status: 'pending',
@@ -570,11 +570,11 @@ ${checkoutUrl}`;
           userId: senderUser._id,
           paymentReference,
           numberOfGuests: quantity,
-          guestDetails: [{
+          guestDetails: Array(quantity).fill({
             name: senderUser.fullName,
             email: senderUser.email,
             phone: senderUser.phoneNumber,
-          }],
+          }),
           totalAmount: baseTotalAmount,
           confirmed: false,
           status: 'pending',
