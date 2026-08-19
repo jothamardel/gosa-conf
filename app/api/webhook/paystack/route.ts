@@ -527,13 +527,56 @@ async function sendServiceNotification(
     // Set internationalPhone to targetJid so that it maps correctly throughout the rest of the function (for result payloads)
     internationalPhone = targetJid;
 
-    // Prepare user details for image generation
+    // Prepare user details for image generation (use personal phone number, not group JID, to prevent exposure)
+    const personalPhone = record.userId?.phoneNumber || record.donorPhone || "";
     const userDetails = {
       name: record.userId?.fullName || record.fullName || "Unknown User",
       email: record.userId?.email || record.email || "unknown@email.com",
-      phone: targetJid,
+      phone: personalPhone || targetJid,
       registrationId: record._id?.toString(),
     };
+
+    const isGroup = targetJid.endsWith('@g.us');
+
+    if (isGroup) {
+      let typeLabel = serviceType.charAt(0).toUpperCase() + serviceType.slice(1);
+      if (serviceType === 'convention') typeLabel = 'Convention Registration';
+      else if (serviceType === 'dinner') typeLabel = 'Dinner Reservation';
+      else if (serviceType === 'brochure') typeLabel = 'Convention Brochure';
+      else if (serviceType === 'donation') typeLabel = 'Donation';
+
+      const amountVal = record.totalAmount || record.amount || record.donationAmount || 0;
+      const quantityVal = record.quantity || record.totalQuantity || 1;
+
+      const textMessage = `🎉 *GOSA Confirmation*
+For Light and Truth
+
+Dear ${userDetails.name},
+
+Your purchase/registration of *${quantityVal}x GOSA ${typeLabel}* has been confirmed! ✅
+
+💳 *Payment Details:*
+• Amount: ₦${amountVal.toLocaleString()}
+• Reference: ${record.paymentReference}
+• Status: Confirmed ✅
+
+Thank you for supporting the GOSA community, sir!`;
+
+      const formattedText = formatGroupResponse(textMessage);
+
+      const wasenderRes = await Wasender.httpSenderMessage({
+        to: targetJid,
+        text: formattedText
+      });
+
+      return {
+        success: wasenderRes.success,
+        serviceType,
+        phoneNumber: targetJid,
+        whatsappSent: wasenderRes.success,
+        error: wasenderRes.error
+      };
+    }
 
     if (serviceType === 'uniform' || serviceType === 'emblem' || serviceType === 'magazine') {
       const typeLabel = serviceType.charAt(0).toUpperCase() + serviceType.slice(1);
@@ -551,8 +594,7 @@ Your purchase of *${record.quantity}x GOSA ${typeLabel}* has been confirmed! ✅
 
 Thank you for supporting the GOSA community, sir!`;
       
-      const isGroup = targetJid.endsWith('@g.us');
-      const formattedText = isGroup ? formatGroupResponse(textMessage) : sanitizeMessage(textMessage);
+      const formattedText = sanitizeMessage(textMessage);
 
       const wasenderRes = await Wasender.httpSenderMessage({
         to: targetJid,

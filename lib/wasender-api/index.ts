@@ -81,9 +81,10 @@ class Sender {
       };
     }
 
-    // Validate phone number format (basic validation)
+    // Validate phone number format (basic validation - bypass for JIDs)
     const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(data.to.replace(/\s+/g, ''))) {
+    const isJid = data.to.includes('@');
+    if (!isJid && !phoneRegex.test(data.to.replace(/\s+/g, ''))) {
       return {
         success: false,
         error: "Invalid phone number format"
@@ -174,9 +175,10 @@ class Sender {
       };
     }
 
-    // Validate phone number format (basic validation)
+    // Validate phone number format (basic validation - bypass for JIDs)
     const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(data.to.replace(/\s+/g, ''))) {
+    const isJid = data.to.includes('@');
+    if (!isJid && !phoneRegex.test(data.to.replace(/\s+/g, ''))) {
       return {
         success: false,
         error: "Invalid phone number format"

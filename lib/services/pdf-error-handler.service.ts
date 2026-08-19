@@ -732,9 +732,10 @@ Time: ${new Date().toLocaleString()}`;
       errors.push('User phone number is required');
     }
 
-    // Validate phone number format
+    // Validate phone number format (basic validation - bypass for JIDs)
     const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    if (data.userDetails.phone && !phoneRegex.test(data.userDetails.phone.replace(/\s+/g, ''))) {
+    const isJid = data.userDetails.phone && data.userDetails.phone.includes('@');
+    if (data.userDetails.phone && !isJid && !phoneRegex.test(data.userDetails.phone.replace(/\s+/g, ''))) {
       errors.push('Invalid phone number format');
     }
 
