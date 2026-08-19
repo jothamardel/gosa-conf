@@ -82,6 +82,7 @@ ${cleanText}
 • *Theme:* _Together We Thrive: Fostering Growth and Community Spirit_
 • *Date:* 31st October, 2026
 • *Venue:* Crispan
+• *Website:* event.gosanigeria.ng
 
 📢 *Ad:* Sponsor a student project! Contact us at *+234 803 123 4567*`;
 }
