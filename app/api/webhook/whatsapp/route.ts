@@ -10,17 +10,36 @@ import {
   WhatsAppSession,
   ProductPurchase,
   Donation,
-  ConventionBrochure
+  ConventionBrochure,
+  Transaction
 } from "@/lib/schema";
 import { Payment } from "@/lib/paystack-api";
 import { Types } from "mongoose";
 
 export const dynamic = "force-dynamic";
 
+// Global cache variables for the bot's profile identity
+let cachedBotJid: string | null = null;
+let cachedBotLid: string | null = null;
+
 function normalizeJidToPhone(jid: string): string {
   const rawNumber = jid.split('@')[0];
   if (rawNumber.startsWith('+')) return rawNumber;
   return '+' + rawNumber;
+}
+
+async function resolveJidToPn(jid: string): Promise<string> {
+  if (jid && jid.endsWith('@lid')) {
+    try {
+      const resolvedPn = await Wasender.getPnFromLid(jid);
+      if (resolvedPn) {
+        return resolvedPn;
+      }
+    } catch (error) {
+      console.error(`Error resolving LID ${jid} to phone JID:`, error);
+    }
+  }
+  return jid;
 }
 
 function calculatePaystackTotal(baseAmount: number): number {
@@ -32,9 +51,11 @@ function calculatePaystackTotal(baseAmount: number): number {
 }
 
 function sanitizeMessage(text: string): string {
+  // Convert double asterisks (markdown bold) to single asterisks (WhatsApp bold)
+  let cleanText = text.replace(/\*\*/g, "*");
   // Automatically strip out any JID or LID suffixes like @s.whatsapp.net, @g.us, @lid
   // Example: 2347033680280@s.whatsapp.net -> +2347033680280
-  let cleanText = text.replace(/([0-9\-]+)@(s\.whatsapp\.net|g\.us|lid)/g, (match, phone) => {
+  cleanText = cleanText.replace(/([0-9\-]+)@(s\.whatsapp\.net|g\.us|lid)/g, (match, phone) => {
     return `+${phone}`;
   });
   // Strip out any trailing internal database IDs if present
@@ -177,6 +198,33 @@ async function handlePaymentFlow(
 
   const checkoutUrl = paystackRes.data.authorization_url;
 
+  // Determine Transaction type
+  let transactionType: 'ticket_convention' | 'ticket_dinner' | 'product_uniform' | 'product_emblem' | 'product_magazine' | 'product_brochure' | 'donation' = 'donation';
+  if (action.type === 'buy_tickets') {
+    transactionType = action.ticketType === 'dinner' ? 'ticket_dinner' : 'ticket_convention';
+  } else if (action.type === 'buy_product') {
+    if (action.productType === 'uniform') transactionType = 'product_uniform';
+    else if (action.productType === 'emblem') transactionType = 'product_emblem';
+    else if (action.productType === 'magazine') transactionType = 'product_magazine';
+    else if (action.productType === 'brochure') transactionType = 'product_brochure';
+  } else if (action.type === 'donation') {
+    transactionType = 'donation';
+  }
+
+  // Create unified Transaction record
+  await Transaction.create({
+    userId: senderUser._id,
+    paymentReference: paymentReference,
+    amount: totalAmount,
+    type: transactionType,
+    status: 'pending',
+    metadata: {
+      quantity,
+      targets: action.targetJids,
+      baseTotalAmount
+    }
+  });
+
   if (action.type === 'buy_tickets') {
     for (let i = 0; i < action.targetJids.length; i++) {
       const targetJid = action.targetJids[i];
@@ -186,11 +234,21 @@ async function handlePaymentFlow(
         phoneNumber: { $regex: targetPhone }
       });
       if (!targetUser) {
-        targetUser = await User.create({
-          fullName: `GOSA Member (${targetPhone})`,
-          phoneNumber: `+${targetPhone}`,
-          email: `${targetPhone}@gosa.events`
-        });
+        const targetEmail = `${targetPhone}@gosa.events`;
+        const existingEmailUser = await User.findOne({ email: targetEmail });
+        if (existingEmailUser) {
+          targetUser = existingEmailUser;
+          if (targetUser.phoneNumber !== `+${targetPhone}`) {
+            targetUser.phoneNumber = `+${targetPhone}`;
+            await targetUser.save();
+          }
+        } else {
+          targetUser = await User.create({
+            fullName: `GOSA Member (${targetPhone})`,
+            phoneNumber: `+${targetPhone}`,
+            email: targetEmail
+          });
+        }
       }
 
       const individualRef = `${paymentReference}_${i}`;
@@ -230,11 +288,21 @@ async function handlePaymentFlow(
         phoneNumber: { $regex: targetPhone }
       });
       if (!targetUser) {
-        targetUser = await User.create({
-          fullName: `GOSA Member (${targetPhone})`,
-          phoneNumber: `+${targetPhone}`,
-          email: `${targetPhone}@gosa.events`
-        });
+        const targetEmail = `${targetPhone}@gosa.events`;
+        const existingEmailUser = await User.findOne({ email: targetEmail });
+        if (existingEmailUser) {
+          targetUser = existingEmailUser;
+          if (targetUser.phoneNumber !== `+${targetPhone}`) {
+            targetUser.phoneNumber = `+${targetPhone}`;
+            await targetUser.save();
+          }
+        } else {
+          targetUser = await User.create({
+            fullName: `GOSA Member (${targetPhone})`,
+            phoneNumber: `+${targetPhone}`,
+            email: targetEmail
+          });
+        }
       }
 
       const individualRef = `${paymentReference}_${i}`;
@@ -395,9 +463,9 @@ export async function POST(req: NextRequest) {
     }
 
     const remoteJid = body?.data?.messages?.key?.remoteJid;
-    const senderJid = body?.data?.messages?.key?.participant || remoteJid;
+    const rawSenderJid = body?.data?.messages?.key?.participant || remoteJid;
 
-    if (!remoteJid || !senderJid) {
+    if (!remoteJid || !rawSenderJid) {
       return NextResponse.json({ message: "No JID provided", success: false });
     }
 
@@ -416,17 +484,101 @@ export async function POST(req: NextRequest) {
 
     const isGroup = remoteJid.endsWith('@g.us');
 
-    // Group mention check
+    // Dynamically resolve LIDs (Linked Identity JIDs) to standard phone number JIDs
+    const senderJid = await resolveJidToPn(rawSenderJid);
+
+    const rawMentionedJids = msgObj?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+    const mentionedJids: string[] = [];
+    for (const rawJid of rawMentionedJids) {
+      mentionedJids.push(await resolveJidToPn(rawJid));
+    }
+
+    // Fetch bot profile details and cache them to identify native mentions
+    if (!cachedBotJid) {
+      try {
+        const profile = await Wasender.getProfile();
+        if (profile && profile.jid) {
+          cachedBotJid = profile.jid;
+        }
+      } catch (err) {
+        console.error("Error fetching bot JID profile:", err);
+      }
+    }
+    if (cachedBotJid && !cachedBotLid) {
+      try {
+        cachedBotLid = await Wasender.getLidFromPn(cachedBotJid);
+      } catch (err) {
+        console.error("Error fetching bot LID:", err);
+      }
+    }
+
+    // Group mention check - allow text keywords OR native mention JID/LID matching the bot
     if (isGroup) {
       const hasKeyword =
         messageText.toLowerCase().includes('wani yaro') ||
-        messageText.toLowerCase().includes('junior boy');
-      if (!hasKeyword) {
+        messageText.toLowerCase().includes('junior boy') ||
+        messageText.toLowerCase().includes('yaro') ||
+        messageText.toLowerCase().includes('waniyaro');
+      
+      let isBotMentioned = hasKeyword;
+      if (!isBotMentioned && rawMentionedJids.length > 0) {
+        if (
+          (cachedBotJid && rawMentionedJids.includes(cachedBotJid)) ||
+          (cachedBotLid && rawMentionedJids.includes(cachedBotLid)) ||
+          (rawSenderJid !== senderJid && rawMentionedJids.includes(rawSenderJid))
+        ) {
+          isBotMentioned = true;
+        }
+      }
+
+      if (!isBotMentioned) {
         return NextResponse.json({ message: "Ignore group message without mention", success: true });
       }
     }
 
     await connectDB();
+
+    // Auto-resolve and save/update mentioned users on the database
+    if (mentionedJids.length > 0) {
+      const textMentions = messageText.match(/@[a-zA-Z0-9_\-]+/g) || [];
+      const cleanTextMentions = textMentions.filter((m: string) => m.toLowerCase() !== '@all');
+      
+      for (let i = 0; i < cleanTextMentions.length; i++) {
+        if (i < mentionedJids.length) {
+          const mentionHandle = cleanTextMentions[i].replace('@', '').trim();
+          const jid = mentionedJids[i];
+          const phone = jid.split('@')[0];
+          const formattedPhone = '+' + phone;
+
+          let userRecord = await User.findOne({ phoneNumber: formattedPhone });
+          if (userRecord) {
+            // Update name if currently a placeholder name
+            if (userRecord.fullName.startsWith('GOSA Member') || userRecord.fullName.startsWith('User')) {
+              userRecord.fullName = mentionHandle;
+              await userRecord.save();
+              console.log(`Updated user ${formattedPhone} name to ${mentionHandle} from mention`);
+            }
+          } else {
+            // Check if user exists with the default placeholder email to avoid duplicate key errors
+            const targetEmail = `${phone}@gosa.events`;
+            const existingEmailUser = await User.findOne({ email: targetEmail });
+            if (existingEmailUser) {
+              userRecord = existingEmailUser;
+              userRecord.fullName = mentionHandle;
+              userRecord.phoneNumber = formattedPhone;
+              await userRecord.save();
+            } else {
+              await User.create({
+                fullName: mentionHandle,
+                phoneNumber: formattedPhone,
+                email: targetEmail
+              });
+            }
+            console.log(`Created/Linked user ${formattedPhone} with name ${mentionHandle} from mention`);
+          }
+        }
+      }
+    }
 
     // Group Syncing
     if (isGroup) {
@@ -445,16 +597,29 @@ export async function POST(req: NextRequest) {
       if (emailMatch) {
         const capturedEmail = emailMatch[0];
         const senderPhone = normalizeJidToPhone(senderJid);
-        let senderUser = await User.findOne({ phoneNumber: senderPhone });
-        if (!senderUser) {
-          senderUser = await User.create({
-            fullName: body?.data?.messages?.pushName || "GOSA Member",
-            phoneNumber: senderPhone,
-            email: capturedEmail
-          });
+        
+        let senderUser = await User.findOne({ email: capturedEmail });
+        
+        if (senderUser) {
+          // If user already exists with this email, link current phone number to it
+          if (senderUser.phoneNumber !== senderPhone) {
+            senderUser.phoneNumber = senderPhone;
+            await senderUser.save();
+          }
         } else {
-          senderUser.email = capturedEmail;
-          await senderUser.save();
+          // If no user has this email, check if one has this phone number to update
+          senderUser = await User.findOne({ phoneNumber: senderPhone });
+          if (senderUser) {
+            senderUser.email = capturedEmail;
+            await senderUser.save();
+          } else {
+            // Otherwise create a completely new user
+            senderUser = await User.create({
+              fullName: body?.data?.messages?.pushName || "GOSA Member",
+              phoneNumber: senderPhone,
+              email: capturedEmail
+            });
+          }
         }
 
         // Resume flow
@@ -492,7 +657,6 @@ export async function POST(req: NextRequest) {
       agentResponse.intent === 'buy_product' ||
       agentResponse.intent === 'donation'
     ) {
-      const mentionedJids = msgObj?.extendedTextMessage?.contextInfo?.mentionedJid || [];
       const rawTargets = agentResponse.data.targets || [];
       
       let targetJids: string[] = [];

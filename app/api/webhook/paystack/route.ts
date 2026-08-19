@@ -231,6 +231,23 @@ export async function POST(req: NextRequest) {
       console.log(`ℹ️ Skipping main notification for dinner - individual receipts already sent`);
     }
 
+    // Update the Transaction status to 'completed'
+    try {
+      const { Transaction } = await import("@/lib/schema");
+      const updatedTx = await Transaction.findOneAndUpdate(
+        { paymentReference: { $regex: `^${paymentReference}` } },
+        { status: 'completed' },
+        { new: true }
+      );
+      if (updatedTx) {
+        console.log(`Updated Transaction ${updatedTx.paymentReference} status to completed`);
+      } else {
+        console.log(`No Transaction record found starting with reference ${paymentReference}`);
+      }
+    } catch (txError) {
+      console.error("Error updating Transaction record status:", txError);
+    }
+
     return NextResponse.json({
       message: `${serviceType.charAt(0).toUpperCase() + serviceType.slice(1)} payment processed successfully`,
       success: true,

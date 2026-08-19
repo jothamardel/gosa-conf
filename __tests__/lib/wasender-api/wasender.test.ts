@@ -1,7 +1,8 @@
 import { WASenderDocument, WASenderMessage } from '../../../lib/types';
 
 const mockAxiosInstance = {
-  post: jest.fn()
+  post: jest.fn(),
+  get: jest.fn()
 };
 
 // Mock axios
@@ -215,6 +216,99 @@ describe('WASender API Integration', () => {
         ...validDocumentData,
         type: 'document'
       });
+    });
+  });
+
+  describe('getGroupParticipants', () => {
+    it('should successfully resolve JIDs from metadata participants array', async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          data: {
+            jid: '120363402321564330@g.us',
+            participants: [
+              { jid: '123456' },
+              { jid: '789101@s.whatsapp.net' }
+            ]
+          }
+        }
+      };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      const result = await Wasender.getGroupParticipants('120363402321564330@g.us');
+
+      expect(result).toEqual(['123456@s.whatsapp.net', '789101@s.whatsapp.net']);
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/groups/120363402321564330@g.us/metadata');
+    });
+
+    it('should fallback to mock participants array in case of api error', async () => {
+      mockAxiosInstance.get.mockRejectedValue(new Error('API Down'));
+
+      const result = await Wasender.getGroupParticipants('120363402321564330@g.us');
+
+      expect(result).toEqual([
+        '2347033680280@s.whatsapp.net',
+        '2348162329082@s.whatsapp.net',
+        '2348031234567@s.whatsapp.net'
+      ]);
+    });
+  });
+
+  describe('getProfile', () => {
+    it('should successfully fetch user profile details', async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          data: {
+            jid: '2348162329082@s.whatsapp.net',
+            lid: '2348162329082@lid'
+          }
+        }
+      };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      const result = await Wasender.getProfile();
+
+      expect(result).toEqual(mockResponse.data.data);
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/get/users/profile');
+    });
+  });
+
+  describe('getLidFromPn', () => {
+    it('should successfully resolve LID from phone number', async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          data: {
+            lid: '2348162329082@lid'
+          }
+        }
+      };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      const result = await Wasender.getLidFromPn('2348162329082@s.whatsapp.net');
+
+      expect(result).toBe('2348162329082@lid');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/lid-from-pn/2348162329082@s.whatsapp.net');
+    });
+  });
+
+  describe('getPnFromLid', () => {
+    it('should successfully resolve phone number JID from LID JID', async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          data: {
+            pn: '2348162329082@s.whatsapp.net'
+          }
+        }
+      };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      const result = await Wasender.getPnFromLid('2348162329082@lid');
+
+      expect(result).toBe('2348162329082@s.whatsapp.net');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/pn-from-lid/2348162329082@lid');
     });
   });
 });

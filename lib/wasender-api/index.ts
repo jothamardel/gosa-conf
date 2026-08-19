@@ -261,28 +261,77 @@ class Sender {
   };
 
   getGroupParticipants = async (groupId: string): Promise<string[]> => {
-    console.log("Fetching group participants for JID:", groupId);
+    console.log("Fetching group metadata for JID:", groupId);
     try {
-      const response = await WasenderAxiosInstance.get(`/group-participants`, {
-        params: { groupId }
-      });
+      const response = await WasenderAxiosInstance.get(`/groups/${groupId}/metadata`);
       
-      if (response.data && Array.isArray(response.data.participants)) {
-        return response.data.participants;
-      }
-      if (response.data && Array.isArray(response.data.data)) {
-        return response.data.data;
+      if (response.data?.success && response.data?.data?.participants) {
+        const rawParticipants = response.data.data.participants;
+        return rawParticipants.map((p: any) => {
+          const rawJid = p.jid;
+          if (rawJid.includes('@')) {
+            return rawJid;
+          }
+          return `${rawJid}@s.whatsapp.net`;
+        });
       }
       
       throw new Error("Invalid response format from WASender API");
     } catch (err: any) {
-      console.warn("Failed to fetch group participants from WASender API:", err?.response?.data || err?.message);
+      console.warn("Failed to fetch group metadata from WASender API:", err?.response?.data || err?.message);
       console.log("Using mock/simulated participant JIDs fallback");
       return [
         "2347033680280@s.whatsapp.net",
         "2348162329082@s.whatsapp.net",
         "2348031234567@s.whatsapp.net"
       ];
+    }
+  };
+
+  getProfile = async (): Promise<{ jid?: string; lid?: string; [key: string]: any } | null> => {
+    try {
+      const response = await WasenderAxiosInstance.get(`/get/users/profile`);
+      if (response.data?.success && response.data?.data) {
+        return response.data.data;
+      }
+      return null;
+    } catch (err: any) {
+      console.warn("Failed to get profile from WASender API /get/users/profile:", err?.response?.data || err?.message);
+      try {
+        const response = await WasenderAxiosInstance.get(`/profile`);
+        if (response.data?.success && response.data?.data) {
+          return response.data.data;
+        }
+      } catch (err2) {}
+      return null;
+    }
+  };
+
+  getLidFromPn = async (phoneJid: string): Promise<string | null> => {
+    console.log("Resolving LID for phone JID:", phoneJid);
+    try {
+      const response = await WasenderAxiosInstance.get(`/lid-from-pn/${phoneJid}`);
+      if (response.data?.success && response.data?.data?.lid) {
+        return response.data.data.lid;
+      }
+      return null;
+    } catch (err: any) {
+      console.warn("Failed to resolve LID from phone JID:", err?.response?.data || err?.message);
+      return null;
+    }
+  };
+
+  getPnFromLid = async (lidJid: string): Promise<string | null> => {
+    console.log("Resolving phone JID for LID:", lidJid);
+    try {
+      const response = await WasenderAxiosInstance.get(`/pn-from-lid/${lidJid}`);
+      if (response.data?.success && response.data?.data?.pn) {
+        return response.data.data.pn;
+      }
+      return null;
+    } catch (err: any) {
+      console.warn("Failed to resolve phone JID from LID:", err?.response?.data || err?.message);
+      return null;
     }
   };
 }
