@@ -43,9 +43,16 @@ async function resolveJidToPn(jid: string): Promise<string> {
 }
 
 function calculatePaystackTotal(baseAmount: number): number {
-  // Paystack fee: 1.5% of amount + 100 Naira
-  // Capped at 2,000 Naira
-  const fee = (baseAmount * 0.015) + 100;
+  // Paystack fee rule:
+  // - 1.5% + 100 applies to amounts above 2,000.
+  // - Anything <= 2,000 only applies the 1.5% fee (no flat 100).
+  // - Capped at 2,000 Naira.
+  let fee = 0;
+  if (baseAmount > 2000) {
+    fee = (baseAmount * 0.015) + 100;
+  } else {
+    fee = baseAmount * 0.015;
+  }
   const cappedFee = Math.min(fee, 2000);
   return Math.round(baseAmount + cappedFee);
 }
