@@ -7,3 +7,6 @@ export * from "./goodwill.schema";
 export * from "./donation.schema";
 export * from "./badge.schema";
 export * from "./qr-history.schema";
+export * from "./whatsapp-group.schema";
+export * from "./whatsapp-session.schema";
+export * from "./product-purchase.schema";

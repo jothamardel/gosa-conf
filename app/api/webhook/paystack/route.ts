@@ -4,6 +4,8 @@ import { AccommodationUtils } from "@/lib/utils/accommodation.utils";
 import { BrochureUtils } from "@/lib/utils/brochure.utils";
 import { GoodwillUtils } from "@/lib/utils/goodwill.utils";
 import { DonationUtils } from "@/lib/utils/donation.utils";
+import { ProductPurchaseUtils } from "@/lib/utils/product-purchase.utils";
+import { Wasender } from "@/lib/wasender-api";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -267,6 +269,20 @@ async function findAndConfirmPaymentByReference(reference: string): Promise<{
   // we need to search using a partial match (startsWith pattern)
 
   try {
+    // Try product purchases (uniform, emblem, magazine)
+    const productRecord = await ProductPurchaseUtils.findByReferencePattern(reference);
+    if (productRecord) {
+      console.log(`Found product purchase with reference pattern: ${reference}`);
+      const confirmedRecord = await ProductPurchaseUtils.confirmPurchase(productRecord.paymentReference);
+      if (confirmedRecord) {
+        return {
+          serviceType: confirmedRecord.productType,
+          record: confirmedRecord,
+          success: true,
+        };
+      }
+    }
+
     // Try dinner reservations
     const dinnerRecord = await DinnerUtils.findByReferencePattern(reference);
     if (dinnerRecord) {
@@ -464,6 +480,22 @@ async function sendServiceNotification(
       phone: internationalPhone,
       registrationId: record._id?.toString(),
     };
+
+    if (serviceType === 'uniform' || serviceType === 'emblem' || serviceType === 'magazine') {
+      const typeLabel = serviceType.charAt(0).toUpperCase() + serviceType.slice(1);
+      const textMessage = `🎉 GOSA Shop Confirmation\nFor Light and Truth\n\nDear ${userDetails.name},\n\nYour purchase of *${record.quantity}x GOSA ${typeLabel}* has been confirmed! ✅\n\n💳 Payment Details:\n• Amount: ₦${record.totalAmount.toLocaleString()}\n• Reference: ${record.paymentReference}\n• Status: Confirmed ✅\n\nThank you for supporting the GOSA community, sir!`;
+      const wasenderRes = await Wasender.httpSenderMessage({
+        to: internationalPhone,
+        text: textMessage
+      });
+      return {
+        success: wasenderRes.success,
+        serviceType,
+        phoneNumber: internationalPhone,
+        whatsappSent: wasenderRes.success,
+        error: wasenderRes.error
+      };
+    }
 
     // Generate QR code data - use existing QR codes if available
     let qrCodeData = record.qrCodes?.[0]?.qrCode;

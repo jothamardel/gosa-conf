@@ -1,42 +1,424 @@
 import { Wasender } from "@/lib/wasender-api";
 import { NextRequest, NextResponse } from "next/server";
-import { put } from "@vercel/blob";
-import QRCode from "qrcode";
-import { Agent } from "@/lib/agent"
-
+import connectDB from "@/lib/mongodb";
+import { Agent } from "@/lib/agent";
+import {
+  User,
+  ConventionRegistration,
+  DinnerReservation,
+  WhatsAppGroup,
+  WhatsAppSession,
+  ProductPurchase
+} from "@/lib/schema";
+import { Payment } from "@/lib/paystack-api";
+import { Types } from "mongoose";
 
 export const dynamic = "force-dynamic";
 
+function normalizeJidToPhone(jid: string): string {
+  const rawNumber = jid.split('@')[0];
+  if (rawNumber.startsWith('+')) return rawNumber;
+  return '+' + rawNumber;
+}
+
+async function resolveMentionsToJids(
+  targets: string[],
+  groupJid: string,
+  mentionedJids: string[]
+): Promise<string[]> {
+  const resolved: string[] = [];
+  let nativeIndex = 0;
+
+  for (const target of targets) {
+    if (target.toLowerCase() === "all" || target.toLowerCase() === "@all") {
+      const group = await WhatsAppGroup.findOne({ groupId: groupJid });
+      if (group && group.participants && group.participants.length > 0) {
+        return group.participants;
+      }
+      return ["all"];
+    }
+
+    // 1. Try native mentions first
+    if (nativeIndex < mentionedJids.length) {
+      resolved.push(mentionedJids[nativeIndex]);
+      nativeIndex++;
+      continue;
+    }
+
+    // 2. Try text match in database
+    const cleanName = target.replace("@", "").trim();
+    if (cleanName) {
+      const matchedUser = await User.findOne({
+        fullName: { $regex: cleanName, $options: "i" }
+      });
+      if (matchedUser) {
+        resolved.push(`${matchedUser.phoneNumber.replace("+", "")}@s.whatsapp.net`);
+        continue;
+      }
+    }
+  }
+
+  return resolved;
+}
+
+async function syncGroupParticipants(groupId: string, name: string) {
+  try {
+    const participants = await Wasender.getGroupParticipants(groupId);
+    if (participants && participants.length > 0) {
+      await WhatsAppGroup.findOneAndUpdate(
+        { groupId },
+        {
+          name: name || "GOSA Group",
+          participants,
+          lastSyncedAt: new Date()
+        },
+        { upsert: true, new: true }
+      );
+      console.log(`Synced ${participants.length} participants for group ${groupId}`);
+    }
+  } catch (error) {
+    console.error(`Error syncing group participants for ${groupId}:`, error);
+  }
+}
+
+async function handlePaymentFlow(
+  senderUser: any,
+  action: {
+    type: string;
+    ticketType?: 'convention' | 'dinner';
+    productType?: 'uniform' | 'emblem' | 'magazine';
+    quantity?: number;
+    targetJids: string[];
+  },
+  remoteJid: string,
+  senderJid: string
+) {
+  let unitPrice = 0;
+  let serviceName = "";
+
+  if (action.type === 'buy_tickets') {
+    if (action.ticketType === 'dinner') {
+      unitPrice = 15000;
+      serviceName = "Dinner Ticket";
+    } else {
+      unitPrice = 10000; // default convention
+      serviceName = "Convention Ticket";
+    }
+  } else if (action.type === 'buy_product') {
+    if (action.productType === 'uniform') {
+      unitPrice = 15000;
+      serviceName = "GOSA Uniform";
+    } else if (action.productType === 'emblem') {
+      unitPrice = 2000;
+      serviceName = "GOSA Emblem";
+    } else if (action.productType === 'magazine') {
+      unitPrice = 3000;
+      serviceName = "Magazine";
+    }
+  }
+
+  if (unitPrice === 0) {
+    throw new Error("Invalid product or ticket type requested, sir.");
+  }
+
+  const quantity = action.type === 'buy_tickets' ? action.targetJids.length : (action.quantity || 1);
+  const totalAmount = unitPrice * quantity;
+
+  const prefix = action.type === 'buy_tickets' ? action.ticketType : action.productType;
+  const paymentReference = `${prefix}_${Date.now()}_${senderUser.phoneNumber.replace('+', '')}`;
+
+  const paystackRes = await Payment.httpInitializePayment({
+    email: senderUser.email,
+    amount: totalAmount,
+    reference: paymentReference
+  });
+
+  if (!paystackRes?.status || !paystackRes?.data?.authorization_url) {
+    throw new Error("Failed to initialize payment with Paystack, sir.");
+  }
+
+  const checkoutUrl = paystackRes.data.authorization_url;
+
+  if (action.type === 'buy_tickets') {
+    for (let i = 0; i < action.targetJids.length; i++) {
+      const targetJid = action.targetJids[i];
+      const targetPhone = targetJid.split('@')[0];
+
+      let targetUser = await User.findOne({
+        phoneNumber: { $regex: targetPhone }
+      });
+      if (!targetUser) {
+        targetUser = await User.create({
+          fullName: `GOSA Member (${targetPhone})`,
+          phoneNumber: `+${targetPhone}`,
+          email: `${targetPhone}@gosa.events`
+        });
+      }
+
+      const individualRef = `${paymentReference}_${i}`;
+
+      if (action.ticketType === 'dinner') {
+        await DinnerReservation.create({
+          userId: targetUser._id,
+          paymentReference: individualRef,
+          numberOfGuests: 1,
+          guestDetails: [{
+            name: targetUser.fullName,
+            email: targetUser.email,
+            phone: targetUser.phoneNumber,
+          }],
+          totalAmount: unitPrice,
+          confirmed: false,
+          status: 'pending',
+          isPrimaryContact: i === 0,
+        });
+      } else {
+        await ConventionRegistration.create({
+          userId: targetUser._id,
+          paymentReference: individualRef,
+          amount: unitPrice,
+          quantity: 1,
+          confirm: false,
+          status: 'pending',
+        });
+      }
+    }
+  } else if (action.type === 'buy_product') {
+    await ProductPurchase.create({
+      userId: senderUser._id,
+      productType: action.productType,
+      quantity,
+      totalAmount,
+      paymentReference,
+      status: 'pending',
+      confirmed: false,
+    });
+  }
+
+  const itemsText = quantity > 1 ? `${quantity}x ${serviceName}s` : `1x ${serviceName}`;
+  const responseText = `Right away, sir! I have generated the Paystack payment link for the purchase of *${itemsText}* (Total: *₦${totalAmount.toLocaleString()}*), sir.\n\n👉 Please click here to complete the payment, sir: ${checkoutUrl}\n\nOnce completed, your receipt will be processed and sent to your email (${senderUser.email}), sir!`;
+
+  await Wasender.httpSenderMessage({
+    to: remoteJid,
+    text: responseText
+  });
+}
+
+async function handleHistoryQuery(senderJid: string, remoteJid: string) {
+  const senderPhone = normalizeJidToPhone(senderJid);
+  const user = await User.findOne({ phoneNumber: senderPhone });
+
+  if (!user) {
+    await Wasender.httpSenderMessage({
+      to: remoteJid,
+      text: "I searched our GOSA records, sir, but I couldn't find your profile, sir. Therefore, you don't have any transaction history yet, sir."
+    });
+    return;
+  }
+
+  const conventions = await ConventionRegistration.find({ userId: user._id });
+  const dinners = await DinnerReservation.find({ userId: user._id });
+  const products = await ProductPurchase.find({ userId: user._id });
+
+  let text = `Here is your transaction summary, sir:\n\n`;
+  let hasTransactions = false;
+
+  if (conventions.length > 0) {
+    hasTransactions = true;
+    text += `*Convention Registrations:* \n`;
+    conventions.forEach((c) => {
+      text += `• Ref: ${c.paymentReference.split('_')[0]} | ₦${c.amount.toLocaleString()} | Status: ${c.confirm ? "Confirmed ✅" : "Pending ⏳"}\n`;
+    });
+    text += `\n`;
+  }
+
+  if (dinners.length > 0) {
+    hasTransactions = true;
+    text += `*Dinner Reservations:* \n`;
+    dinners.forEach((d) => {
+      text += `• Ref: ${d.paymentReference.split('_')[0]} | ₦${d.totalAmount.toLocaleString()} | Status: ${d.confirmed ? "Confirmed ✅" : "Pending ⏳"}\n`;
+    });
+    text += `\n`;
+  }
+
+  if (products.length > 0) {
+    hasTransactions = true;
+    text += `*Product Purchases (GOSA Shop):* \n`;
+    products.forEach((p) => {
+      const typeLabel = p.productType.charAt(0).toUpperCase() + p.productType.slice(1);
+      text += `• ${p.quantity}x ${typeLabel} | ₦${p.totalAmount.toLocaleString()} | Status: ${p.confirmed ? "Confirmed ✅" : "Pending ⏳"}\n`;
+    });
+    text += `\n`;
+  }
+
+  if (!hasTransactions) {
+    text = "I see your profile, sir, but you have not made any purchases or registrations yet, sir.";
+  } else {
+    text += `Always at your service, sir!`;
+  }
+
+  await Wasender.httpSenderMessage({
+    to: remoteJid,
+    text
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    if (body?.event?.includes('group')) {
-      console.log("Whatsapp body: ", { body })
-      console.log("Whatsapp body message: ", body?.data?.messages)
-      return NextResponse.json({
-        message: "Webhook Whatsapp",
-        success: true,
-      });
+    const body = await req.json();
+
+    // Self-message prevention
+    if (body?.data?.messages?.key?.fromMe) {
+      return NextResponse.json({ message: "Ignore self message", success: true });
     }
-    // console.log("Whatsapp events: ", req)
-    console.log(body?.data?.messages?.message?.conversation)
-    const message = body?.data?.messages?.message?.conversation
-    const response = await Agent.httpSendMessage(message);
 
-    console.log({ response })
+    const remoteJid = body?.data?.messages?.key?.remoteJid;
+    const senderJid = body?.data?.messages?.key?.participant || remoteJid;
 
-    await Wasender.httpSenderMessage({
-      to: body?.data?.messages?.key?.remoteJid,
-      // @ts-ignore
-      text: response?.response as string || response as string
-    })
+    if (!remoteJid || !senderJid) {
+      return NextResponse.json({ message: "No JID provided", success: false });
+    }
 
+    const msgObj = body?.data?.messages?.message;
+    const messageText = (
+      msgObj?.conversation ||
+      msgObj?.extendedTextMessage?.text ||
+      msgObj?.imageMessage?.caption ||
+      msgObj?.videoMessage?.caption ||
+      ""
+    ).trim();
 
+    if (!messageText) {
+      return NextResponse.json({ message: "Empty message", success: true });
+    }
 
-    return NextResponse.json({
-      message: "Webhook Whatsapp",
-      success: true,
-    });
+    const isGroup = remoteJid.endsWith('@g.us');
+
+    // Group mention check
+    if (isGroup) {
+      const hasKeyword =
+        messageText.toLowerCase().includes('wani yaro') ||
+        messageText.toLowerCase().includes('junior boy');
+      if (!hasKeyword) {
+        return NextResponse.json({ message: "Ignore group message without mention", success: true });
+      }
+    }
+
+    await connectDB();
+
+    // Group Syncing
+    if (isGroup) {
+      const groupRecord = await WhatsAppGroup.findOne({ groupId: remoteJid });
+      const oneDay = 24 * 60 * 60 * 1000;
+      if (!groupRecord || Date.now() - new Date(groupRecord.lastSyncedAt).getTime() > oneDay) {
+        await syncGroupParticipants(remoteJid, body?.data?.messages?.pushName || "GOSA Group");
+      }
+    }
+
+    // Active conversational session (capturing email)
+    const session = await WhatsAppSession.findOne({ jid: senderJid });
+    if (session) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(messageText)) {
+        const senderPhone = normalizeJidToPhone(senderJid);
+        let senderUser = await User.findOne({ phoneNumber: senderPhone });
+        if (!senderUser) {
+          senderUser = await User.create({
+            fullName: body?.data?.messages?.pushName || "GOSA Member",
+            phoneNumber: senderPhone,
+            email: messageText
+          });
+        } else {
+          senderUser.email = messageText;
+          await senderUser.save();
+        }
+
+        // Resume flow
+        const pendingAction = session.pendingAction;
+        await handlePaymentFlow(senderUser, pendingAction as any, remoteJid, senderJid);
+        await WhatsAppSession.deleteOne({ jid: senderJid });
+
+        return NextResponse.json({ message: "Email captured, checkout generated", success: true });
+      } else {
+        await Wasender.httpSenderMessage({
+          to: remoteJid,
+          text: "I apologize, sir. That email address doesn't seem valid, sir. Could you please reply with a valid email address so I can generate your payment link, sir?"
+        });
+        return NextResponse.json({ message: "Invalid email retry sent", success: true });
+      }
+    }
+
+    // Process using wani yaro agent
+    const agentResponse = await Agent.httpSendMessage(messageText);
+
+    if (agentResponse.intent === 'general_query') {
+      await Wasender.httpSenderMessage({
+        to: remoteJid,
+        text: agentResponse.response
+      });
+      return NextResponse.json({ message: "General query handled", success: true });
+    }
+
+    if (agentResponse.intent === 'view_history') {
+      await handleHistoryQuery(senderJid, remoteJid);
+      return NextResponse.json({ message: "History query handled", success: true });
+    }
+
+    // Payment intents: buy_tickets, buy_product
+    if (agentResponse.intent === 'buy_tickets' || agentResponse.intent === 'buy_product') {
+      const mentionedJids = msgObj?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+      const rawTargets = agentResponse.data.targets || [];
+      
+      let targetJids: string[] = [];
+      if (rawTargets.length > 0) {
+        targetJids = await resolveMentionsToJids(rawTargets, remoteJid, mentionedJids);
+      }
+      
+      // Default to sender if no targets resolved
+      if (targetJids.length === 0) {
+        targetJids = [senderJid];
+      }
+
+      const senderPhone = normalizeJidToPhone(senderJid);
+      const senderUser = await User.findOne({ phoneNumber: senderPhone });
+
+      // Check if email needs to be requested
+      const hasEmail = senderUser && senderUser.email && !senderUser.email.endsWith('@gosa.events');
+      if (!hasEmail) {
+        // Save session
+        await WhatsAppSession.create({
+          jid: senderJid,
+          pendingAction: {
+            type: agentResponse.intent,
+            ticketType: agentResponse.data.ticketType,
+            productType: agentResponse.data.productType,
+            quantity: agentResponse.data.quantity || 1,
+            targetJids: targetJids
+          },
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
+        });
+
+        await Wasender.httpSenderMessage({
+          to: remoteJid,
+          text: `Yes sir! I see you want to make a purchase, sir. However, I don't have your email address on file to process the receipt. Could you please reply with your email address, sir?`
+        });
+
+        return NextResponse.json({ message: "Session created, email requested", success: true });
+      }
+
+      // Execute payment link generation
+      await handlePaymentFlow(senderUser, {
+        type: agentResponse.intent,
+        ticketType: agentResponse.data.ticketType,
+        productType: agentResponse.data.productType,
+        quantity: agentResponse.data.quantity || 1,
+        targetJids: targetJids
+      }, remoteJid, senderJid);
+
+      return NextResponse.json({ message: "Checkout generated", success: true });
+    }
+
+    return NextResponse.json({ message: "Unsupported intent", success: false });
   } catch (error) {
     console.error("Error processing request:", error);
     return NextResponse.json(
@@ -52,46 +434,3 @@ export async function GET() {
     success: true,
   });
 }
-
-
-
-// const body = await req.json();
-
-// const qrCodeBuffer = QRCode.toBuffer(
-//   "https://cdn.pixabay.com/photo/2023/02/28/01/50/qr-code-7819652_1280.jpg",
-//   {
-//     type: "png",
-//     // @ts-ignore
-//     quality: 0.92,
-//     margin: 1,
-//     color: {
-//       dark: "#000000",
-//       light: "#FFFFFF",
-//     },
-//     width: 512,
-//   },
-//   async (error: Error | null | undefined, buffer: Buffer) => {
-//     console.log({
-//       error,
-//       buffer,
-//     });
-//     const blob = await put("qrcode.jpg", buffer, {
-//       access: "public",
-//       addRandomSuffix: true,
-//     });
-
-//     const res = await Wasender.httpSenderMessage({
-//       to: "+2347033680280",
-//       text: "Check this image",
-//       imageUrl: blob?.url,
-//     });
-
-//     return NextResponse.json({
-//       message: "Whatsapp",
-//       success: true,
-//       buffer,
-//       res,
-//       blob,
-//     });
-//   },
-// );

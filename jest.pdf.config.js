@@ -49,7 +49,7 @@ const customJestConfig = {
     }
   },
   testEnvironment: 'node',
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1'
   },
   transform: {

@@ -1,23 +1,19 @@
-import { Wasender } from '../../../lib/wasender-api';
 import { WASenderDocument, WASenderMessage } from '../../../lib/types';
+
+const mockAxiosInstance = {
+  post: jest.fn()
+};
 
 // Mock axios
 jest.mock('axios', () => ({
-  create: jest.fn(() => ({
-    post: jest.fn()
-  }))
+  create: jest.fn(() => mockAxiosInstance)
 }));
 
-describe('WASender API Integration', () => {
-  const mockAxiosInstance = {
-    post: jest.fn()
-  };
+const { Wasender } = require('../../../lib/wasender-api');
 
+describe('WASender API Integration', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Mock the axios instance
-    const axios = require('axios');
-    axios.create.mockReturnValue(mockAxiosInstance);
   });
 
   describe('sendDocument', () => {
