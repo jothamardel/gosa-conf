@@ -8,7 +8,9 @@ import {
   DinnerReservation,
   WhatsAppGroup,
   WhatsAppSession,
-  ProductPurchase
+  ProductPurchase,
+  Donation,
+  ConventionBrochure
 } from "@/lib/schema";
 import { Payment } from "@/lib/paystack-api";
 import { Types } from "mongoose";
@@ -19,6 +21,14 @@ function normalizeJidToPhone(jid: string): string {
   const rawNumber = jid.split('@')[0];
   if (rawNumber.startsWith('+')) return rawNumber;
   return '+' + rawNumber;
+}
+
+function calculatePaystackTotal(baseAmount: number): number {
+  // Paystack fee: 1.5% of amount + 100 Naira
+  // Capped at 2,000 Naira
+  const fee = (baseAmount * 0.015) + 100;
+  const cappedFee = Math.min(fee, 2000);
+  return Math.round(baseAmount + cappedFee);
 }
 
 async function resolveMentionsToJids(
@@ -86,8 +96,9 @@ async function handlePaymentFlow(
   action: {
     type: string;
     ticketType?: 'convention' | 'dinner';
-    productType?: 'uniform' | 'emblem' | 'magazine';
+    productType?: 'uniform' | 'emblem' | 'magazine' | 'brochure';
     quantity?: number;
+    amount?: number;
     targetJids: string[];
   },
   remoteJid: string,
@@ -98,10 +109,10 @@ async function handlePaymentFlow(
 
   if (action.type === 'buy_tickets') {
     if (action.ticketType === 'dinner') {
-      unitPrice = 15000;
+      unitPrice = 2500;
       serviceName = "Dinner Ticket";
     } else {
-      unitPrice = 10000; // default convention
+      unitPrice = 1000; // convention registration
       serviceName = "Convention Ticket";
     }
   } else if (action.type === 'buy_product') {
@@ -114,17 +125,27 @@ async function handlePaymentFlow(
     } else if (action.productType === 'magazine') {
       unitPrice = 3000;
       serviceName = "Magazine";
+    } else if (action.productType === 'brochure') {
+      unitPrice = 2000;
+      serviceName = "Convention Brochure";
     }
+  } else if (action.type === 'donation') {
+    unitPrice = action.amount || 0;
+    serviceName = "GOSA Donation";
   }
 
   if (unitPrice === 0) {
-    throw new Error("Invalid product or ticket type requested, sir.");
+    throw new Error("Invalid product, donation, or ticket type requested, sir.");
   }
 
-  const quantity = action.type === 'buy_tickets' ? action.targetJids.length : (action.quantity || 1);
-  const totalAmount = unitPrice * quantity;
+  const quantity = (action.type === 'buy_tickets' || action.type === 'donation') ? action.targetJids.length : (action.quantity || 1);
+  const baseTotalAmount = unitPrice * quantity;
+  const totalAmount = calculatePaystackTotal(baseTotalAmount);
 
-  const prefix = action.type === 'buy_tickets' ? action.ticketType : action.productType;
+  const prefix = action.type === 'buy_tickets'
+    ? action.ticketType
+    : (action.type === 'donation' ? 'donation' : action.productType);
+    
   const paymentReference = `${prefix}_${Date.now()}_${senderUser.phoneNumber.replace('+', '')}`;
 
   const paystackRes = await Payment.httpInitializePayment({
@@ -183,20 +204,69 @@ async function handlePaymentFlow(
         });
       }
     }
+  } else if (action.type === 'donation') {
+    for (let i = 0; i < action.targetJids.length; i++) {
+      const targetJid = action.targetJids[i];
+      const targetPhone = targetJid.split('@')[0];
+
+      let targetUser = await User.findOne({
+        phoneNumber: { $regex: targetPhone }
+      });
+      if (!targetUser) {
+        targetUser = await User.create({
+          fullName: `GOSA Member (${targetPhone})`,
+          phoneNumber: `+${targetPhone}`,
+          email: `${targetPhone}@gosa.events`
+        });
+      }
+
+      const individualRef = `${paymentReference}_${i}`;
+
+      await Donation.create({
+        userId: targetUser._id,
+        paymentReference: individualRef,
+        amount: unitPrice,
+        donorName: senderUser.fullName,
+        donorEmail: senderUser.email,
+        donorPhone: senderUser.phoneNumber,
+        anonymous: false,
+        confirmed: false,
+        receiptNumber: `DON-${Date.now()}-${targetPhone.slice(-4)}-${i}`
+      });
+    }
   } else if (action.type === 'buy_product') {
-    await ProductPurchase.create({
-      userId: senderUser._id,
-      productType: action.productType,
-      quantity,
-      totalAmount,
-      paymentReference,
-      status: 'pending',
-      confirmed: false,
-    });
+    if (action.productType === 'brochure') {
+      await ConventionBrochure.create({
+        userId: senderUser._id,
+        paymentReference,
+        quantity,
+        brochureType: 'physical',
+        recipientDetails: [{
+          name: senderUser.fullName,
+          email: senderUser.email,
+          phone: senderUser.phoneNumber,
+        }],
+        totalAmount: baseTotalAmount,
+        confirmed: false,
+        qrCode: `GOSA-BRO-${Date.now()}-${senderUser.phoneNumber.slice(-4)}`,
+        collected: false,
+        status: 'pending',
+      });
+    } else {
+      await ProductPurchase.create({
+        userId: senderUser._id,
+        productType: action.productType,
+        quantity,
+        totalAmount: baseTotalAmount,
+        paymentReference,
+        status: 'pending',
+        confirmed: false,
+      });
+    }
   }
 
   const itemsText = quantity > 1 ? `${quantity}x ${serviceName}s` : `1x ${serviceName}`;
-  const responseText = `Right away, sir! I have generated the Paystack payment link for the purchase of *${itemsText}* (Total: *₦${totalAmount.toLocaleString()}*), sir.\n\n👉 Please click here to complete the payment, sir: ${checkoutUrl}\n\nOnce completed, your receipt will be processed and sent to your email (${senderUser.email}), sir!`;
+  const responseText = `Right away, sir! I have generated the Paystack payment link for the purchase of *${itemsText}* (Total base: *₦${baseTotalAmount.toLocaleString()}* plus transaction charge: *₦${(totalAmount - baseTotalAmount).toLocaleString()}*, payable: *₦${totalAmount.toLocaleString()}*), sir.\n\n👉 Please click here to complete the payment, sir: ${checkoutUrl}\n\nOnce completed, your receipt will be processed and sent to your email (${senderUser.email}), sir!`;
 
   await Wasender.httpSenderMessage({
     to: remoteJid,
@@ -219,6 +289,8 @@ async function handleHistoryQuery(senderJid: string, remoteJid: string) {
   const conventions = await ConventionRegistration.find({ userId: user._id });
   const dinners = await DinnerReservation.find({ userId: user._id });
   const products = await ProductPurchase.find({ userId: user._id });
+  const donations = await Donation.find({ userId: user._id });
+  const brochures = await ConventionBrochure.find({ userId: user._id });
 
   let text = `Here is your transaction summary, sir:\n\n`;
   let hasTransactions = false;
@@ -247,6 +319,24 @@ async function handleHistoryQuery(senderJid: string, remoteJid: string) {
     products.forEach((p) => {
       const typeLabel = p.productType.charAt(0).toUpperCase() + p.productType.slice(1);
       text += `• ${p.quantity}x ${typeLabel} | ₦${p.totalAmount.toLocaleString()} | Status: ${p.confirmed ? "Confirmed ✅" : "Pending ⏳"}\n`;
+    });
+    text += `\n`;
+  }
+
+  if (brochures.length > 0) {
+    hasTransactions = true;
+    text += `*Brochure Orders:* \n`;
+    brochures.forEach((b) => {
+      text += `• ${b.quantity}x Brochure | ₦${b.totalAmount.toLocaleString()} | Status: ${b.confirmed ? "Confirmed ✅" : "Pending ⏳"}\n`;
+    });
+    text += `\n`;
+  }
+
+  if (donations.length > 0) {
+    hasTransactions = true;
+    text += `*Donations:* \n`;
+    donations.forEach((d) => {
+      text += `• Ref: ${d.paymentReference.split('_')[0]} | ₦${d.amount.toLocaleString()} | Status: ${d.confirmed ? "Confirmed ✅" : "Pending ⏳"}\n`;
     });
     text += `\n`;
   }
@@ -364,8 +454,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "History query handled", success: true });
     }
 
-    // Payment intents: buy_tickets, buy_product
-    if (agentResponse.intent === 'buy_tickets' || agentResponse.intent === 'buy_product') {
+    // Payment intents: buy_tickets, buy_product, donation
+    if (
+      agentResponse.intent === 'buy_tickets' || 
+      agentResponse.intent === 'buy_product' ||
+      agentResponse.intent === 'donation'
+    ) {
       const mentionedJids = msgObj?.extendedTextMessage?.contextInfo?.mentionedJid || [];
       const rawTargets = agentResponse.data.targets || [];
       
@@ -393,6 +487,7 @@ export async function POST(req: NextRequest) {
             ticketType: agentResponse.data.ticketType,
             productType: agentResponse.data.productType,
             quantity: agentResponse.data.quantity || 1,
+            amount: agentResponse.data.amount,
             targetJids: targetJids
           },
           expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
@@ -412,6 +507,7 @@ export async function POST(req: NextRequest) {
         ticketType: agentResponse.data.ticketType,
         productType: agentResponse.data.productType,
         quantity: agentResponse.data.quantity || 1,
+        amount: agentResponse.data.amount,
         targetJids: targetJids
       }, remoteJid, senderJid);
 

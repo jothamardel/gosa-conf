@@ -1,12 +1,13 @@
 import OpenAI from "openai";
 
 export interface AgentResponse {
-  intent: 'buy_tickets' | 'buy_product' | 'view_history' | 'general_query';
+  intent: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query';
   data: {
     ticketType?: 'convention' | 'dinner';
-    productType?: 'uniform' | 'emblem' | 'magazine';
+    productType?: 'uniform' | 'emblem' | 'magazine' | 'brochure';
     quantity?: number;
     targets?: string[];
+    amount?: number; // only for donation
     email?: string | null;
   };
   response: string;
@@ -44,12 +45,20 @@ class AgentClass {
 
             ---
 
+            ## GOSA 2025 Convention Theme
+            - **Theme**: "Together We Thrive: Fostering Growth and Community Spirit"
+
+            ---
+
             ## Product & Ticket Pricing
-            - **Convention Ticket**: ₦10,000 per ticket
-            - **Dinner Ticket**: ₦15,000 per ticket
+            - **Convention Ticket**: ₦1,000 per ticket
+            - **Dinner Ticket**: ₦2,500 per ticket
+            - **Convention Brochure**: ₦2,000 per brochure
             - **GOSA Uniform**: ₦15,000 per piece
             - **GOSA Emblem**: ₦2,000 per piece
             - **Magazine**: ₦3,000 per piece
+
+            *Note*: Paystack transaction fees are automatically added on top of these amounts.
 
             ---
 
@@ -61,21 +70,28 @@ class AgentClass {
             - Examples:
               - "wani yaro buy convention tickets for @john and @mary"
               - "wani yaro buy dinner tickets for @all"
-              - "buy dinner ticket"
             - Populate "ticketType" as either "convention" or "dinner".
 
             ### 2. Buy Product (intent: "buy_product")
-            - Triggered when users want to buy GOSA uniforms, emblems, or magazines.
-            - Populate "productType" as "uniform", "emblem", or "magazine".
-            - Example: "wani yaro buy 2 uniforms"
+            - Triggered when users want to buy GOSA uniforms, emblems, magazines, or brochures.
+            - Populate "productType" as "uniform", "emblem", "magazine", or "brochure".
+            - Example: "wani yaro buy 2 uniforms" or "buy a brochure"
 
-            ### 3. View History (intent: "view_history")
-            - Triggered when users request transaction records or summaries for themselves, another user, or the group.
+            ### 3. Make Donations (intent: "donation")
+            - Triggered when users want to donate money individually or as a group.
+            - Users can donate for themselves or on behalf of others/groups (e.g., "wani yaro donate 5000 for @all").
+            - Examples:
+              - "wani yaro donate 5000 naira" -> intent: "donation", amount: 5000
+              - "wani yaro donate 10000 for @john and @mary" -> intent: "donation", amount: 10000, targets: ["@john", "@mary"]
+            - Populate "amount" with the numeric donation value.
+
+            ### 4. View History (intent: "view_history")
+            - Triggered when users request transaction records or summaries.
             - Example: "wani yaro show transaction history" or "show group payments"
 
-            ### 4. General Query (intent: "general_query")
-            - Triggered for general questions about GOSA, Gindiri heritage, conventions, or chit-chat.
-            - Example: "who are you?" or "when is the convention?"
+            ### 5. General Query (intent: "general_query")
+            - Triggered for general questions about GOSA, Gindiri heritage, convention details/theme, or chit-chat.
+            - Example: "what is the theme of this year's convention?" or "who are you?"
 
             ---
 
@@ -97,7 +113,6 @@ class AgentClass {
       return parsed;
     } catch (err) {
       console.error("Error in AgentClass.httpSendMessage:", err);
-      // Fallback response in case of API failure or parsing errors
       return {
         intent: "general_query",
         data: {},

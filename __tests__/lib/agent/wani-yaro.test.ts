@@ -116,6 +116,34 @@ describe('Wani Yaro Agent Integration', () => {
     expect(result.response).toContain('sir');
   });
 
+  it('should parse donation requests correctly', async () => {
+    const mockLLMResponse = {
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              intent: 'donation',
+              data: {
+                amount: 5000,
+                targets: [],
+                email: null
+              },
+              response: 'Yes sir, I have initialized a donation checkout of 5,000 Naira, sir.'
+            })
+          }
+        }
+      ]
+    };
+
+    mockCreateFn.mockResolvedValue(mockLLMResponse);
+
+    const result = await Agent.httpSendMessage('donate 5000');
+
+    expect(result.intent).toBe('donation');
+    expect(result.data.amount).toBe(5000);
+    expect(result.response).toContain('sir');
+  });
+
   it('should gracefully fall back in case of parsing or api errors', async () => {
     mockCreateFn.mockRejectedValue(new Error('OpenAI API Error'));
 
