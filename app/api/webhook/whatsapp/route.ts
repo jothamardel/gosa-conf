@@ -211,6 +211,8 @@ async function handlePaymentFlow(
     transactionType = 'donation';
   }
 
+  const isGroup = remoteJid.endsWith('@g.us');
+
   // Create unified Transaction record
   await Transaction.create({
     userId: senderUser._id,
@@ -218,10 +220,12 @@ async function handlePaymentFlow(
     amount: totalAmount,
     type: transactionType,
     status: 'pending',
+    source: remoteJid,
     metadata: {
       quantity,
       targets: action.targetJids,
-      baseTotalAmount
+      baseTotalAmount,
+      groupJid: isGroup ? remoteJid : null
     }
   });
 
@@ -360,7 +364,6 @@ Type: ${typeLabel}
 👉 Tap the link below to make payment, sir:
 ${checkoutUrl}`;
 
-  const isGroup = remoteJid.endsWith('@g.us');
   const formattedText = isGroup ? formatGroupResponse(responseText) : sanitizeMessage(responseText);
 
   await Wasender.httpSenderMessage({

@@ -483,25 +483,45 @@ async function sendServiceNotification(
     let targetJid = "";
     try {
       const { Transaction } = await import("@/lib/schema");
-      const tx = await Transaction.findOne({ paymentReference: { $regex: `^${record.paymentReference.split('_')[0]}` } });
-      if (tx && tx.metadata?.groupJid) {
-        targetJid = tx.metadata.groupJid;
-        console.log(`[PAYSTACK-WEBHOOK] Routing confirmation to group JID: ${targetJid}`);
+      // Split reference to match the exact parent transaction reference prefix
+      const parts = record.paymentReference?.split("_") || [];
+      const baseRef = parts.slice(0, 3).join("_");
+      console.log(`[PAYSTACK-WEBHOOK] Looking up transaction with reference: ${baseRef}`);
+      const tx = await Transaction.findOne({ paymentReference: baseRef });
+      if (tx) {
+        if (tx.source) {
+          targetJid = tx.source;
+          console.log(`[PAYSTACK-WEBHOOK] Resolved target JID from Transaction source field: ${targetJid}`);
+        } else if (tx.metadata?.groupJid) {
+          targetJid = tx.metadata.groupJid;
+          console.log(`[PAYSTACK-WEBHOOK] Resolved target JID from Transaction metadata groupJid: ${targetJid}`);
+        }
       }
     } catch (e) {
       console.error("Failed to query transaction for routing:", e);
     }
 
     if (!targetJid) {
-      const phoneNumber =
-        record.paymentReference?.split("_")[1] || record.userId?.phoneNumber;
-
-      if (!phoneNumber) {
-        throw new Error("No phone number found for notification");
+      // Fallback 1: Prioritize populated user phoneNumber
+      const rawPhone = record.userId?.phoneNumber || record.donorPhone || "";
+      if (rawPhone) {
+        targetJid = convertToInternationalFormat(rawPhone);
+        console.log(`[PAYSTACK-WEBHOOK] Fallback: Routing privately to user phone JID: ${targetJid}`);
       }
+    }
 
-      targetJid = convertToInternationalFormat(phoneNumber);
-      console.log(`[PAYSTACK-WEBHOOK] Routing confirmation privately to JID: ${targetJid}`);
+    if (!targetJid) {
+      // Fallback 2: Parse phone number from reference
+      const parts = record.paymentReference?.split("_") || [];
+      const phoneCandidate = parts.length > 2 ? parts[2] : parts[1];
+      if (phoneCandidate && phoneCandidate.length > 5) {
+        targetJid = convertToInternationalFormat(phoneCandidate);
+        console.log(`[PAYSTACK-WEBHOOK] Fallback 2: Routing privately to parsed phone JID: ${targetJid}`);
+      }
+    }
+
+    if (!targetJid) {
+      throw new Error("No destination JID found for notification");
     }
 
     // Set internationalPhone to targetJid so that it maps correctly throughout the rest of the function (for result payloads)
@@ -517,7 +537,19 @@ async function sendServiceNotification(
 
     if (serviceType === 'uniform' || serviceType === 'emblem' || serviceType === 'magazine') {
       const typeLabel = serviceType.charAt(0).toUpperCase() + serviceType.slice(1);
-      const textMessage = `🎉 GOSA Shop Confirmation\nFor Light and Truth\n\nDear ${userDetails.name},\n\nYour purchase of *${record.quantity}x GOSA ${typeLabel}* has been confirmed! ✅\n\n💳 Payment Details:\n• Amount: ₦${record.totalAmount.toLocaleString()}\n• Reference: ${record.paymentReference}\n• Status: Confirmed ✅\n\nThank you for supporting the GOSA community, sir!`;
+      const textMessage = `🎉 *GOSA Shop Confirmation*
+For Light and Truth
+
+Dear ${userDetails.name},
+
+Your purchase of *${record.quantity}x GOSA ${typeLabel}* has been confirmed! ✅
+
+💳 *Payment Details:*
+• Amount: ₦${record.totalAmount.toLocaleString()}
+• Reference: ${record.paymentReference}
+• Status: Confirmed ✅
+
+Thank you for supporting the GOSA community, sir!`;
       
       const isGroup = targetJid.endsWith('@g.us');
       const formattedText = isGroup ? formatGroupResponse(textMessage) : sanitizeMessage(textMessage);

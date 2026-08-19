@@ -6,6 +6,7 @@ export interface ITransaction extends Document {
   amount: number;
   type: 'ticket_convention' | 'ticket_dinner' | 'product_uniform' | 'product_emblem' | 'product_magazine' | 'product_brochure' | 'donation';
   status: 'pending' | 'completed' | 'failed';
+  source?: string;
   metadata?: any;
   createdAt: Date;
   updatedAt: Date;
@@ -46,6 +47,10 @@ const TransactionSchema = new Schema<ITransaction>(
       type: String,
       enum: ['pending', 'completed', 'failed'],
       default: 'pending',
+    },
+    source: {
+      type: String,
+      trim: true,
     },
     metadata: {
       type: Schema.Types.Mixed,

@@ -58,40 +58,23 @@ class StorageService {
     options: StorageUploadOptions = {}
   ): Promise<StorageUploadResponse> {
     const startTime = Date.now();
-    let primaryError: Error | null = null;
-    let fallbackError: Error | null = null;
+    let errorToThrow: Error | null = null;
 
-    // Step 1: Try ImageKit first (primary)
-    console.log('🔄 Attempting upload to ImageKit (primary)...');
-    try {
-      const result = await this.uploadToImageKit(file, fileName, options);
-      console.log('✅ ImageKit upload successful');
-      return result;
-    } catch (error) {
-      primaryError = error instanceof Error ? error : new Error('ImageKit upload failed');
-      console.error('❌ ImageKit upload failed:', primaryError.message);
-    }
-
-    // Step 2: Try Vercel Blob as fallback
-    console.log('🔄 Attempting fallback to Vercel Blob...');
+    // Upload directly to Vercel Blob (ImageKit ignored)
+    console.log('🔄 Attempting upload directly to Vercel Blob (ImageKit ignored)...');
     try {
       const result = await this.uploadToVercel(file, fileName, options);
-      console.log('✅ Vercel Blob fallback upload successful');
-
-      // Log successful fallback for monitoring
-      this.logFallbackSuccess(fileName, primaryError.message);
-
+      console.log('✅ Vercel Blob upload successful');
       return result;
     } catch (error) {
-      fallbackError = error instanceof Error ? error : new Error('Vercel upload failed');
-      console.error('❌ Vercel Blob fallback upload failed:', fallbackError.message);
+      errorToThrow = error instanceof Error ? error : new Error('Vercel Blob upload failed');
+      console.error('❌ Vercel Blob upload failed:', errorToThrow.message);
     }
 
-    // Step 3: Both failed - notify admin and throw error
     const duration = Date.now() - startTime;
-    await this.notifyStorageFailure(fileName, primaryError, fallbackError, duration, options.userDetails);
+    await this.notifyStorageFailure(fileName, errorToThrow, new Error('ImageKit upload ignored'), duration, options.userDetails);
 
-    throw new Error(`Complete storage failure: ImageKit (${primaryError.message}) and Vercel (${fallbackError.message}) both failed`);
+    throw new Error(`Complete storage failure: Vercel Blob (${errorToThrow.message}) failed`);
   }
 
   /**
