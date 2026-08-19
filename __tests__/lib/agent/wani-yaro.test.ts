@@ -1,4 +1,27 @@
 import { Agent } from '../../../lib/agent';
+import mongoose from 'mongoose';
+import { ConversationHistory } from '../../../lib/schema';
+
+// Mock mongoose to avoid loading raw database ESM files in Jest
+jest.mock('mongoose', () => {
+  return {
+    __esModule: true,
+    default: {
+      connection: {
+        readyState: 0
+      }
+    }
+  };
+});
+
+// Mock schema module to return stubbed schema objects
+jest.mock('../../../lib/schema', () => {
+  return {
+    ConversationHistory: {
+      findOne: jest.fn()
+    }
+  };
+});
 
 // Mock OpenAI using global registry to avoid hoisting initialization order issues
 jest.mock('openai', () => {
@@ -152,5 +175,48 @@ describe('Wani Yaro Agent Integration', () => {
     expect(result.intent).toBe('general_query');
     expect(result.response).toContain('sir');
     expect(result.response).toContain('apologize');
+  });
+
+  it('should include conversation history when loading context', async () => {
+    // Mock DB connection state to be active
+    const originalReadyState = mongoose.connection.readyState;
+    Object.defineProperty(mongoose.connection, 'readyState', { value: 1, writable: true });
+
+    // Mock ConversationHistory findOne
+    const mockFindOne = jest.spyOn(ConversationHistory, 'findOne').mockResolvedValue({
+      jid: 'test-jid',
+      messages: [
+        { role: 'user', content: 'hello', name: 'User', timestamp: new Date() },
+        { role: 'assistant', content: 'Yes sir, how can I help you, sir?', timestamp: new Date() }
+      ],
+      save: jest.fn().mockResolvedValue(true)
+    } as any);
+
+    const mockLLMResponse = {
+      choices: [
+        {
+          message: {
+            content: 'Hello again, sir!'
+          }
+        }
+      ]
+    };
+    mockCreateFn.mockResolvedValue(mockLLMResponse);
+
+    const result = await Agent.httpSendMessage('what did we talk about?', 'test-jid', 'User');
+
+    expect(result.intent).toBe('general_query');
+    expect(result.response).toBe('Hello again, sir!');
+    expect(mockFindOne).toHaveBeenCalledWith({ jid: 'test-jid' });
+
+    // Verify history messages were included in the OpenAI payload
+    const callArgs = mockCreateFn.mock.calls[0][0];
+    expect(callArgs.messages).toHaveLength(4); // system, user(hello), assistant(help), user(what did we talk about)
+    expect(callArgs.messages[1]).toEqual({ role: 'user', content: 'hello', name: 'User' });
+    expect(callArgs.messages[2]).toEqual({ role: 'assistant', content: 'Yes sir, how can I help you, sir?', name: undefined });
+
+    // Restore mocks
+    mockFindOne.mockRestore();
+    Object.defineProperty(mongoose.connection, 'readyState', { value: originalReadyState, writable: true });
   });
 });

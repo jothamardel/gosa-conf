@@ -1,6 +1,4 @@
 import OpenAI from "openai";
-import mongoose from "mongoose";
-import { ConversationHistory } from "../schema";
 
 export interface AgentResponse {
   intent: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query';
@@ -106,6 +104,9 @@ class AgentClass {
 
   async httpSendMessage(message: string, jid?: string, senderName?: string): Promise<AgentResponse> {
     try {
+      const mongoose = (await import("mongoose")).default;
+      const { ConversationHistory } = await import("../schema");
+
       const isDbConnected = mongoose.connection.readyState === 1;
       let historyMessages: any[] = [];
       let historyRecord: any = null;
