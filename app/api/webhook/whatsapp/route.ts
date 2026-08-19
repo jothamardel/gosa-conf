@@ -352,11 +352,13 @@ async function handlePaymentFlow(
 
   const feeAmount = totalAmount - baseTotalAmount;
   const typeLabel = quantity > 1 ? `${serviceName}s` : serviceName;
-  const responseText = `Amount: NGN${baseTotalAmount.toLocaleString()}
-Fee: NGN${feeAmount.toLocaleString()}
+  const responseText = `Amount: ₦${baseTotalAmount.toLocaleString()}
+Fee: ₦${feeAmount.toLocaleString()}
 Email: ${senderUser.email}
-Link: ${checkoutUrl}
-Type: ${typeLabel}`;
+Type: ${typeLabel}
+
+👉 Tap the link below to make payment, sir:
+${checkoutUrl}`;
 
   const isGroup = remoteJid.endsWith('@g.us');
   const formattedText = isGroup ? formatGroupResponse(responseText) : sanitizeMessage(responseText);
