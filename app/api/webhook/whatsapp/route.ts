@@ -42,6 +42,22 @@ async function resolveJidToPn(jid: string): Promise<string> {
   return jid;
 }
 
+async function getLidForJid(jid: string): Promise<string | null> {
+  if (!jid) return null;
+  if (jid.endsWith('@lid')) {
+    return jid;
+  }
+  if (jid.endsWith('@s.whatsapp.net')) {
+    try {
+      const lid = await Wasender.getLidFromPn(jid);
+      if (lid) return lid;
+    } catch (err) {
+      console.warn(`Failed to resolve LID for JID ${jid}:`, err);
+    }
+  }
+  return null;
+}
+
 function calculatePaystackTotal(baseAmount: number): number {
   // Paystack fee rule:
   // - 1.5% + 100 applies to amounts above 2,000.
@@ -164,8 +180,20 @@ async function handlePaymentFlow(
     }>;
   },
   remoteJid: string,
-  senderJid: string
+  senderJid: string,
+  rawSenderJid?: string,
+  rawMentionedJids?: string[]
 ) {
+  // Resolve LID of initiator and mentions
+  const initiatorLid = rawSenderJid ? await getLidForJid(rawSenderJid) : null;
+  const mentionLids: string[] = [];
+  if (rawMentionedJids && rawMentionedJids.length > 0) {
+    for (const jid of rawMentionedJids) {
+      const lid = await getLidForJid(jid);
+      if (lid) mentionLids.push(lid);
+    }
+  }
+
   if (action.type === 'checkout_cart') {
     let cartBaseTotalAmount = 0;
     const cartItems = action.items || [];
@@ -181,7 +209,7 @@ async function handlePaymentFlow(
       else if (item.type === 'donation') itemUnitPrice = item.amount || 0;
 
       const itemQuantity = (item.type === 'convention' || item.type === 'dinner' || item.type === 'donation')
-        ? (item.targetJids || []).length
+        ? (item.targetJids && item.targetJids.length > 0 ? item.targetJids.length : (item.quantity || 1))
         : (item.quantity || 1);
       
       cartBaseTotalAmount += itemUnitPrice * itemQuantity;
@@ -211,6 +239,8 @@ async function handlePaymentFlow(
       type: 'cart',
       status: 'pending',
       source: remoteJid,
+      initiatorLid: initiatorLid || undefined,
+      mentionLids: mentionLids,
       metadata: {
         items: cartItems,
         baseTotalAmount: cartBaseTotalAmount,
@@ -231,107 +261,152 @@ async function handlePaymentFlow(
       else if (item.type === 'donation') itemUnitPrice = item.amount || 0;
 
       const itemQuantity = (item.type === 'convention' || item.type === 'dinner' || item.type === 'donation')
-        ? (item.targetJids || []).length
+        ? (item.targetJids && item.targetJids.length > 0 ? item.targetJids.length : (item.quantity || 1))
         : (item.quantity || 1);
       
       const itemBaseTotalAmount = itemUnitPrice * itemQuantity;
       const itemRef = `${paymentReference}_${index}`;
 
       if (item.type === 'convention' || item.type === 'dinner') {
-        const itemTargetJids = item.targetJids || [senderJid];
-        for (let i = 0; i < itemTargetJids.length; i++) {
-          const targetJid = itemTargetJids[i];
-          const targetPhone = targetJid.split('@')[0];
-
-          let targetUser = await User.findOne({
-            phoneNumber: { $regex: targetPhone }
-          });
-          if (!targetUser) {
-            const targetEmail = `${targetPhone}@gosa.events`;
-            const existingEmailUser = await User.findOne({ email: targetEmail });
-            if (existingEmailUser) {
-              targetUser = existingEmailUser;
-              if (targetUser.phoneNumber !== `+${targetPhone}`) {
-                targetUser.phoneNumber = `+${targetPhone}`;
-                await targetUser.save();
-              }
-            } else {
-              targetUser = await User.create({
-                fullName: `GOSA Member (${targetPhone})`,
-                phoneNumber: `+${targetPhone}`,
-                email: targetEmail
-              });
-            }
-          }
-
-          const individualRef = `${itemRef}_${i}`;
-
+        const itemTargetJids = item.targetJids || [];
+        if (itemTargetJids.length === 0) {
+          // BUY FOR ONESELF: Create single record with quantity
           if (item.type === 'dinner') {
             await DinnerReservation.create({
-              userId: targetUser._id,
-              paymentReference: individualRef,
-              numberOfGuests: 1,
+              userId: senderUser._id,
+              paymentReference: itemRef,
+              numberOfGuests: itemQuantity,
               guestDetails: [{
-                name: targetUser.fullName,
-                email: targetUser.email,
-                phone: targetUser.phoneNumber,
+                name: senderUser.fullName,
+                email: senderUser.email,
+                phone: senderUser.phoneNumber,
               }],
-              totalAmount: itemUnitPrice,
+              totalAmount: itemBaseTotalAmount,
               confirmed: false,
               status: 'pending',
-              isPrimaryContact: i === 0,
+              isPrimaryContact: true,
             });
           } else {
             await ConventionRegistration.create({
-              userId: targetUser._id,
-              paymentReference: individualRef,
-              amount: itemUnitPrice,
-              quantity: 1,
+              userId: senderUser._id,
+              paymentReference: itemRef,
+              amount: itemBaseTotalAmount,
+              quantity: itemQuantity,
               confirm: false,
               status: 'pending',
             });
           }
-        }
-      } else if (item.type === 'donation') {
-        const itemTargetJids = item.targetJids || [senderJid];
-        for (let i = 0; i < itemTargetJids.length; i++) {
-          const targetJid = itemTargetJids[i];
-          const targetPhone = targetJid.split('@')[0];
+        } else {
+          // BUY FOR MENTIONS: Create individual records
+          for (let i = 0; i < itemTargetJids.length; i++) {
+            const targetJid = itemTargetJids[i];
+            const targetPhone = targetJid.split('@')[0];
 
-          let targetUser = await User.findOne({
-            phoneNumber: { $regex: targetPhone }
-          });
-          if (!targetUser) {
-            const targetEmail = `${targetPhone}@gosa.events`;
-            const existingEmailUser = await User.findOne({ email: targetEmail });
-            if (existingEmailUser) {
-              targetUser = existingEmailUser;
-              if (targetUser.phoneNumber !== `+${targetPhone}`) {
-                targetUser.phoneNumber = `+${targetPhone}`;
-                await targetUser.save();
+            let targetUser = await User.findOne({
+              phoneNumber: { $regex: targetPhone }
+            });
+            if (!targetUser) {
+              const targetEmail = `${targetPhone}@gosa.events`;
+              const existingEmailUser = await User.findOne({ email: targetEmail });
+              if (existingEmailUser) {
+                targetUser = existingEmailUser;
+                if (targetUser.phoneNumber !== `+${targetPhone}`) {
+                  targetUser.phoneNumber = `+${targetPhone}`;
+                  await targetUser.save();
+                }
+              } else {
+                targetUser = await User.create({
+                  fullName: `GOSA Member (${targetPhone})`,
+                  phoneNumber: `+${targetPhone}`,
+                  email: targetEmail
+                });
               }
+            }
+
+            const individualRef = `${itemRef}_${i}`;
+
+            if (item.type === 'dinner') {
+              await DinnerReservation.create({
+                userId: targetUser._id,
+                paymentReference: individualRef,
+                numberOfGuests: 1,
+                guestDetails: [{
+                  name: targetUser.fullName,
+                  email: targetUser.email,
+                  phone: targetUser.phoneNumber,
+                }],
+                totalAmount: itemUnitPrice,
+                confirmed: false,
+                status: 'pending',
+                isPrimaryContact: i === 0,
+              });
             } else {
-              targetUser = await User.create({
-                fullName: `GOSA Member (${targetPhone})`,
-                phoneNumber: `+${targetPhone}`,
-                email: targetEmail
+              await ConventionRegistration.create({
+                userId: targetUser._id,
+                paymentReference: individualRef,
+                amount: itemUnitPrice,
+                quantity: 1,
+                confirm: false,
+                status: 'pending',
               });
             }
           }
-
-          const individualRef = `${itemRef}_${i}`;
-
+        }
+      } else if (item.type === 'donation') {
+        const itemTargetJids = item.targetJids || [];
+        if (itemTargetJids.length === 0) {
+          // Single donation by sender
           await Donation.create({
-            userId: targetUser._id,
-            paymentReference: individualRef,
-            amount: itemUnitPrice,
+            userId: senderUser._id,
+            paymentReference: itemRef,
+            amount: itemBaseTotalAmount,
             donorName: senderUser.fullName,
             donorEmail: senderUser.email,
             donorPhone: senderUser.phoneNumber,
             anonymous: false,
             confirmed: false,
-            receiptNumber: `DON-${Date.now()}-${targetPhone.slice(-4)}-${index}-${i}`
+            receiptNumber: `DON-${Date.now()}-${senderUser.phoneNumber.slice(-4)}-${index}`
           });
+        } else {
+          for (let i = 0; i < itemTargetJids.length; i++) {
+            const targetJid = itemTargetJids[i];
+            const targetPhone = targetJid.split('@')[0];
+
+            let targetUser = await User.findOne({
+              phoneNumber: { $regex: targetPhone }
+            });
+            if (!targetUser) {
+              const targetEmail = `${targetPhone}@gosa.events`;
+              const existingEmailUser = await User.findOne({ email: targetEmail });
+              if (existingEmailUser) {
+                targetUser = existingEmailUser;
+                if (targetUser.phoneNumber !== `+${targetPhone}`) {
+                  targetUser.phoneNumber = `+${targetPhone}`;
+                  await targetUser.save();
+                }
+              } else {
+                targetUser = await User.create({
+                  fullName: `GOSA Member (${targetPhone})`,
+                  phoneNumber: `+${targetPhone}`,
+                  email: targetEmail
+                });
+              }
+            }
+
+            const individualRef = `${itemRef}_${i}`;
+
+            await Donation.create({
+              userId: targetUser._id,
+              paymentReference: individualRef,
+              amount: itemUnitPrice,
+              donorName: senderUser.fullName,
+              donorEmail: senderUser.email,
+              donorPhone: senderUser.phoneNumber,
+              anonymous: false,
+              confirmed: false,
+              receiptNumber: `DON-${Date.now()}-${targetPhone.slice(-4)}-${index}-${i}`
+            });
+          }
         }
       } else if (item.type === 'brochure') {
         await ConventionBrochure.create({
@@ -368,7 +443,7 @@ async function handlePaymentFlow(
     for (const item of cartItems) {
       const typeLabel = item.type.charAt(0).toUpperCase() + item.type.slice(1);
       const itemQuantity = (item.type === 'convention' || item.type === 'dinner' || item.type === 'donation')
-        ? (item.targetJids || []).length
+        ? (item.targetJids && item.targetJids.length > 0 ? item.targetJids.length : (item.quantity || 1))
         : (item.quantity || 1);
       cartItemsSummaryText += `• ${itemQuantity}x GOSA ${typeLabel}\n`;
     }
@@ -430,7 +505,9 @@ ${checkoutUrl}`;
     throw new Error("Invalid product, donation, or ticket type requested, sir.");
   }
 
-  const quantity = (action.type === 'buy_tickets' || action.type === 'donation') ? action.targetJids.length : (action.quantity || 1);
+  const quantity = (action.type === 'buy_tickets' || action.type === 'donation')
+    ? (action.targetJids.length || action.quantity || 1)
+    : (action.quantity || 1);
   const baseTotalAmount = unitPrice * quantity;
   const totalAmount = calculatePaystackTotal(baseTotalAmount);
 
@@ -475,6 +552,8 @@ ${checkoutUrl}`;
     type: transactionType,
     status: 'pending',
     source: remoteJid,
+    initiatorLid: initiatorLid || undefined,
+    mentionLids: mentionLids,
     metadata: {
       quantity,
       targets: action.targetJids,
@@ -484,98 +563,141 @@ ${checkoutUrl}`;
   });
 
   if (action.type === 'buy_tickets') {
-    for (let i = 0; i < action.targetJids.length; i++) {
-      const targetJid = action.targetJids[i];
-      const targetPhone = targetJid.split('@')[0];
-
-      let targetUser = await User.findOne({
-        phoneNumber: { $regex: targetPhone }
-      });
-      if (!targetUser) {
-        const targetEmail = `${targetPhone}@gosa.events`;
-        const existingEmailUser = await User.findOne({ email: targetEmail });
-        if (existingEmailUser) {
-          targetUser = existingEmailUser;
-          if (targetUser.phoneNumber !== `+${targetPhone}`) {
-            targetUser.phoneNumber = `+${targetPhone}`;
-            await targetUser.save();
-          }
-        } else {
-          targetUser = await User.create({
-            fullName: `GOSA Member (${targetPhone})`,
-            phoneNumber: `+${targetPhone}`,
-            email: targetEmail
-          });
-        }
-      }
-
-      const individualRef = `${paymentReference}_${i}`;
-
+    if (action.targetJids.length === 0) {
+      // BUY FOR ONESELF: Create single record with quantity
       if (action.ticketType === 'dinner') {
         await DinnerReservation.create({
-          userId: targetUser._id,
-          paymentReference: individualRef,
-          numberOfGuests: 1,
+          userId: senderUser._id,
+          paymentReference,
+          numberOfGuests: quantity,
           guestDetails: [{
-            name: targetUser.fullName,
-            email: targetUser.email,
-            phone: targetUser.phoneNumber,
+            name: senderUser.fullName,
+            email: senderUser.email,
+            phone: senderUser.phoneNumber,
           }],
-          totalAmount: unitPrice,
+          totalAmount: baseTotalAmount,
           confirmed: false,
           status: 'pending',
-          isPrimaryContact: i === 0,
+          isPrimaryContact: true,
         });
       } else {
         await ConventionRegistration.create({
-          userId: targetUser._id,
-          paymentReference: individualRef,
-          amount: unitPrice,
-          quantity: 1,
+          userId: senderUser._id,
+          paymentReference,
+          amount: baseTotalAmount,
+          quantity: quantity,
           confirm: false,
           status: 'pending',
         });
       }
-    }
-  } else if (action.type === 'donation') {
-    for (let i = 0; i < action.targetJids.length; i++) {
-      const targetJid = action.targetJids[i];
-      const targetPhone = targetJid.split('@')[0];
+    } else {
+      for (let i = 0; i < action.targetJids.length; i++) {
+        const targetJid = action.targetJids[i];
+        const targetPhone = targetJid.split('@')[0];
 
-      let targetUser = await User.findOne({
-        phoneNumber: { $regex: targetPhone }
-      });
-      if (!targetUser) {
-        const targetEmail = `${targetPhone}@gosa.events`;
-        const existingEmailUser = await User.findOne({ email: targetEmail });
-        if (existingEmailUser) {
-          targetUser = existingEmailUser;
-          if (targetUser.phoneNumber !== `+${targetPhone}`) {
-            targetUser.phoneNumber = `+${targetPhone}`;
-            await targetUser.save();
+        let targetUser = await User.findOne({
+          phoneNumber: { $regex: targetPhone }
+        });
+        if (!targetUser) {
+          const targetEmail = `${targetPhone}@gosa.events`;
+          const existingEmailUser = await User.findOne({ email: targetEmail });
+          if (existingEmailUser) {
+            targetUser = existingEmailUser;
+            if (targetUser.phoneNumber !== `+${targetPhone}`) {
+              targetUser.phoneNumber = `+${targetPhone}`;
+              await targetUser.save();
+            }
+          } else {
+            targetUser = await User.create({
+              fullName: `GOSA Member (${targetPhone})`,
+              phoneNumber: `+${targetPhone}`,
+              email: targetEmail
+            });
           }
+        }
+
+        const individualRef = `${paymentReference}_${i}`;
+
+        if (action.ticketType === 'dinner') {
+          await DinnerReservation.create({
+            userId: targetUser._id,
+            paymentReference: individualRef,
+            numberOfGuests: 1,
+            guestDetails: [{
+              name: targetUser.fullName,
+              email: targetUser.email,
+              phone: targetUser.phoneNumber,
+            }],
+            totalAmount: unitPrice,
+            confirmed: false,
+            status: 'pending',
+            isPrimaryContact: i === 0,
+          });
         } else {
-          targetUser = await User.create({
-            fullName: `GOSA Member (${targetPhone})`,
-            phoneNumber: `+${targetPhone}`,
-            email: targetEmail
+          await ConventionRegistration.create({
+            userId: targetUser._id,
+            paymentReference: individualRef,
+            amount: unitPrice,
+            quantity: 1,
+            confirm: false,
+            status: 'pending',
           });
         }
       }
-
-      const individualRef = `${paymentReference}_${i}`;
-
+    }
+  } else if (action.type === 'donation') {
+    if (action.targetJids.length === 0) {
       await Donation.create({
-        userId: targetUser._id,
-        paymentReference: individualRef,
-        amount: unitPrice,
+        userId: senderUser._id,
+        paymentReference,
+        amount: baseTotalAmount,
         donorName: senderUser.fullName,
         donorEmail: senderUser.email,
         donorPhone: senderUser.phoneNumber,
         anonymous: false,
         confirmed: false,
-        receiptNumber: `DON-${Date.now()}-${targetPhone.slice(-4)}-${i}`
+        receiptNumber: `DON-${Date.now()}-${senderUser.phoneNumber.slice(-4)}`
       });
+    } else {
+      for (let i = 0; i < action.targetJids.length; i++) {
+        const targetJid = action.targetJids[i];
+        const targetPhone = targetJid.split('@')[0];
+
+        let targetUser = await User.findOne({
+          phoneNumber: { $regex: targetPhone }
+        });
+        if (!targetUser) {
+          const targetEmail = `${targetPhone}@gosa.events`;
+          const existingEmailUser = await User.findOne({ email: targetEmail });
+          if (existingEmailUser) {
+            targetUser = existingEmailUser;
+            if (targetUser.phoneNumber !== `+${targetPhone}`) {
+              targetUser.phoneNumber = `+${targetPhone}`;
+              await targetUser.save();
+            }
+          } else {
+            targetUser = await User.create({
+              fullName: `GOSA Member (${targetPhone})`,
+              phoneNumber: `+${targetPhone}`,
+              email: targetEmail
+            });
+          }
+        }
+
+        const individualRef = `${paymentReference}_${i}`;
+
+        await Donation.create({
+          userId: targetUser._id,
+          paymentReference: individualRef,
+          amount: unitPrice,
+          donorName: senderUser.fullName,
+          donorEmail: senderUser.email,
+          donorPhone: senderUser.phoneNumber,
+          anonymous: false,
+          confirmed: false,
+          receiptNumber: `DON-${Date.now()}-${targetPhone.slice(-4)}-${i}`
+        });
+      }
     }
   } else if (action.type === 'buy_product') {
     if (action.productType === 'brochure') {
@@ -895,7 +1017,7 @@ export async function POST(req: NextRequest) {
 
         // Resume flow
         const pendingAction = session.pendingAction;
-        await handlePaymentFlow(senderUser, pendingAction as any, remoteJid, senderJid);
+        await handlePaymentFlow(senderUser, pendingAction as any, remoteJid, senderJid, rawSenderJid, rawMentionedJids);
         await WhatsAppSession.deleteOne({ jid: senderJid });
 
         return NextResponse.json({ message: "Email captured, checkout generated", success: true });
@@ -938,13 +1060,21 @@ export async function POST(req: NextRequest) {
           let itemTargetJids: string[] = [];
           if (itemTargets.length > 0) {
             itemTargetJids = await resolveMentionsToJids(itemTargets, remoteJid, mentionedJids);
+            
+            // Pad target JIDs list to match the quantity only if targets are provided
+            const qty = item.quantity || 1;
+            if (itemTargetJids.length < qty) {
+              const padValue = itemTargetJids[itemTargetJids.length - 1];
+              const shortfall = qty - itemTargetJids.length;
+              for (let s = 0; s < shortfall; s++) {
+                itemTargetJids.push(padValue);
+              }
+            }
           }
-          if (itemTargetJids.length === 0) {
-            itemTargetJids = [senderJid];
-          }
+
           resolvedItems.push({
             type: item.type,
-            quantity: item.quantity || 1,
+            quantity: item.quantity || itemTargetJids.length || 1,
             amount: item.amount,
             targetJids: itemTargetJids
           });
@@ -956,11 +1086,18 @@ export async function POST(req: NextRequest) {
       let targetJids: string[] = [];
       if (rawTargets.length > 0) {
         targetJids = await resolveMentionsToJids(rawTargets, remoteJid, mentionedJids);
-      }
-      
-      // Default to sender if no targets resolved
-      if (targetJids.length === 0 && agentResponse.intent !== 'checkout_cart') {
-        targetJids = [senderJid];
+        
+        // Pad target JIDs list to match the quantity for single ticket purchases only if targets are provided
+        if (agentResponse.intent === 'buy_tickets') {
+          const qty = agentResponse.data.quantity || 1;
+          if (targetJids.length < qty) {
+            const padValue = targetJids[targetJids.length - 1];
+            const shortfall = qty - targetJids.length;
+            for (let s = 0; s < shortfall; s++) {
+              targetJids.push(padValue);
+            }
+          }
+        }
       }
 
       const senderPhone = normalizeJidToPhone(senderJid);
@@ -1003,7 +1140,7 @@ export async function POST(req: NextRequest) {
           type: 'checkout_cart',
           items: resolvedItems,
           targetJids: []
-        } as any, remoteJid, senderJid);
+        } as any, remoteJid, senderJid, rawSenderJid, rawMentionedJids);
       } else {
         await handlePaymentFlow(senderUser, {
           type: agentResponse.intent,
@@ -1012,7 +1149,7 @@ export async function POST(req: NextRequest) {
           quantity: agentResponse.data.quantity || 1,
           amount: agentResponse.data.amount,
           targetJids: targetJids
-        }, remoteJid, senderJid);
+        }, remoteJid, senderJid, rawSenderJid, rawMentionedJids);
       }
 
       return NextResponse.json({ message: "Checkout generated", success: true });

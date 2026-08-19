@@ -7,6 +7,8 @@ export interface ITransaction extends Document {
   type: 'ticket_convention' | 'ticket_dinner' | 'product_uniform' | 'product_emblem' | 'product_magazine' | 'product_brochure' | 'donation' | 'cart';
   status: 'pending' | 'completed' | 'failed';
   source?: string;
+  initiatorLid?: string;
+  mentionLids?: string[];
   metadata?: any;
   createdAt: Date;
   updatedAt: Date;
@@ -52,6 +54,14 @@ const TransactionSchema = new Schema<ITransaction>(
     source: {
       type: String,
       trim: true,
+    },
+    initiatorLid: {
+      type: String,
+      trim: true,
+    },
+    mentionLids: {
+      type: [String],
+      default: [],
     },
     metadata: {
       type: Schema.Types.Mixed,

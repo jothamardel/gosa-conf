@@ -33,6 +33,11 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             enum: ["convention", "dinner"],
             description: "The type of ticket to buy."
           },
+          quantity: {
+            type: "number",
+            minimum: 1,
+            description: "Number of tickets to purchase. Defaults to 1."
+          },
           targets: {
             type: "array",
             items: { type: "string" },
