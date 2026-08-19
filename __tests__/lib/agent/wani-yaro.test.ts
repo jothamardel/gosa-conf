@@ -36,11 +36,7 @@ describe('Wani Yaro Agent Integration', () => {
       choices: [
         {
           message: {
-            content: JSON.stringify({
-              intent: 'general_query',
-              data: {},
-              response: 'Yes sir, the GOSA convention is scheduled for November 1–2, 2025, sir!'
-            })
+            content: 'Yes sir, the GOSA convention is scheduled for November 1–2, 2025, sir!'
           }
         }
       ]
@@ -60,16 +56,17 @@ describe('Wani Yaro Agent Integration', () => {
       choices: [
         {
           message: {
-            content: JSON.stringify({
-              intent: 'buy_tickets',
-              data: {
-                ticketType: 'convention',
-                quantity: 2,
-                targets: ['@john', '@mary'],
-                email: null
-              },
-              response: 'Right away, sir! I am generating the Paystack payment link for the convention tickets for @john and @mary, sir.'
-            })
+            tool_calls: [
+              {
+                function: {
+                  name: 'buy_tickets',
+                  arguments: JSON.stringify({
+                    ticketType: 'convention',
+                    targets: ['@john', '@mary']
+                  })
+                }
+              }
+            ]
           }
         }
       ]
@@ -91,16 +88,17 @@ describe('Wani Yaro Agent Integration', () => {
       choices: [
         {
           message: {
-            content: JSON.stringify({
-              intent: 'buy_product',
-              data: {
-                productType: 'uniform',
-                quantity: 2,
-                targets: [],
-                email: null
-              },
-              response: 'Yes sir, I have initialized the checkout for 2 GOSA uniforms, sir.'
-            })
+            tool_calls: [
+              {
+                function: {
+                  name: 'buy_product',
+                  arguments: JSON.stringify({
+                    productType: 'uniform',
+                    quantity: 2
+                  })
+                }
+              }
+            ]
           }
         }
       ]
@@ -121,15 +119,17 @@ describe('Wani Yaro Agent Integration', () => {
       choices: [
         {
           message: {
-            content: JSON.stringify({
-              intent: 'donation',
-              data: {
-                amount: 5000,
-                targets: [],
-                email: null
-              },
-              response: 'Yes sir, I have initialized a donation checkout of 5,000 Naira, sir.'
-            })
+            tool_calls: [
+              {
+                function: {
+                  name: 'donation',
+                  arguments: JSON.stringify({
+                    amount: 5000,
+                    targets: []
+                  })
+                }
+              }
+            ]
           }
         }
       ]

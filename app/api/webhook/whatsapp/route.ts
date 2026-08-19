@@ -440,18 +440,20 @@ export async function POST(req: NextRequest) {
     // Active conversational session (capturing email)
     const session = await WhatsAppSession.findOne({ jid: senderJid });
     if (session) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (emailRegex.test(messageText)) {
+      // Use match to extract email from anywhere in the text (more conversational)
+      const emailMatch = messageText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      if (emailMatch) {
+        const capturedEmail = emailMatch[0];
         const senderPhone = normalizeJidToPhone(senderJid);
         let senderUser = await User.findOne({ phoneNumber: senderPhone });
         if (!senderUser) {
           senderUser = await User.create({
             fullName: body?.data?.messages?.pushName || "GOSA Member",
             phoneNumber: senderPhone,
-            email: messageText
+            email: capturedEmail
           });
         } else {
-          senderUser.email = messageText;
+          senderUser.email = capturedEmail;
           await senderUser.save();
         }
 
@@ -462,14 +464,8 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ message: "Email captured, checkout generated", success: true });
       } else {
-        const responseText = "I apologize, sir. That email address doesn't seem valid, sir. Could you please reply with a valid email address so I can generate your payment link, sir?";
-        const formattedText = isGroup ? formatGroupResponse(responseText) : sanitizeMessage(responseText);
-
-        await Wasender.httpSenderMessage({
-          to: remoteJid,
-          text: formattedText
-        });
-        return NextResponse.json({ message: "Invalid email retry sent", success: true });
+        // Unrelated message typed during email request -> delete session to allow normal conversation
+        await WhatsAppSession.deleteOne({ jid: senderJid });
       }
     }
 

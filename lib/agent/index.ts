@@ -13,6 +13,89 @@ export interface AgentResponse {
   response: string;
 }
 
+const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+  {
+    type: "function",
+    function: {
+      name: "buy_tickets",
+      description: "Initialize a payment link to purchase GOSA convention or dinner tickets for oneself, specific users, or everyone in the group.",
+      parameters: {
+        type: "object",
+        properties: {
+          ticketType: {
+            type: "string",
+            enum: ["convention", "dinner"],
+            description: "The type of ticket to buy."
+          },
+          targets: {
+            type: "array",
+            items: { type: "string" },
+            description: "List of user mentions or names to buy tickets for, e.g. ['@john', '@mary']. Use ['@all'] to buy for everyone."
+          }
+        },
+        required: ["ticketType"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "buy_product",
+      description: "Initialize a payment link to buy GOSA merchandise like uniforms, emblems, magazines, or brochures.",
+      parameters: {
+        type: "object",
+        properties: {
+          productType: {
+            type: "string",
+            enum: ["uniform", "emblem", "magazine", "brochure"],
+            description: "The product to purchase."
+          },
+          quantity: {
+            type: "number",
+            minimum: 1,
+            description: "Number of items to purchase."
+          }
+        },
+        required: ["productType", "quantity"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "donation",
+      description: "Initialize a payment link for custom donations for oneself, other members, or the group.",
+      parameters: {
+        type: "object",
+        properties: {
+          amount: {
+            type: "number",
+            minimum: 5,
+            description: "The amount to donate in Naira."
+          },
+          targets: {
+            type: "array",
+            items: { type: "string" },
+            description: "List of user mentions or names to make the donation on behalf of, e.g. ['@john', '@mary']. Use ['@all'] for the group."
+          }
+        },
+        required: ["amount"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "view_history",
+      description: "Display transaction history and payment summaries for the user.",
+      parameters: {
+        type: "object",
+        properties: {}
+      }
+    }
+  }
+];
+
 class AgentClass {
   private openAI: OpenAI;
   constructor() {
@@ -23,7 +106,6 @@ class AgentClass {
     try {
       const response = await this.openAI.chat.completions.create({
         model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
         messages: [
           {
             role: "system",
@@ -54,69 +136,61 @@ class AgentClass {
 
             ---
 
-            ## Product & Ticket Pricing
-            - **Convention Ticket**: ₦1,000 per ticket
-            - **Dinner Ticket**: ₦2,500 per ticket
-            - **Convention Brochure**: ₦2,000 per brochure
-            - **GOSA Uniform**: ₦15,000 per piece
-            - **GOSA Emblem**: ₦2,000 per piece
-            - **Magazine**: ₦3,000 per piece
-
-            *Note*: Paystack transaction fees are automatically added on top of these amounts.
-
-            ---
-
-            ## Capabilities & Intents
-
-            ### 1. Buy Tickets (intent: "buy_tickets")
-            - Triggered when users want to purchase convention or dinner tickets.
-            - Users can buy for themselves, specific users (e.g., "@john, @mary"), or everyone in the group ("@all").
-            - Examples:
-              - "wani yaro buy convention tickets for @john and @mary"
-              - "wani yaro buy dinner tickets for @all"
-            - Populate "ticketType" as either "convention" or "dinner".
-
-            ### 2. Buy Product (intent: "buy_product")
-            - Triggered when users want to buy GOSA uniforms, emblems, magazines, or brochures.
-            - Populate "productType" as "uniform", "emblem", "magazine", or "brochure".
-            - Example: "wani yaro buy 2 uniforms" or "buy a brochure"
-
-            ### 3. Make Donations (intent: "donation")
-            - Triggered when users want to donate money individually or as a group.
-            - Users can donate for themselves or on behalf of others/groups (e.g., "wani yaro donate 5000 for @all").
-            - Examples:
-              - "wani yaro donate 5000 naira" -> intent: "donation", amount: 5000
-              - "wani yaro donate 10000 for @john and @mary" -> intent: "donation", amount: 10000, targets: ["@john", "@mary"]
-            - Populate "amount" with the numeric donation value.
-
-            ### 4. View History (intent: "view_history")
-            - Triggered when users request transaction records or summaries.
-            - Example: "wani yaro show transaction history" or "show group payments"
-
-            ### 5. General Query (intent: "general_query")
-            - Triggered for general questions about GOSA, Gindiri heritage, convention details/theme, or chit-chat.
-            - Example: "what is the theme of this year's convention?" or "who are you?"
-
-            ---
-
             ## Response Rules
-            - You MUST respond in valid JSON format.
-            - Do not include markdown wraps (like \`\`\`json) in the raw response, just return the JSON object directly.
             - Always maintain the respectful junior boy Gindiri alumnus personality.
-            - The "response" field should be the direct polite text meant for the WhatsApp message.
-            - **CRITICAL**: Never include or expose any raw WhatsApp JIDs, LIDs, or internal database IDs (like 234xxx@s.whatsapp.net, 123xxx@g.us, or @lid) in the "response" text. If referring to a member, use their clean display name or name handle.
+            - Address the user as "sir" in your text replies.
+            - **CRITICAL**: Never include or expose any raw WhatsApp JIDs, LIDs, or internal database IDs (like 234xxx@s.whatsapp.net, 123xxx@g.us, or @lid) in your response, sir.
             - **CRITICAL**: Never expose, mention, or print any website links or URLs (including "gosanigeria.ng" or "v2.gosanigeria.ng") in your response, sir.
             `,
           },
           { role: "user", content: message },
         ],
-        store: true,
+        tools,
         max_tokens: 400,
       });
 
-      const rawContent = response.choices[0]?.message?.content || "{}";
-      const parsed: AgentResponse = JSON.parse(rawContent);
-      return parsed;
+      const messageObj = response.choices[0]?.message;
+      const toolCalls = messageObj?.tool_calls;
+
+      if (toolCalls && toolCalls.length > 0) {
+        const toolCall = toolCalls[0] as any;
+        const functionName = toolCall.function.name as 'buy_tickets' | 'buy_product' | 'donation' | 'view_history';
+        const args = JSON.parse(toolCall.function.arguments || "{}");
+
+        const targets = args.targets || [];
+        
+        let politeResponse = "";
+        if (functionName === 'buy_tickets') {
+          politeResponse = `Right away, sir! I am generating the Paystack payment link for the ${args.ticketType} tickets, sir.`;
+        } else if (functionName === 'buy_product') {
+          politeResponse = `Yes sir, I have initialized the checkout for the GOSA ${args.productType}, sir.`;
+        } else if (functionName === 'donation') {
+          politeResponse = `Yes sir, I have initialized a GOSA donation checkout for ₦${args.amount.toLocaleString()}, sir.`;
+        } else if (functionName === 'view_history') {
+          politeResponse = `Right away, sir! Retrieving your transaction history, sir.`;
+        }
+
+        return {
+          intent: functionName,
+          data: {
+            ticketType: args.ticketType,
+            productType: args.productType,
+            quantity: args.quantity,
+            targets: targets,
+            amount: args.amount,
+            email: null
+          },
+          response: politeResponse
+        };
+      }
+
+      // Default to general query if no tools called
+      const content = messageObj?.content || "I apologize, sir. I didn't quite get that, sir. Could you please rephrase, sir?";
+      return {
+        intent: "general_query",
+        data: {},
+        response: content
+      };
     } catch (err) {
       console.error("Error in AgentClass.httpSendMessage:", err);
       return {
