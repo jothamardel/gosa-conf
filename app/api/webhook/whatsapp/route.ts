@@ -31,6 +31,23 @@ function calculatePaystackTotal(baseAmount: number): number {
   return Math.round(baseAmount + cappedFee);
 }
 
+function sanitizeMessage(text: string): string {
+  // Automatically strip out any JID or LID suffixes like @s.whatsapp.net, @g.us, @lid
+  // Example: 2347033680280@s.whatsapp.net -> +2347033680280
+  let cleanText = text.replace(/([0-9\-]+)@(s\.whatsapp\.net|g\.us|lid)/g, (match, phone) => {
+    return `+${phone}`;
+  });
+  // Strip out any trailing internal database IDs if present
+  cleanText = cleanText.replace(/[0-9a-fA-F]{24}/g, "");
+  return cleanText;
+}
+
+function formatGroupResponse(text: string): string {
+  const cleanText = sanitizeMessage(text);
+  // Unique framing for wani yaro responses in groups to differentiate it
+  return `┏━━━━━━━━━━━━━━━━━━┓\n👦🏽 *Wani Yaro (Junior Boy)*\n┗━━━━━━━━━━━━━━━━━━┛\n\n${cleanText}`;
+}
+
 async function resolveMentionsToJids(
   targets: string[],
   groupJid: string,
@@ -268,9 +285,12 @@ async function handlePaymentFlow(
   const itemsText = quantity > 1 ? `${quantity}x ${serviceName}s` : `1x ${serviceName}`;
   const responseText = `Right away, sir! I have generated the Paystack payment link for the purchase of *${itemsText}* (Total base: *₦${baseTotalAmount.toLocaleString()}* plus transaction charge: *₦${(totalAmount - baseTotalAmount).toLocaleString()}*, payable: *₦${totalAmount.toLocaleString()}*), sir.\n\n👉 Please click here to complete the payment, sir: ${checkoutUrl}\n\nOnce completed, your receipt will be processed and sent to your email (${senderUser.email}), sir!`;
 
+  const isGroup = remoteJid.endsWith('@g.us');
+  const formattedText = isGroup ? formatGroupResponse(responseText) : sanitizeMessage(responseText);
+
   await Wasender.httpSenderMessage({
     to: remoteJid,
-    text: responseText
+    text: formattedText
   });
 }
 
@@ -279,9 +299,13 @@ async function handleHistoryQuery(senderJid: string, remoteJid: string) {
   const user = await User.findOne({ phoneNumber: senderPhone });
 
   if (!user) {
+    const defaultResponse = "I searched our GOSA records, sir, but I couldn't find your profile, sir. Therefore, you don't have any transaction history yet, sir.";
+    const isGroup = remoteJid.endsWith('@g.us');
+    const formattedText = isGroup ? formatGroupResponse(defaultResponse) : sanitizeMessage(defaultResponse);
+
     await Wasender.httpSenderMessage({
       to: remoteJid,
-      text: "I searched our GOSA records, sir, but I couldn't find your profile, sir. Therefore, you don't have any transaction history yet, sir."
+      text: formattedText
     });
     return;
   }
@@ -347,9 +371,12 @@ async function handleHistoryQuery(senderJid: string, remoteJid: string) {
     text += `Always at your service, sir!`;
   }
 
+  const isGroup = remoteJid.endsWith('@g.us');
+  const responseText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
+
   await Wasender.httpSenderMessage({
     to: remoteJid,
-    text
+    text: responseText
   });
 }
 
@@ -430,9 +457,12 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ message: "Email captured, checkout generated", success: true });
       } else {
+        const responseText = "I apologize, sir. That email address doesn't seem valid, sir. Could you please reply with a valid email address so I can generate your payment link, sir?";
+        const formattedText = isGroup ? formatGroupResponse(responseText) : sanitizeMessage(responseText);
+
         await Wasender.httpSenderMessage({
           to: remoteJid,
-          text: "I apologize, sir. That email address doesn't seem valid, sir. Could you please reply with a valid email address so I can generate your payment link, sir?"
+          text: formattedText
         });
         return NextResponse.json({ message: "Invalid email retry sent", success: true });
       }
@@ -442,9 +472,10 @@ export async function POST(req: NextRequest) {
     const agentResponse = await Agent.httpSendMessage(messageText);
 
     if (agentResponse.intent === 'general_query') {
+      const formattedText = isGroup ? formatGroupResponse(agentResponse.response) : sanitizeMessage(agentResponse.response);
       await Wasender.httpSenderMessage({
         to: remoteJid,
-        text: agentResponse.response
+        text: formattedText
       });
       return NextResponse.json({ message: "General query handled", success: true });
     }
@@ -493,9 +524,12 @@ export async function POST(req: NextRequest) {
           expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
         });
 
+        const responseText = `Yes sir! I see you want to make a purchase, sir. However, I don't have your email address on file to process the receipt. Could you please reply with your email address, sir?`;
+        const formattedText = isGroup ? formatGroupResponse(responseText) : sanitizeMessage(responseText);
+
         await Wasender.httpSenderMessage({
           to: remoteJid,
-          text: `Yes sir! I see you want to make a purchase, sir. However, I don't have your email address on file to process the receipt. Could you please reply with your email address, sir?`
+          text: formattedText
         });
 
         return NextResponse.json({ message: "Session created, email requested", success: true });
