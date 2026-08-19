@@ -64,9 +64,19 @@ function sanitizeMessage(text: string): string {
 }
 
 function formatGroupResponse(text: string): string {
-  const cleanText = sanitizeMessage(text);
-  // Unique framing for wani yaro responses in groups to differentiate it
-  return `┏━━━━━━━━━━━━━━━━━━┓\n👦🏽 *Wani Yaro (Junior Boy)*\n┗━━━━━━━━━━━━━━━━━━┛\n\n${cleanText}`;
+  const cleanText = sanitizeMessage(text).trim();
+  return `🌟 *GOSA BILKWAS* 🌟
+━━━━━━━━━━━━━━━━━━
+
+${cleanText}
+
+━━━━━━━━━━━━━━━━━━
+📅 *GOSA CONVENTION 2026*
+• *Theme:* _Together We Thrive: Fostering Growth and Community Spirit_
+• *Date:* 31st October, 2026
+• *Venue:* Crispan
+
+📢 *Ad:* Sponsor a student project! Contact us at *+234 803 123 4567*`;
 }
 
 async function resolveMentionsToJids(
@@ -528,7 +538,9 @@ export async function POST(req: NextRequest) {
         messageText.toLowerCase().includes('wani yaro') ||
         messageText.toLowerCase().includes('junior boy') ||
         messageText.toLowerCase().includes('yaro') ||
-        messageText.toLowerCase().includes('waniyaro');
+        messageText.toLowerCase().includes('waniyaro') ||
+        messageText.toLowerCase().includes('gosa') ||
+        messageText.toLowerCase().includes('bilkwas');
       
       let isBotMentioned = hasKeyword;
       if (!isBotMentioned && rawMentionedJids.length > 0) {

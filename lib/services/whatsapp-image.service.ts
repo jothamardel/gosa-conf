@@ -244,8 +244,19 @@ www.gosa.events`;
   }
 
   private static formatGroupResponse(text: string): string {
-    const cleanText = this.sanitizeMessage(text);
-    return `┏━━━━━━━━━━━━━━━━━━┓\n👦🏽 *Wani Yaro (Junior Boy)*\n┗━━━━━━━━━━━━━━━━━━┛\n\n${cleanText}`;
+    const cleanText = this.sanitizeMessage(text).trim();
+    return `🌟 *GOSA BILKWAS* 🌟
+━━━━━━━━━━━━━━━━━━
+
+${cleanText}
+
+━━━━━━━━━━━━━━━━━━
+📅 *GOSA CONVENTION 2026*
+• *Theme:* _Together We Thrive: Fostering Growth and Community Spirit_
+• *Date:* 31st October, 2026
+• *Venue:* Crispan
+
+📢 *Ad:* Sponsor a student project! Contact us at *+234 803 123 4567*`;
   }
 
   private static sanitizeMessage(text: string): string {

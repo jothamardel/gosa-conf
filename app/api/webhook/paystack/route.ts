@@ -857,8 +857,19 @@ async function sendIndividualDinnerReceipt(reservation: any, mainPaymentReferenc
 }
 
 function formatGroupResponse(text: string): string {
-  const cleanText = sanitizeMessage(text);
-  return `┏━━━━━━━━━━━━━━━━━━┓\n👦🏽 *Wani Yaro (Junior Boy)*\n┗━━━━━━━━━━━━━━━━━━┛\n\n${cleanText}`;
+  const cleanText = sanitizeMessage(text).trim();
+  return `🌟 *GOSA BILKWAS* 🌟
+━━━━━━━━━━━━━━━━━━
+
+${cleanText}
+
+━━━━━━━━━━━━━━━━━━
+📅 *GOSA CONVENTION 2026*
+• *Theme:* _Together We Thrive: Fostering Growth and Community Spirit_
+• *Date:* 31st October, 2026
+• *Venue:* Crispan
+
+📢 *Ad:* Sponsor a student project! Contact us at *+234 803 123 4567*`;
 }
 
 function sanitizeMessage(text: string): string {
