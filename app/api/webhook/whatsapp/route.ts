@@ -154,10 +154,12 @@ async function syncGroupParticipants(groupId: string) {
       // Try to fetch name from groups API
       try {
         const groups = await Wasender.getGroups();
+        console.log("All groups: ", groups)
         const found = groups.find((g: any) => g.jid === groupId);
         if (found && found.name) {
           groupName = found.name;
         }
+        console.log("Found: ", found)
       } catch (err) {
         console.warn(`Failed to resolve group name for ${groupId}:`, err);
       }
@@ -172,6 +174,7 @@ async function syncGroupParticipants(groupId: string) {
         {
           name: groupName,
           participants,
+          active: true,
           lastSyncedAt: new Date()
         },
         { upsert: true, new: true }
@@ -180,6 +183,44 @@ async function syncGroupParticipants(groupId: string) {
     }
   } catch (error) {
     console.error(`Error syncing group participants for ${groupId}:`, error);
+  }
+}
+
+async function syncAllGroups(sessionId: string) {
+  try {
+    const groupsList = await Wasender.getGroups();
+    if (groupsList && groupsList.length > 0) {
+      const { WhatsAppGroup } = await import("@/lib/schema");
+      for (const group of groupsList) {
+        if (group.jid) {
+          // Fetch participants list for this group to sync it to DB
+          let groupParticipants: string[] = [];
+          try {
+            groupParticipants = await Wasender.getGroupParticipants(group.jid);
+          } catch (pErr) {
+            console.error(`Failed to fetch participants for group ${group.jid}:`, pErr);
+          }
+
+          // Find existing record to preserve name if needed
+          const existingRecord = await WhatsAppGroup.findOne({ groupId: group.jid });
+          const finalName = group.name || existingRecord?.name || "GOSA Group";
+
+          await WhatsAppGroup.findOneAndUpdate(
+            { groupId: group.jid },
+            {
+              name: finalName,
+              participants: groupParticipants,
+              active: true,
+              lastSyncedAt: new Date()
+            },
+            { upsert: true, new: true }
+          );
+        }
+      }
+      console.log(`[GROUP-SYNC] Successfully synced ${groupsList.length} groups to DB!`);
+    }
+  } catch (error) {
+    console.error("Failed to sync all groups:", error);
   }
 }
 
@@ -860,15 +901,33 @@ export async function POST(req: NextRequest) {
 
     console.log(body)
 
-    // Prevent duplicate processing by only listening to messages.received or group-participants.update events
-    if (body?.event && body.event !== 'messages.received' && body.event !== 'group-participants.update') {
+    // Prevent duplicate processing by only listening to allowed events
+    const allowedEvents = [
+      'messages.received',
+      'messages-group.received',
+      'group-participants.update',
+      'groups.upsert'
+    ];
+    if (body?.event && !allowedEvents.includes(body.event)) {
       return NextResponse.json({ message: `Ignoring event ${body.event}`, success: true });
     }
 
+    if (body?.event === 'groups.upsert') {
+      console.log(`[GROUPS-UPSERT] Groups upsert event received. Syncing groups...`);
+      try {
+        await connectDB();
+        await syncAllGroups(body.sessionId);
+      } catch (err) {
+        console.error("Error handling groups.upsert event:", err);
+      }
+      return NextResponse.json({ message: "Groups upsert processed", success: true });
+    }
+
     if (body?.event === 'group-participants.update') {
-      const { jid: groupJid, participants, action } = body.data || {};
-      if (action === 'add' && Array.isArray(participants) && participants.length > 0) {
-        // Resolve bot JID and LID for the current session to check if the bot is added
+      const { groupId, jid: groupJid, participants, action } = body.data || {};
+      const resolvedGroupJid = groupId || groupJid;
+      if (resolvedGroupJid && Array.isArray(participants) && participants.length > 0) {
+        // Resolve bot JID and LID for the current session to check if the bot is involved
         let botJid = "";
         let botLid = "";
         try {
@@ -881,8 +940,19 @@ export async function POST(req: NextRequest) {
           console.error("Error resolving bot JID/LID for participants update check:", err);
         }
 
-        // Check if the bot was added
-        const isBotAdded = participants.some((p: string) => {
+        // Extract participant IDs (supporting strings or objects)
+        const participantIds: string[] = [];
+        for (const p of participants) {
+          if (typeof p === 'string') {
+            participantIds.push(p);
+          } else if (p && typeof p === 'object') {
+            const val = p.jid || p.id || p.user || p.participant;
+            if (val) participantIds.push(val);
+          }
+        }
+
+        // Check if the bot was involved
+        const isBotInvolved = participantIds.some((p: string) => {
           const numericP = p.replace(/\D/g, '');
           const numericBotJid = botJid.replace(/\D/g, '');
           const numericBotLid = botLid.replace(/\D/g, '');
@@ -893,42 +963,34 @@ export async function POST(req: NextRequest) {
           );
         });
 
-        if (isBotAdded) {
-          console.log(`[BOT-ADD] Bot added to group: ${groupJid}. Triggering group sync...`);
-          try {
-            await connectDB();
-            const groupsList = await Wasender.getGroups();
-            if (groupsList && groupsList.length > 0) {
-              const { WhatsAppGroup } = await import("@/lib/schema");
-              for (const group of groupsList) {
-                if (group.jid) {
-                  // Fetch participants list for this group to sync it to DB
-                  let groupParticipants: string[] = [];
-                  try {
-                    groupParticipants = await Wasender.getGroupParticipants(group.jid);
-                  } catch (pErr) {
-                    console.error(`Failed to fetch participants for group ${group.jid}:`, pErr);
-                  }
+        if (isBotInvolved) {
+          await connectDB();
+          const { WhatsAppGroup } = await import("@/lib/schema");
 
-                  // Find existing record to preserve name if needed
-                  const existingRecord = await WhatsAppGroup.findOne({ groupId: group.jid });
-                  const finalName = group.name || existingRecord?.name || "GOSA Group";
-
-                  await WhatsAppGroup.findOneAndUpdate(
-                    { groupId: group.jid },
-                    {
-                      name: finalName,
-                      participants: groupParticipants,
-                      lastSyncedAt: new Date()
-                    },
-                    { upsert: true, new: true }
-                  );
-                }
-              }
-              console.log(`[BOT-ADD] Successfully synced ${groupsList.length} groups to DB!`);
+          if (action === 'add') {
+            console.log(`[BOT-ADD] Bot added to group: ${resolvedGroupJid}. Triggering group sync...`);
+            try {
+              await syncAllGroups(body.sessionId);
+            } catch (syncErr) {
+              console.error("[BOT-ADD] Error syncing groups after bot addition:", syncErr);
             }
-          } catch (syncErr) {
-            console.error("[BOT-ADD] Error syncing groups after bot addition:", syncErr);
+          } else if (action === 'remove') {
+            console.log(`[BOT-REMOVE] Bot removed from group: ${resolvedGroupJid}. Updating database...`);
+            try {
+              // Mark group as inactive and clear participants list per user preference
+              await WhatsAppGroup.findOneAndUpdate(
+                { groupId: resolvedGroupJid },
+                {
+                  active: false,
+                  participants: [],
+                  lastSyncedAt: new Date()
+                },
+                { upsert: true }
+              );
+              console.log(`[BOT-REMOVE] Group ${resolvedGroupJid} marked inactive and participants cleared.`);
+            } catch (err) {
+              console.error("[BOT-REMOVE] Error marking group inactive:", err);
+            }
           }
         }
       }
