@@ -1391,16 +1391,19 @@ export async function POST(req: NextRequest) {
       await connectDB();
 
       if (targetGroupId === 'all') {
-        // Create confirmation session on the database
-        await WhatsAppSession.create({
-          jid: senderJid,
-          pendingAction: {
-            type: 'approve_send_group_message',
-            targetGroupId: targetGroupId,
-            messageContent: messageContent
+        // Upsert confirmation session on the database to prevent duplicate key errors and overwrite stale sessions
+        await WhatsAppSession.findOneAndUpdate(
+          { jid: senderJid },
+          {
+            pendingAction: {
+              type: 'approve_send_group_message',
+              targetGroupId: targetGroupId,
+              messageContent: messageContent
+            },
+            expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
           },
-          expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
-        });
+          { upsert: true, new: true }
+        );
 
         const ackText = `Yes sir! I have prepared the announcement to be sent to all active GOSA groups.
 
@@ -1471,16 +1474,19 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
       await connectDB();
 
       if (targetGroupId === 'all') {
-        // Create confirmation session on the database
-        await WhatsAppSession.create({
-          jid: senderJid,
-          pendingAction: {
-            type: 'approve_send_broadcast_message',
-            targetGroupId: targetGroupId,
-            messageContent: messageContent
+        // Upsert confirmation session on the database to prevent duplicate key errors and overwrite stale sessions
+        await WhatsAppSession.findOneAndUpdate(
+          { jid: senderJid },
+          {
+            pendingAction: {
+              type: 'approve_send_broadcast_message',
+              targetGroupId: targetGroupId,
+              messageContent: messageContent
+            },
+            expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
           },
-          expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
-        });
+          { upsert: true, new: true }
+        );
 
         const ackText = `Yes sir! I have prepared the direct message broadcast to unique participants of all active groups.
 
@@ -1584,19 +1590,23 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
       const hasEmail = senderUser && senderUser.email && !senderUser.email.endsWith('@gosa.events');
       if (!hasEmail) {
         // Save session
-        await WhatsAppSession.create({
-          jid: senderJid,
-          pendingAction: {
-            type: agentResponse.intent,
-            ticketType: agentResponse.data.ticketType,
-            productType: agentResponse.data.productType,
-            quantity: agentResponse.data.quantity || 1,
-            amount: agentResponse.data.amount,
-            targetJids: targetJids,
-            items: resolvedItems // Save the items for cart session continuation
+        // Upsert confirmation session on the database to prevent duplicate key errors and overwrite stale sessions
+        await WhatsAppSession.findOneAndUpdate(
+          { jid: senderJid },
+          {
+            pendingAction: {
+              type: agentResponse.intent,
+              ticketType: agentResponse.data.ticketType,
+              productType: agentResponse.data.productType,
+              quantity: agentResponse.data.quantity || 1,
+              amount: agentResponse.data.amount,
+              targetJids: targetJids,
+              items: resolvedItems // Save the items for cart session continuation
+            },
+            expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
           },
-          expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
-        });
+          { upsert: true, new: true }
+        );
 
         const responseText = agentResponse.intent === 'checkout_cart'
           ? `Yes sir! I see you want to make a combined checkout, sir. However, I don't have your email address on file to process the receipt. Could you please reply with your email address, sir?`
