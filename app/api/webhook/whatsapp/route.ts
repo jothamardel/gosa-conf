@@ -858,6 +858,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
+    console.log(body)
+
     // Prevent duplicate processing by only listening to messages.received or group-participants.update events
     if (body?.event && body.event !== 'messages.received' && body.event !== 'group-participants.update') {
       return NextResponse.json({ message: `Ignoring event ${body.event}`, success: true });
@@ -884,7 +886,7 @@ export async function POST(req: NextRequest) {
           const numericP = p.replace(/\D/g, '');
           const numericBotJid = botJid.replace(/\D/g, '');
           const numericBotLid = botLid.replace(/\D/g, '');
-          
+
           return (
             (numericBotJid && (numericBotJid.endsWith(numericP) || numericP.endsWith(numericBotJid))) ||
             (numericBotLid && (numericBotLid.endsWith(numericP) || numericP.endsWith(numericBotLid)))
