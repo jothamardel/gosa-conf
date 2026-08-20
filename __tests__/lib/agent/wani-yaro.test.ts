@@ -343,4 +343,24 @@ describe('Wani Yaro Agent Integration', () => {
     expect(result.data.messageText).toBe('Hello members!');
     expect(result.response).toContain('sir');
   });
+
+  it('should handle help request and teach commands correctly', async () => {
+    const mockLLMResponse = {
+      choices: [
+        {
+          message: {
+            content: 'Yes sir! Here are the correct templates to command me, sir:\n\n1. *Convention Tickets:* `GOSA buy Regular ticket for myself` or `GOSA buy VIP ticket for @John`\n2. *Dinner Tickets:* `GOSA buy Dinner for myself`\n3. *Donations:* `GOSA donate 5000`'
+          }
+        }
+      ]
+    };
+
+    mockCreateFn.mockResolvedValue(mockLLMResponse);
+
+    const result = await Agent.httpSendMessage('help');
+
+    expect(result.intent).toBe('general_query');
+    expect(result.response).toContain('sir');
+    expect(result.response).toContain('GOSA buy');
+  });
 });
