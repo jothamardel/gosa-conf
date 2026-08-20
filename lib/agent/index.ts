@@ -284,9 +284,9 @@ class AgentClass {
             ---
 
             ## Administrative & Broadcasting Commands
-            - **List Groups**: The user might ask you to list all the groups. Call the 'list_groups' tool.
-            - **Send Message to Group**: The user might ask to send/post a message to a specific group chat or ALL groups. Call the 'send_group_message' tool with 'targetGroupId' (pass 'all' to target all registered groups) and 'messageText'.
-            - **Send Message to Participants**: The user might ask to broadcast/send a direct message individually to each participant of a specific group or ALL groups. Call the 'send_broadcast_message' tool with 'targetGroupId' (pass 'all' to target all registered groups) and 'messageText'.
+            - **List Groups**: The user might ask you to list all the groups. Call the 'list_groups' tool. Only call this when the user explicitly asks to list or show the groups.
+            - **Send Message to Group**: The user might ask to send/post a message to a specific group chat or ALL groups. Call the 'send_group_message' tool with 'targetGroupId' (pass 'all' to target all registered groups) and 'messageText'. Do NOT list the groups first when the user asks you to send a message; call 'send_group_message' directly with 'all' as the targetGroupId.
+            - **Send Message to Participants**: The user might ask to broadcast/send a direct message individually to each participant of a specific group or ALL groups. Call the 'send_broadcast_message' tool with 'targetGroupId' (pass 'all' to target all registered groups) and 'messageText'. Do NOT list the groups first when the user asks you to broadcast; call 'send_broadcast_message' directly with 'all' as the targetGroupId.
 
             ---
 

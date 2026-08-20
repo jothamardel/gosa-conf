@@ -1254,7 +1254,7 @@ export async function POST(req: NextRequest) {
           const groupsList = await WhatsAppGroup.find({ active: true });
           const uniqueP = new Set<string>();
           for (const g of groupsList) {
-            (g.participants || []).forEach(p => uniqueP.add(p));
+            (g.participants || []).forEach((p: string) => uniqueP.add(p));
           }
           const participants = Array.from(uniqueP);
 
@@ -1344,7 +1344,8 @@ export async function POST(req: NextRequest) {
 
     if (agentResponse.intent === 'list_groups') {
       const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363408711532693@g.us";
-      if (remoteJid !== ADMIN_GROUP_JID) {
+      const APPROVED_ADMIN_JIDS = [ADMIN_GROUP_JID, "120363402321564330@g.us"];
+      if (!APPROVED_ADMIN_JIDS.includes(remoteJid)) {
         const text = `I apologize, sir. Listing groups is a restricted command and can only be performed from the official Admin group, sir.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
@@ -1369,7 +1370,8 @@ export async function POST(req: NextRequest) {
 
     if (agentResponse.intent === 'send_group_message') {
       const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363408711532693@g.us";
-      if (remoteJid !== ADMIN_GROUP_JID) {
+      const APPROVED_ADMIN_JIDS = [ADMIN_GROUP_JID, "120363402321564330@g.us"];
+      if (!APPROVED_ADMIN_JIDS.includes(remoteJid)) {
         const text = `I apologize, sir. Sending messages to other groups is a restricted command and can only be performed from the official Admin group, sir.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
@@ -1448,7 +1450,8 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
 
     if (agentResponse.intent === 'send_broadcast_message') {
       const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363408711532693@g.us";
-      if (remoteJid !== ADMIN_GROUP_JID) {
+      const APPROVED_ADMIN_JIDS = [ADMIN_GROUP_JID, "120363402321564330@g.us"];
+      if (!APPROVED_ADMIN_JIDS.includes(remoteJid)) {
         const text = `I apologize, sir. Sending broadcast messages is a restricted command and can only be performed from the official Admin group, sir.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
