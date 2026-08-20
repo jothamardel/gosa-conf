@@ -1097,91 +1097,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Group mention check - allow text keywords OR native mention JID/LID matching the bot
-    if (isGroup) {
-      const hasKeyword =
-        messageText.toLowerCase().includes('wani yaro') ||
-        messageText.toLowerCase().includes('junior boy') ||
-        messageText.toLowerCase().includes('yaro') ||
-        messageText.toLowerCase().includes('waniyaro') ||
-        messageText.toLowerCase().includes('gosa') ||
-        messageText.toLowerCase().includes('bilkwas');
-
-      let isBotMentioned = hasKeyword;
-      if (!isBotMentioned && rawMentionedJids.length > 0) {
-        if (
-          (cachedBotJid && rawMentionedJids.includes(cachedBotJid)) ||
-          (cachedBotLid && rawMentionedJids.includes(cachedBotLid)) ||
-          (rawSenderJid !== senderJid && rawMentionedJids.includes(rawSenderJid))
-        ) {
-          isBotMentioned = true;
-        }
-      }
-
-      if (!isBotMentioned) {
-        return NextResponse.json({ message: "Ignore group message without mention", success: true });
-      }
-    }
-
     await connectDB();
 
-    // Auto-resolve and save/update mentioned users on the database
-    if (mentionedJids.length > 0) {
-      const textMentions = messageText.match(/@[a-zA-Z0-9_\-]+/g) || [];
-      const cleanTextMentions = textMentions.filter((m: string) => m.toLowerCase() !== '@all');
-
-      for (let i = 0; i < cleanTextMentions.length; i++) {
-        if (i < mentionedJids.length) {
-          const mentionHandle = cleanTextMentions[i].replace('@', '').trim();
-          const jid = mentionedJids[i];
-          const phone = jid.split('@')[0];
-          const formattedPhone = '+' + phone;
-
-          let userRecord = await User.findOne({ phoneNumber: formattedPhone });
-          if (userRecord) {
-            // Update name if currently a placeholder name
-            if (userRecord.fullName.startsWith('GOSA Member') || userRecord.fullName.startsWith('User')) {
-              userRecord.fullName = mentionHandle;
-              await userRecord.save();
-              console.log(`Updated user ${formattedPhone} name to ${mentionHandle} from mention`);
-            }
-          } else {
-            // Check if user exists with the default placeholder email to avoid duplicate key errors
-            const targetEmail = `${phone}@gosa.events`;
-            const existingEmailUser = await User.findOne({ email: targetEmail });
-            if (existingEmailUser) {
-              userRecord = existingEmailUser;
-              userRecord.fullName = mentionHandle;
-              userRecord.phoneNumber = formattedPhone;
-              await userRecord.save();
-            } else {
-              await User.create({
-                fullName: mentionHandle,
-                phoneNumber: formattedPhone,
-                email: targetEmail
-              });
-            }
-            console.log(`Created/Linked user ${formattedPhone} with name ${mentionHandle} from mention`);
-          }
-        }
-      }
-    }
-
-    // Group Syncing (Non-blocking background promise)
-    if (isGroup) {
-      WhatsAppGroup.findOne({ groupId: remoteJid }).then((groupRecord) => {
-        const oneDay = 24 * 60 * 60 * 1000;
-        if (!groupRecord || Date.now() - new Date(groupRecord.lastSyncedAt).getTime() > oneDay) {
-          syncGroupParticipants(remoteJid).catch((err) => {
-            console.error("Failed to sync group participants in background:", err);
-          });
-        }
-      }).catch((err) => {
-        console.error("Failed to query group in background:", err);
-      });
-    }
-
-    // Active conversational session
+    // Active conversational session (processed early so group chat approvals bypass the bot mention check)
     const session = await WhatsAppSession.findOne({ jid: senderJid });
     if (session) {
       if (session.pendingAction.type === 'approve_send_group_message') {
@@ -1322,6 +1240,90 @@ export async function POST(req: NextRequest) {
         // Unrelated message typed during email request -> delete session to allow normal conversation
         await WhatsAppSession.deleteOne({ jid: senderJid });
       }
+    }
+
+    // Group mention check - allow text keywords OR native mention JID/LID matching the bot
+    if (isGroup) {
+      const hasKeyword =
+        messageText.toLowerCase().includes('wani yaro') ||
+        messageText.toLowerCase().includes('junior boy') ||
+        messageText.toLowerCase().includes('yaro') ||
+        messageText.toLowerCase().includes('waniyaro') ||
+        messageText.toLowerCase().includes('gosa') ||
+        messageText.toLowerCase().includes('bilkwas');
+
+      let isBotMentioned = hasKeyword;
+      if (!isBotMentioned && rawMentionedJids.length > 0) {
+        if (
+          (cachedBotJid && rawMentionedJids.includes(cachedBotJid)) ||
+          (cachedBotLid && rawMentionedJids.includes(cachedBotLid)) ||
+          (rawSenderJid !== senderJid && rawMentionedJids.includes(rawSenderJid))
+        ) {
+          isBotMentioned = true;
+        }
+      }
+
+      if (!isBotMentioned) {
+        return NextResponse.json({ message: "Ignore group message without mention", success: true });
+      }
+    }
+
+    await connectDB();
+
+    // Auto-resolve and save/update mentioned users on the database
+    if (mentionedJids.length > 0) {
+      const textMentions = messageText.match(/@[a-zA-Z0-9_\-]+/g) || [];
+      const cleanTextMentions = textMentions.filter((m: string) => m.toLowerCase() !== '@all');
+
+      for (let i = 0; i < cleanTextMentions.length; i++) {
+        if (i < mentionedJids.length) {
+          const mentionHandle = cleanTextMentions[i].replace('@', '').trim();
+          const jid = mentionedJids[i];
+          const phone = jid.split('@')[0];
+          const formattedPhone = '+' + phone;
+
+          let userRecord = await User.findOne({ phoneNumber: formattedPhone });
+          if (userRecord) {
+            // Update name if currently a placeholder name
+            if (userRecord.fullName.startsWith('GOSA Member') || userRecord.fullName.startsWith('User')) {
+              userRecord.fullName = mentionHandle;
+              await userRecord.save();
+              console.log(`Updated user ${formattedPhone} name to ${mentionHandle} from mention`);
+            }
+          } else {
+            // Check if user exists with the default placeholder email to avoid duplicate key errors
+            const targetEmail = `${phone}@gosa.events`;
+            const existingEmailUser = await User.findOne({ email: targetEmail });
+            if (existingEmailUser) {
+              userRecord = existingEmailUser;
+              userRecord.fullName = mentionHandle;
+              userRecord.phoneNumber = formattedPhone;
+              await userRecord.save();
+            } else {
+              await User.create({
+                fullName: mentionHandle,
+                phoneNumber: formattedPhone,
+                email: targetEmail
+              });
+            }
+            console.log(`Created/Linked user ${formattedPhone} with name ${mentionHandle} from mention`);
+          }
+        }
+      }
+    }
+
+    // Group Syncing (Non-blocking background promise)
+    if (isGroup) {
+      WhatsAppGroup.findOne({ groupId: remoteJid }).then((groupRecord) => {
+        const oneDay = 24 * 60 * 60 * 1000;
+        if (!groupRecord || Date.now() - new Date(groupRecord.lastSyncedAt).getTime() > oneDay) {
+          syncGroupParticipants(remoteJid).catch((err) => {
+            console.error("Failed to sync group participants in background:", err);
+          });
+        }
+      }).catch((err) => {
+        console.error("Failed to query group in background:", err);
+      });
     }
 
     // Process using wani yaro agent with conversation memory context
