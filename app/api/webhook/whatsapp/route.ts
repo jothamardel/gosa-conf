@@ -100,7 +100,7 @@ ${cleanText}
 • *Venue:* Crispan
 • *Website:* event.gosanigeria.ng
 
-📢 *Ad:* Advertise your business here! Contact us at *+234 803 123 4567*`;
+📢 *Ad:* Advertise your business here! Contact us at *08098341778*`;
 }
 
 async function resolveMentionsToJids(
@@ -306,7 +306,7 @@ async function handlePaymentFlow(
               phoneNumber: { $regex: targetPhone }
             });
             if (!targetUser) {
-              const targetEmail = `${targetPhone}@gosa.events`;
+              const targetEmail = `${targetPhone}@event.gosanigeria.ng`;
               const existingEmailUser = await User.findOne({ email: targetEmail });
               if (existingEmailUser) {
                 targetUser = existingEmailUser;
@@ -376,7 +376,7 @@ async function handlePaymentFlow(
               phoneNumber: { $regex: targetPhone }
             });
             if (!targetUser) {
-              const targetEmail = `${targetPhone}@gosa.events`;
+              const targetEmail = `${targetPhone}@event.gosanigeria.ng`;
               const existingEmailUser = await User.findOne({ email: targetEmail });
               if (existingEmailUser) {
                 targetUser = existingEmailUser;
@@ -599,7 +599,7 @@ ${checkoutUrl}`;
           phoneNumber: { $regex: targetPhone }
         });
         if (!targetUser) {
-          const targetEmail = `${targetPhone}@gosa.events`;
+          const targetEmail = `${targetPhone}@event.gosanigeria.ng`;
           const existingEmailUser = await User.findOne({ email: targetEmail });
           if (existingEmailUser) {
             targetUser = existingEmailUser;
@@ -667,7 +667,7 @@ ${checkoutUrl}`;
           phoneNumber: { $regex: targetPhone }
         });
         if (!targetUser) {
-          const targetEmail = `${targetPhone}@gosa.events`;
+          const targetEmail = `${targetPhone}@event.gosanigeria.ng`;
           const existingEmailUser = await User.findOne({ email: targetEmail });
           if (existingEmailUser) {
             targetUser = existingEmailUser;
@@ -838,9 +838,71 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Prevent duplicate processing by only listening to the primary 'messages.received' event
-    if (body?.event && body.event !== 'messages.received') {
-      return NextResponse.json({ message: `Ignoring event ${body.event} to prevent duplicate processing`, success: true });
+    // Prevent duplicate processing by only listening to messages.received or group-participants.update events
+    if (body?.event && body.event !== 'messages.received' && body.event !== 'group-participants.update') {
+      return NextResponse.json({ message: `Ignoring event ${body.event}`, success: true });
+    }
+
+    if (body?.event === 'group-participants.update') {
+      const { jid: groupJid, participants, action } = body.data || {};
+      if (action === 'add' && Array.isArray(participants) && participants.length > 0) {
+        // Resolve bot JID and LID for the current session to check if the bot is added
+        let botJid = "";
+        let botLid = "";
+        try {
+          const fetchedJid = await Wasender.getBotJidFromSession(body.sessionId);
+          if (fetchedJid) {
+            botJid = fetchedJid;
+            botLid = (await Wasender.getLidFromPn(botJid)) || "";
+          }
+        } catch (err) {
+          console.error("Error resolving bot JID/LID for participants update check:", err);
+        }
+
+        // Check if the bot was added
+        const isBotAdded = participants.some((p: string) => {
+          const cleanP = p.replace('@s.whatsapp.net', '').replace('@lid', '');
+          const cleanBotJid = botJid.replace('@s.whatsapp.net', '');
+          const cleanBotLid = botLid.replace('@lid', '');
+          return p === botJid || p === botLid || cleanP === cleanBotJid || cleanP === cleanBotLid;
+        });
+
+        if (isBotAdded) {
+          console.log(`[BOT-ADD] Bot added to group: ${groupJid}. Triggering group sync...`);
+          try {
+            await connectDB();
+            const groupsList = await Wasender.getGroups();
+            if (groupsList && groupsList.length > 0) {
+              const { WhatsAppGroup } = await import("@/lib/schema");
+              for (const group of groupsList) {
+                if (group.jid) {
+                  // Fetch participants list for this group to sync it to DB
+                  let groupParticipants: string[] = [];
+                  try {
+                    groupParticipants = await Wasender.getGroupParticipants(group.jid);
+                  } catch (pErr) {
+                    console.error(`Failed to fetch participants for group ${group.jid}:`, pErr);
+                  }
+
+                  await WhatsAppGroup.findOneAndUpdate(
+                    { groupId: group.jid },
+                    {
+                      name: group.name || "GOSA Group",
+                      participants: groupParticipants,
+                      lastSyncedAt: new Date()
+                    },
+                    { upsert: true, new: true }
+                  );
+                }
+              }
+              console.log(`[BOT-ADD] Successfully synced ${groupsList.length} groups to DB!`);
+            }
+          } catch (syncErr) {
+            console.error("[BOT-ADD] Error syncing groups after bot addition:", syncErr);
+          }
+        }
+      }
+      return NextResponse.json({ message: "Group participants update processed", success: true });
     }
 
     // Self-message prevention

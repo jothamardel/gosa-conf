@@ -290,6 +290,20 @@ class Sender {
     }
   };
 
+  getGroups = async (): Promise<any[]> => {
+    console.log("Fetching all WhatsApp groups for account");
+    try {
+      const response = await WasenderAxiosInstance.get('/groups');
+      if (response.data?.success && Array.isArray(response.data?.data)) {
+        return response.data.data;
+      }
+      return [];
+    } catch (err: any) {
+      console.warn("Failed to fetch groups from WASender API:", err?.response?.data || err?.message);
+      return [];
+    }
+  };
+
   getBotJidFromSession = async (sessionId: string): Promise<string | null> => {
     console.log("Fetching session info for JID resolution:", sessionId);
     try {

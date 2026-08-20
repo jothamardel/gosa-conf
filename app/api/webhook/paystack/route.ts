@@ -953,7 +953,7 @@ ${cleanText}
 • *Venue:* Crispan
 • *Website:* event.gosanigeria.ng
 
-📢 *Ad:* Advertise your business here! Contact us at *+234 803 123 4567*`;
+📢 *Ad:* Advertise your business here! Contact us at *08098341778*`;
 }
 
 function sanitizeMessage(text: string): string {
