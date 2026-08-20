@@ -39,7 +39,7 @@ export default function ComingSoon() {
   useEffect(() => {
     if (!mounted) return;
 
-    const targetDate = new Date("2026-11-01T09:00:00");
+    const targetDate = new Date("2026-10-31T09:00:00");
 
     const calculateTimeLeft = () => {
       const difference = +targetDate - +new Date();
@@ -112,18 +112,18 @@ export default function ComingSoon() {
         </div>
 
         {/* Heading */}
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-950 mb-3 tracking-tight leading-tight">
-          Strengthening Our Legacy:
-          <span className="block bg-gradient-to-r from-primary to-secondary-500 bg-clip-text text-transparent mt-1">
-            Empowering Leaders
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-950 mb-3 tracking-tight leading-tight uppercase">
+          Building Bridges:
+          <span className="block bg-gradient-to-r from-primary to-secondary-500 bg-clip-text text-transparent mt-1 text-2xl sm:text-3xl lg:text-4xl normal-case font-bold">
+            Connecting the Past with the Present
           </span>
         </h1>
 
         {/* Description */}
         <p className="text-gray-600 text-sm sm:text-base max-w-lg mb-8 leading-relaxed">
+          Strengthening Our Legacy: Empowering the Next Generation of Leaders.
           Professional development meets cherished memories at our premier alumni convention.
           Featuring keynote speakers, career networking, and special reunion events.
-          Our new portal is currently preparing for launch.
         </p>
 
         {/* Countdown Timer */}
@@ -152,7 +152,7 @@ export default function ComingSoon() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-xs sm:text-sm text-gray-600 mb-8 w-full max-w-md border-t border-b border-gray-200/50 py-4">
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4 text-primary-600" />
-            <span className="font-medium text-gray-800">November 1 - 2, 2026</span>
+            <span className="font-medium text-gray-800">October 31, 2026</span>
           </div>
           <span className="hidden sm:inline text-gray-300">|</span>
           <div className="flex items-center space-x-2">
