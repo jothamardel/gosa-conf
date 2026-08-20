@@ -155,7 +155,7 @@ async function syncGroupParticipants(groupId: string) {
       try {
         const groups = await Wasender.getGroups();
         console.log("All groups: ", groups)
-        const found = groups.find((g: any) => g.jid === groupId);
+        const found = groups.find((g: any) => (g.id || g.jid) === groupId);
         if (found && found.name) {
           groupName = found.name;
         }
@@ -192,21 +192,22 @@ async function syncAllGroups(sessionId: string) {
     if (groupsList && groupsList.length > 0) {
       const { WhatsAppGroup } = await import("@/lib/schema");
       for (const group of groupsList) {
-        if (group.jid) {
+        const targetJid = group.id || group.jid;
+        if (targetJid) {
           // Fetch participants list for this group to sync it to DB
           let groupParticipants: string[] = [];
           try {
-            groupParticipants = await Wasender.getGroupParticipants(group.jid);
+            groupParticipants = await Wasender.getGroupParticipants(targetJid);
           } catch (pErr) {
-            console.error(`Failed to fetch participants for group ${group.jid}:`, pErr);
+            console.error(`Failed to fetch participants for group ${targetJid}:`, pErr);
           }
 
           // Find existing record to preserve name if needed
-          const existingRecord = await WhatsAppGroup.findOne({ groupId: group.jid });
+          const existingRecord = await WhatsAppGroup.findOne({ groupId: targetJid });
           const finalName = group.name || existingRecord?.name || "GOSA Group";
 
           await WhatsAppGroup.findOneAndUpdate(
-            { groupId: group.jid },
+            { groupId: targetJid },
             {
               name: finalName,
               participants: groupParticipants,
