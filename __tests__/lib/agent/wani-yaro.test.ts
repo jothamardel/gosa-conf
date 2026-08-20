@@ -255,4 +255,92 @@ describe('Wani Yaro Agent Integration', () => {
     expect(result.data.items![2]).toEqual({ type: 'uniform', quantity: 2 });
     expect(result.response).toContain('sir');
   });
+
+  it('should parse list groups request correctly', async () => {
+    const mockLLMResponse = {
+      choices: [
+        {
+          message: {
+            tool_calls: [
+              {
+                function: {
+                  name: 'list_groups',
+                  arguments: JSON.stringify({})
+                }
+              }
+            ]
+          }
+        }
+      ]
+    };
+
+    mockCreateFn.mockResolvedValue(mockLLMResponse);
+
+    const result = await Agent.httpSendMessage('list all groups');
+
+    expect(result.intent).toBe('list_groups');
+    expect(result.response).toContain('sir');
+  });
+
+  it('should parse send group message request correctly', async () => {
+    const mockLLMResponse = {
+      choices: [
+        {
+          message: {
+            tool_calls: [
+              {
+                function: {
+                  name: 'send_group_message',
+                  arguments: JSON.stringify({
+                    targetGroupId: '120363402321564330@g.us',
+                    messageText: 'Hello group!'
+                  })
+                }
+              }
+            ]
+          }
+        }
+      ]
+    };
+
+    mockCreateFn.mockResolvedValue(mockLLMResponse);
+
+    const result = await Agent.httpSendMessage('send Hello group! to group 120363402321564330@g.us');
+
+    expect(result.intent).toBe('send_group_message');
+    expect(result.data.targetGroupId).toBe('120363402321564330@g.us');
+    expect(result.data.messageText).toBe('Hello group!');
+    expect(result.response).toContain('sir');
+  });
+
+  it('should parse send broadcast message request correctly', async () => {
+    const mockLLMResponse = {
+      choices: [
+        {
+          message: {
+            tool_calls: [
+              {
+                function: {
+                  name: 'send_broadcast_message',
+                  arguments: JSON.stringify({
+                    targetGroupId: '120363402321564330@g.us',
+                    messageText: 'Hello members!'
+                  })
+                }
+              }
+            ]
+          }
+        }
+      ]
+    };
+
+    mockCreateFn.mockResolvedValue(mockLLMResponse);
+
+    const result = await Agent.httpSendMessage('broadcast Hello members! to participants of group 120363402321564330@g.us');
+
+    expect(result.intent).toBe('send_broadcast_message');
+    expect(result.data.targetGroupId).toBe('120363402321564330@g.us');
+    expect(result.data.messageText).toBe('Hello members!');
+    expect(result.response).toContain('sir');
+  });
 });

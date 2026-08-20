@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 export interface AgentResponse {
-  intent: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query' | 'checkout_cart';
+  intent: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query' | 'checkout_cart' | 'list_groups' | 'send_group_message' | 'send_broadcast_message';
   data: {
     ticketType?: 'convention' | 'dinner';
     productType?: 'uniform' | 'emblem' | 'magazine' | 'brochure';
@@ -15,6 +15,8 @@ export interface AgentResponse {
       amount?: number;
       targets?: string[];
     }>;
+    targetGroupId?: string;
+    messageText?: string;
   };
   response: string;
 }
@@ -147,6 +149,59 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         required: ["items"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_groups",
+      description: "List all WhatsApp groups the bot is registered in, showing their group names and JIDs.",
+      parameters: {
+        type: "object",
+        properties: {}
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_group_message",
+      description: "Send a message to a specific WhatsApp group. Requires the target group's JID (groupId) and the message content.",
+      parameters: {
+        type: "object",
+        properties: {
+          targetGroupId: {
+            type: "string",
+            description: "The group JID, e.g. '120363402321564330@g.us'."
+          },
+          messageText: {
+            type: "string",
+            description: "The message text to send."
+          }
+        },
+        required: ["targetGroupId", "messageText"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_broadcast_message",
+      description: "Broadcast a direct message individually to each participant in a specific group. Requires the target group's JID (groupId) and the message content.",
+      parameters: {
+        type: "object",
+        properties: {
+          targetGroupId: {
+            type: "string",
+            description: "The group JID, e.g. '120363402321564330@g.us'."
+          },
+          messageText: {
+            type: "string",
+            description: "The message text to broadcast."
+          }
+        },
+        required: ["targetGroupId", "messageText"]
+      }
+    }
   }
 ];
 
@@ -228,6 +283,13 @@ class AgentClass {
 
             ---
 
+            ## Administrative & Broadcasting Commands
+            - **List Groups**: The user might ask you to list all the groups. Call the 'list_groups' tool.
+            - **Send Message to Group**: The user might ask to send/post a message to a specific group chat. Call the 'send_group_message' tool with 'targetGroupId' and 'messageText'.
+            - **Send Message to Participants**: The user might ask to broadcast/send a direct message individually to each participant of a specific group. Call the 'send_broadcast_message' tool with 'targetGroupId' and 'messageText'.
+
+            ---
+
             ## Response Rules
             - Always maintain the respectful junior boy Gindiri alumnus personality.
             - Address the user as "sir" in your text replies.
@@ -253,13 +315,13 @@ class AgentClass {
       const messageObj = response.choices[0]?.message;
       const toolCalls = messageObj?.tool_calls;
 
-      let intentVal: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query' | 'checkout_cart' = 'general_query';
+      let intentVal: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query' | 'checkout_cart' | 'list_groups' | 'send_group_message' | 'send_broadcast_message' = 'general_query';
       let dataVal: any = {};
       let politeResponse = "";
 
       if (toolCalls && toolCalls.length > 0) {
         const toolCall = toolCalls[0] as any;
-        const functionName = toolCall.function.name as 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'checkout_cart';
+        const functionName = toolCall.function.name as 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'checkout_cart' | 'list_groups' | 'send_group_message' | 'send_broadcast_message';
         const args = JSON.parse(toolCall.function.arguments || "{}");
         const targets = args.targets || [];
 
@@ -270,6 +332,21 @@ class AgentClass {
           dataVal = {
             items: args.items,
             email: null
+          };
+        } else if (functionName === 'list_groups') {
+          politeResponse = `Yes sir! Retrieving the active GOSA groups list for you, sir.`;
+          dataVal = {};
+        } else if (functionName === 'send_group_message') {
+          politeResponse = `Yes sir! Right away, sir! I will forward that message to the specified group chat, sir.`;
+          dataVal = {
+            targetGroupId: args.targetGroupId,
+            messageText: args.messageText
+          };
+        } else if (functionName === 'send_broadcast_message') {
+          politeResponse = `Yes sir! Right away, sir! I will broadcast that direct message to all participants of the specified group individually, sir.`;
+          dataVal = {
+            targetGroupId: args.targetGroupId,
+            messageText: args.messageText
           };
         } else {
           dataVal = {

@@ -1200,6 +1200,134 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "History query handled", success: true });
     }
 
+    if (agentResponse.intent === 'list_groups') {
+      const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363402321564330@g.us";
+      if (remoteJid !== ADMIN_GROUP_JID) {
+        const text = `I apologize, sir. Listing groups is a restricted command and can only be performed from the official Admin group, sir.`;
+        const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
+        await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+        return NextResponse.json({ message: "Restricted command rejected", success: true });
+      }
+
+      await connectDB();
+      const groups = await WhatsAppGroup.find({ active: true });
+      let replyText = "";
+      if (groups.length === 0) {
+        replyText = "Yes sir! I couldn't find any active groups in my registry, sir.";
+      } else {
+        replyText = "Yes sir! Here are the active GOSA groups in my registry, sir:\n\n";
+        groups.forEach((g, index) => {
+          replyText += `${index + 1}. *Name*: ${g.name}\n• *JID*: ${g.groupId}\n• *Participants*: ${g.participants.length} members\n\n`;
+        });
+      }
+      const formattedText = isGroup ? formatGroupResponse(replyText) : sanitizeMessage(replyText);
+      await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+      return NextResponse.json({ message: "Groups listed successfully", success: true });
+    }
+
+    if (agentResponse.intent === 'send_group_message') {
+      const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363402321564330@g.us";
+      if (remoteJid !== ADMIN_GROUP_JID) {
+        const text = `I apologize, sir. Sending messages to other groups is a restricted command and can only be performed from the official Admin group, sir.`;
+        const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
+        await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+        return NextResponse.json({ message: "Restricted command rejected", success: true });
+      }
+
+      const { targetGroupId, messageText: messageContent } = agentResponse.data;
+      if (!targetGroupId || !messageContent) {
+        const text = `I apologize, sir. I couldn't resolve the target group or message content, sir. Could you please specify them clearly, sir?`;
+        const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
+        await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+        return NextResponse.json({ message: "Invalid command parameters", success: true });
+      }
+
+      // Check if target group is active in DB
+      await connectDB();
+      const targetGroup = await WhatsAppGroup.findOne({ groupId: targetGroupId, active: true });
+      if (!targetGroup) {
+        const text = `I apologize, sir. The group JID *${targetGroupId}* was not found or is currently inactive, sir.`;
+        const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
+        await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+        return NextResponse.json({ message: "Target group not found", success: true });
+      }
+
+      // Send message to the target group
+      const formattedMessage = formatGroupResponse(messageContent);
+      const res = await Wasender.httpSenderMessage({
+        to: targetGroupId,
+        text: formattedMessage
+      });
+
+      let replyText = "";
+      if (res.success) {
+        replyText = `Yes sir! I have successfully sent the message to the group *${targetGroup.name}*, sir.`;
+      } else {
+        replyText = `I apologize, sir. I failed to send the message to group *${targetGroup.name}*. Error: ${res.error || "unknown"}, sir.`;
+      }
+
+      const formattedText = isGroup ? formatGroupResponse(replyText) : sanitizeMessage(replyText);
+      await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+      return NextResponse.json({ message: "Group message processed", success: true });
+    }
+
+    if (agentResponse.intent === 'send_broadcast_message') {
+      const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363402321564330@g.us";
+      if (remoteJid !== ADMIN_GROUP_JID) {
+        const text = `I apologize, sir. Sending broadcast messages is a restricted command and can only be performed from the official Admin group, sir.`;
+        const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
+        await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+        return NextResponse.json({ message: "Restricted command rejected", success: true });
+      }
+
+      const { targetGroupId, messageText: messageContent } = agentResponse.data;
+      if (!targetGroupId || !messageContent) {
+        const text = `I apologize, sir. I couldn't resolve the target group or message content, sir. Could you please specify them clearly, sir?`;
+        const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
+        await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+        return NextResponse.json({ message: "Invalid command parameters", success: true });
+      }
+
+      // Check if target group is active in DB
+      await connectDB();
+      const targetGroup = await WhatsAppGroup.findOne({ groupId: targetGroupId, active: true });
+      if (!targetGroup) {
+        const text = `I apologize, sir. The group JID *${targetGroupId}* was not found or is currently inactive, sir.`;
+        const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
+        await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+        return NextResponse.json({ message: "Target group not found", success: true });
+      }
+
+      const participants = targetGroup.participants || [];
+      if (participants.length === 0) {
+        const text = `I apologize, sir. The group *${targetGroup.name}* does not have any participant JIDs registered in our database, sir.`;
+        const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
+        await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+        return NextResponse.json({ message: "No participants registered", success: true });
+      }
+
+      // Send direct messages to all participants in the group
+      console.log(`[BROADCAST] Triggering direct message broadcast to ${participants.length} participants of group ${targetGroupId}...`);
+      let successCount = 0;
+      let failCount = 0;
+      for (const participant of participants) {
+        const res = await Wasender.httpSenderMessage({
+          to: participant,
+          text: sanitizeMessage(messageContent)
+        });
+        if (res.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      }
+
+      const replyText = `Yes sir! I have finished broadcasting the message to the participants of group *${targetGroup.name}*, sir.\n\n• *Total*: ${participants.length}\n• *Delivered*: ${successCount}\n• *Failed*: ${failCount}`;
+      const formattedText = isGroup ? formatGroupResponse(replyText) : sanitizeMessage(replyText);
+      await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+      return NextResponse.json({ message: "Broadcast completed", success: true });
+    }
+
     // Payment intents: buy_tickets, buy_product, donation, checkout_cart
     if (
       agentResponse.intent === 'buy_tickets' ||
