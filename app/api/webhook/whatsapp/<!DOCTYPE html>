@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GOSA — Gindiri Old Students&#039; Association</title>
+  <meta name="description"
+    content="Official alumni portal of Boys Secondary School and Girls High School, Gindiri, Plateau State, Nigeria.">
+
+  
+  <link rel="canonical" href="https://gosanigeria.ng">
+
+  
+  <!-- MINIFIED -->
+  <title>GOSA — Gindiri Old Students' Association | Official Alumni Portal - It's Over 9000!</title><meta name="description" content="Official alumni portal of Boys&#039; Secondary School (BSS) and Girls&#039; High School (GHS), Gindiri, Plateau State, Nigeria. Est. 1956."><meta name="keywords" content="GOSA, Gindiri Old Students Association, BSS Gindiri, GHS Gindiri, Plateau State Nigeria, alumni"><meta property="og:title" content="GOSA — Gindiri Old Students&#039; Association"><meta property="og:description" content="Official alumni portal of BSS and GHS Gindiri, Nigeria."><meta property="og:url" content="https://gosanigeria.ng"><meta property="og:image" content="https://gosanigeria.ng/images/gosa_logo.png"><meta property="og:image" content="https://gosanigeria.ng/images/gosa_logo.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Over 9000 Thousand!","description":"For those who helped create the Genki Dama"}</script>
+
+  
+  <link rel="icon" type="image/x-icon" href="https://gosanigeria.ng/images/favicon.ico">
+  <link rel="apple-touch-icon" href="https://gosanigeria.ng/images/apple-touch-icon.png">
+
+  
+  <link rel="preconnect" href="https://fonts.bunny.net">
+  <link href="https://fonts.bunny.net/css?family=playfair-display:400,400i,700,700i|inter:400,500,600&display=swap"
+    rel="stylesheet">
+
+  
+  <link rel="preload" as="style" href="https://gosanigeria.ng/build/assets/app-gMoxnINK.css" /><link rel="modulepreload" as="script" href="https://gosanigeria.ng/build/assets/app-34mOoJaZ.js" /><link rel="stylesheet" href="https://gosanigeria.ng/build/assets/app-gMoxnINK.css" data-navigate-track="reload" /><script type="module" src="https://gosanigeria.ng/build/assets/app-34mOoJaZ.js" data-navigate-track="reload"></script>
+  
+  
+<script id="browser-logger-active">
+(function() {
+    const ENDPOINT = 'https://gosanigeria.ng/_boost/browser-logs';
+    const logQueue = [];
+    let flushTimeout = null;
+
+    console.log('🔍 Browser logger active (MCP server detected). Posting to: ' + ENDPOINT);
+
+    // Store original console methods
+    const originalConsole = {
+        log: console.log,
+        info: console.info,
+        error: console.error,
+        warn: console.warn,
+        table: console.table
+    };
+
+    // Helper to safely stringify values
+    function safeStringify(obj) {
+        const seen = new WeakSet();
+        return JSON.stringify(obj, (key, value) => {
+            if (typeof value === 'object' && value !== null) {
+                if (seen.has(value)) return '[Circular]';
+                seen.add(value);
+            }
+            if (value instanceof Error) {
+                return {
+                    name: value.name,
+                    message: value.message,
+                    stack: value.stack
+                };
+            }
+            return value;
+        });
+    }
+
+    // Batch and send logs
+    function flushLogs() {
+        if (logQueue.length === 0) return;
+
+        const batch = logQueue.splice(0, logQueue.length);
+
+        fetch(ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ logs: batch })
+        }).catch(err => {
+            // Silently fail to avoid infinite loops
+            originalConsole.error('Failed to send logs:', err);
+        });
+    }
+
+    // Debounced flush (100ms)
+    function scheduleFlush() {
+        if (flushTimeout) clearTimeout(flushTimeout);
+        flushTimeout = setTimeout(flushLogs, 100);
+    }
+
+    // Intercept console methods
+    ['log', 'info', 'error', 'warn', 'table'].forEach(method => {
+        console[method] = function(...args) {
+            // Call original method
+            originalConsole[method].apply(console, args);
+
+            // Capture log data
+            try {
+                logQueue.push({
+                    type: method,
+                    timestamp: new Date().toISOString(),
+                    data: args.map(arg => {
+                        try {
+                            return typeof arg === 'object' ? JSON.parse(safeStringify(arg)) : arg;
+                        } catch (e) {
+                            return String(arg);
+                        }
+                    }),
+                    url: window.location.href,
+                    userAgent: navigator.userAgent
+                });
+
+                scheduleFlush();
+            } catch (e) {
+                // Fail silently
+            }
+        };
+    });
+
+    // Global error handlers for uncaught errors
+    const originalOnError = window.onerror;
+    window.onerror = function boostErrorHandler(errorMsg, url, lineNumber, colNumber, error) {
+        try {
+            logQueue.push({
+                type: 'uncaught_error',
+                timestamp: new Date().toISOString(),
+                data: [{
+                    message: errorMsg,
+                    filename: url,
+                    lineno: lineNumber,
+                    colno: colNumber,
+                    error: error ? {
+                        name: error.name,
+                        message: error.message,
+                        stack: error.stack
+                    } : null
+                }],
+                url: window.location.href,
+                userAgent: navigator.userAgent
+            });
+
+            scheduleFlush();
+        } catch (e) {
+            // Fail silently
+        }
+
+        // Call original handler if it exists
+        if (originalOnError && typeof originalOnError === 'function') {
+            return originalOnError(errorMsg, url, lineNumber, colNumber, error);
+        }
+
+        // Let the error continue to propagate
+        return false;
+    }
+    window.addEventListener('error', (event) => {
+        try {
+            logQueue.push({
+                type: 'window_error',
+                timestamp: new Date().toISOString(),
+                data: [{
+                    message: event.message,
+                    filename: event.filename,
+                    lineno: event.lineno,
+                    colno: event.colno,
+                    error: event.error ? {
+                        name: event.error.name,
+                        message: event.error.message,
+                        stack: event.error.stack
+                    } : null
+                }],
+                url: window.location.href,
+                userAgent: navigator.userAgent
+            });
+
+            scheduleFlush();
+        } catch (e) {
+            // Fail silently
+        }
+
+        // Let the error continue to propagate
+        return false;
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+        try {
+            logQueue.push({
+                type: 'error',
+                timestamp: new Date().toISOString(),
+                data: [{
+                    message: 'Unhandled Promise Rejection',
+                    reason: event.reason instanceof Error ? {
+                        name: event.reason.name,
+                        message: event.reason.message,
+                        stack: event.reason.stack
+                    } : event.reason
+                }],
+                url: window.location.href,
+                userAgent: navigator.userAgent
+            });
+
+            scheduleFlush();
+        } catch (e) {
+            // Fail silently
+        }
+
+        // Let the rejection continue to propagate
+        return false;
+    });
+
+    // Flush on page unload
+    window.addEventListener('beforeunload', () => {
+        if (logQueue.length > 0) {
+            navigator.sendBeacon(ENDPOINT, JSON.stringify({ logs: logQueue }));
+        }
+    });
+})();
+</script>
+</head>
+
+<body class="bg-gosa-cream font-sans text-gosa-text antialiased">
+
+  
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4
+           focus:z-9999 focus:rounded-lg focus:bg-gosa-gold focus:px-4
+           focus:py-2 focus:font-semibold focus:text-gosa-green">
+    Skip to main content
+  </a>
+
+  
+  <header class="sticky top-0 z-50 bg-gosa-green shadow-md" role="banner">
+          <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" aria-label="Main navigation">
+
+            <div class="flex h-16 items-center justify-between">
+
+              
+              <a href="https://gosanigeria.ng" class="flex shrink-0 flex-col" aria-label="GOSA Home">
+                <div class="flex items-center gap-2.5">
+                  <img src="https://gosanigeria.ng/assets/images/gosa_logoOld.png" alt="GOSA Logo"
+                    class="h-10 w-auto object-contain" loading="eager">
+                  <div class="hidden sm:block">
+                    <span class="block font-serif text-base font-bold leading-tight text-white">GOSA</span>
+                    <span class="block font-serif text-[11px] italic text-gosa-gold leading-tight">
+                      For Light and Truth
+                    </span>
+                  </div>
+                </div>
+              </a>
+
+              
+              <ul class="hidden lg:flex lg:items-center lg:gap-1" role="list">
+
+                <li>
+                  <a href="https://gosanigeria.ng" class="nav-link-active">
+                    Home
+                  </a>
+                </li>
+
+                
+                <li class="group relative">
+                  <button type="button" class="nav-link flex items-center gap-1" aria-haspopup="true"
+                    aria-expanded="false">
+                    About
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                      class="size-3.5 transition-transform duration-200 group-hover:rotate-180" aria-hidden="true">
+                      <path fill-rule="evenodd"
+                        d="M12.53 16.28a.75.75 0 0 1-1.06 0l-7.5-7.5a.75.75 0 0 1 1.06-1.06L12 14.69l6.97-6.97a.75.75 0 1 1 1.06 1.06l-7.5 7.5Z"
+                        clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  <ul class="nav-dropdown" role="list">
+                    <li><a href="https://gosanigeria.ng/about" class="nav-dropdown-item">History of GOSA</a></li>
+                    <li><a href="https://gosanigeria.ng/about/constitution" class="nav-dropdown-item">Constitution</a></li>
+                  </ul>
+                </li>
+
+                
+                <li class="group relative">
+                  <button type="button" class="nav-link flex items-center gap-1" aria-haspopup="true"
+                    aria-expanded="false">
+                    The Schools
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                      class="size-3.5 transition-transform duration-200 group-hover:rotate-180" aria-hidden="true">
+                      <path fill-rule="evenodd"
+     
