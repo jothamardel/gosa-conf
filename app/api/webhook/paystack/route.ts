@@ -285,9 +285,13 @@ async function findAndConfirmPaymentByReference(reference: string): Promise<{
   try {
     if (reference.startsWith('cart')) {
       const { Transaction } = await import("@/lib/schema");
-      const tx = await Transaction.findOne({ paymentReference: { $regex: `^${reference}` }, type: 'cart' });
+      const tx = await Transaction.findOneAndUpdate(
+        { paymentReference: { $regex: `^${reference}` }, type: 'cart' },
+        { status: 'completed' },
+        { new: true }
+      );
       if (tx) {
-        console.log(`Found combined cart transaction: ${tx.paymentReference}`);
+        console.log(`Found and completed combined cart transaction: ${tx.paymentReference}`);
         
         // Confirm all items in other tables that share this prefix
         const hasProduct = await ProductPurchaseUtils.findByReferencePattern(reference);
@@ -497,7 +501,8 @@ async function sendServiceNotification(
       record.confirm ||
       record.confirmed ||
       record.status === "confirmed" ||
-      record.paymentStatus === "confirmed";
+      record.paymentStatus === "confirmed" ||
+      record.status === "completed";
 
     // paymentReference
     console.log(`Payment confirmation check for ${record.paymentReference}:`, {
