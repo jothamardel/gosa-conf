@@ -1,5 +1,6 @@
 import { Wasender } from "@/lib/wasender-api";
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import connectDB from "@/lib/mongodb";
 import { Agent } from "@/lib/agent";
 import {
@@ -1142,7 +1143,7 @@ export async function POST(req: NextRequest) {
             await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
           };
 
-          runGroupSend().catch(err => console.error("Error in async group send task:", err));
+          waitUntil(runGroupSend().catch(err => console.error("Error in async group send task:", err)));
 
           await WhatsAppSession.deleteOne({ jid: senderJid });
 
@@ -1177,8 +1178,10 @@ export async function POST(req: NextRequest) {
           const participants = Array.from(uniqueP);
 
           // Trigger background broadcast loop asynchronously with 10s delay
-          runBroadcast(participants, messageContent, "all groups", remoteJid)
-            .catch(err => console.error("Error in async broadcast loop:", err));
+          waitUntil(
+            runBroadcast(participants, messageContent, "all groups", remoteJid)
+              .catch(err => console.error("Error in async broadcast loop:", err))
+          );
 
           await WhatsAppSession.deleteOne({ jid: senderJid });
 
@@ -1314,16 +1317,16 @@ export async function POST(req: NextRequest) {
 
     // Group Syncing (Non-blocking background promise)
     if (isGroup) {
-      WhatsAppGroup.findOne({ groupId: remoteJid }).then((groupRecord) => {
-        const oneDay = 24 * 60 * 60 * 1000;
-        if (!groupRecord || Date.now() - new Date(groupRecord.lastSyncedAt).getTime() > oneDay) {
-          syncGroupParticipants(remoteJid).catch((err) => {
-            console.error("Failed to sync group participants in background:", err);
-          });
-        }
-      }).catch((err) => {
-        console.error("Failed to query group in background:", err);
-      });
+      waitUntil(
+        WhatsAppGroup.findOne({ groupId: remoteJid }).then((groupRecord) => {
+          const oneDay = 24 * 60 * 60 * 1000;
+          if (!groupRecord || Date.now() - new Date(groupRecord.lastSyncedAt).getTime() > oneDay) {
+            return syncGroupParticipants(remoteJid);
+          }
+        }).catch((err) => {
+          console.error("Failed to sync group participants in background:", err);
+        })
+      );
     }
 
     // Process using wani yaro agent with conversation memory context
@@ -1445,7 +1448,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
       };
 
-      runGroupSend().catch(err => console.error("Error in async group send task:", err));
+      waitUntil(runGroupSend().catch(err => console.error("Error in async group send task:", err)));
 
       const ackText = `Yes sir! I am forwarding the message to the group *${targetGroup.name}* in the background, sir.`;
       const formattedAck = formatGroupResponse(ackText);
@@ -1519,8 +1522,10 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
       }
 
       // Trigger background broadcast loop asynchronously with 10s delay
-      runBroadcast(participants, messageContent, targetGroup.name, remoteJid)
-        .catch(err => console.error("Error in async broadcast loop:", err));
+      waitUntil(
+        runBroadcast(participants, messageContent, targetGroup.name, remoteJid)
+          .catch(err => console.error("Error in async broadcast loop:", err))
+      );
 
       const ackText = `Yes sir! I am starting the direct message broadcast to the ${participants.length} participants of group *${targetGroup.name}* in the background, sir. I will notify you in this chat once it is complete, sir.`;
       const formattedAck = formatGroupResponse(ackText);
