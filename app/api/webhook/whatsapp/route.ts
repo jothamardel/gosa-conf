@@ -1181,9 +1181,107 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Active conversational session (capturing email)
+    // Active conversational session
     const session = await WhatsAppSession.findOne({ jid: senderJid });
     if (session) {
+      if (session.pendingAction.type === 'approve_send_group_message') {
+        const cleanMsg = messageText.trim().toLowerCase();
+        if (cleanMsg === 'yes' || cleanMsg === 'approve' || cleanMsg === 'confirm' || cleanMsg === 'send' || cleanMsg === 'y') {
+          const { messageContent } = session.pendingAction;
+          
+          // Forward message asynchronously in the background
+          const runGroupSend = async () => {
+            const formattedMessage = formatGroupResponse(messageContent);
+            const groupsList = await WhatsAppGroup.find({ active: true });
+            let successCount = 0;
+            let failCount = 0;
+
+            for (let i = 0; i < groupsList.length; i++) {
+              const g = groupsList[i];
+              
+              if (i > 0) {
+                await new Promise(resolve => setTimeout(resolve, 10000));
+              }
+
+              try {
+                const res = await Wasender.httpSenderMessage({
+                  to: g.groupId,
+                  text: formattedMessage
+                });
+                if (res.success) {
+                  successCount++;
+                } else {
+                  failCount++;
+                }
+              } catch (err) {
+                console.error(`Group send failed to ${g.groupId}:`, err);
+                failCount++;
+              }
+            }
+
+            const completionText = `Yes sir! I have finished forwarding the message to all GOSA groups, sir.\n\n• *Total Groups*: ${groupsList.length}\n• *Sent*: ${successCount}\n• *Failed*: ${failCount}`;
+            const formattedText = formatGroupResponse(completionText);
+            await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+          };
+
+          runGroupSend().catch(err => console.error("Error in async group send task:", err));
+
+          await WhatsAppSession.deleteOne({ jid: senderJid });
+
+          const text = `Yes sir! Message approved. Starting the forward to all GOSA groups in the background, sir.`;
+          const formattedText = formatGroupResponse(text);
+          await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+          return NextResponse.json({ message: "Group message send approved", success: true });
+        } else if (cleanMsg === 'no' || cleanMsg === 'cancel' || cleanMsg === 'n') {
+          await WhatsAppSession.deleteOne({ jid: senderJid });
+          const text = `Yes sir! Cancelled the announcement send, sir.`;
+          const formattedText = formatGroupResponse(text);
+          await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+          return NextResponse.json({ message: "Group message send cancelled", success: true });
+        } else {
+          const text = `I apologize, sir. Please reply with *yes* to approve sending the message to all groups, or *no* to cancel, sir.`;
+          const formattedText = formatGroupResponse(text);
+          await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+          return NextResponse.json({ message: "Awaiting approval response", success: true });
+        }
+      }
+
+      if (session.pendingAction.type === 'approve_send_broadcast_message') {
+        const cleanMsg = messageText.trim().toLowerCase();
+        if (cleanMsg === 'yes' || cleanMsg === 'approve' || cleanMsg === 'confirm' || cleanMsg === 'send' || cleanMsg === 'y') {
+          const { messageContent } = session.pendingAction;
+          
+          const groupsList = await WhatsAppGroup.find({ active: true });
+          const uniqueP = new Set<string>();
+          for (const g of groupsList) {
+            (g.participants || []).forEach(p => uniqueP.add(p));
+          }
+          const participants = Array.from(uniqueP);
+
+          // Trigger background broadcast loop asynchronously with 10s delay
+          runBroadcast(participants, messageContent, "all groups", remoteJid)
+            .catch(err => console.error("Error in async broadcast loop:", err));
+
+          await WhatsAppSession.deleteOne({ jid: senderJid });
+
+          const text = `Yes sir! Message approved. Starting the direct message broadcast to the ${participants.length} unique participants in the background, sir.`;
+          const formattedText = formatGroupResponse(text);
+          await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+          return NextResponse.json({ message: "Broadcast approved", success: true });
+        } else if (cleanMsg === 'no' || cleanMsg === 'cancel' || cleanMsg === 'n') {
+          await WhatsAppSession.deleteOne({ jid: senderJid });
+          const text = `Yes sir! Cancelled the broadcast send, sir.`;
+          const formattedText = formatGroupResponse(text);
+          await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+          return NextResponse.json({ message: "Broadcast cancelled", success: true });
+        } else {
+          const text = `I apologize, sir. Please reply with *yes* to approve sending the broadcast to all groups' participants, or *no* to cancel, sir.`;
+          const formattedText = formatGroupResponse(text);
+          await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+          return NextResponse.json({ message: "Awaiting approval response", success: true });
+        }
+      }
+
       // Use match to extract email from anywhere in the text (more conversational)
       const emailMatch = messageText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
       if (emailMatch) {
@@ -1286,8 +1384,34 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: "Invalid command parameters", success: true });
       }
 
-      // Check if target group is active in DB
       await connectDB();
+
+      if (targetGroupId === 'all') {
+        // Create confirmation session on the database
+        await WhatsAppSession.create({
+          jid: senderJid,
+          pendingAction: {
+            type: 'approve_send_group_message',
+            targetGroupId: targetGroupId,
+            messageContent: messageContent
+          },
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
+        });
+
+        const ackText = `Yes sir! I have prepared the announcement to be sent to all active GOSA groups.
+
+📢 *Announcement Preview:*
+━━━━━━━━━━━━━━━━━━
+${messageContent}
+━━━━━━━━━━━━━━━━━━
+
+Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, sir.`;
+        const formattedAck = formatGroupResponse(ackText);
+        await Wasender.httpSenderMessage({ to: remoteJid, text: formattedAck });
+        return NextResponse.json({ message: "Group message confirmation requested", success: true });
+      }
+
+      // Check if specific target group is active in DB
       const targetGroup = await WhatsAppGroup.findOne({ groupId: targetGroupId, active: true });
       if (!targetGroup) {
         const text = `I apologize, sir. The group JID *${targetGroupId}* was not found or is currently inactive, sir.`;
@@ -1339,8 +1463,34 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: "Invalid command parameters", success: true });
       }
 
-      // Check if target group is active in DB
       await connectDB();
+
+      if (targetGroupId === 'all') {
+        // Create confirmation session on the database
+        await WhatsAppSession.create({
+          jid: senderJid,
+          pendingAction: {
+            type: 'approve_send_broadcast_message',
+            targetGroupId: targetGroupId,
+            messageContent: messageContent
+          },
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
+        });
+
+        const ackText = `Yes sir! I have prepared the direct message broadcast to unique participants of all active groups.
+
+📢 *Broadcast Message Preview:*
+━━━━━━━━━━━━━━━━━━
+${messageContent}
+━━━━━━━━━━━━━━━━━━
+
+Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, sir.`;
+        const formattedAck = formatGroupResponse(ackText);
+        await Wasender.httpSenderMessage({ to: remoteJid, text: formattedAck });
+        return NextResponse.json({ message: "Broadcast confirmation requested", success: true });
+      }
+
+      // Check if target group is active in DB
       const targetGroup = await WhatsAppGroup.findOne({ groupId: targetGroupId, active: true });
       if (!targetGroup) {
         const text = `I apologize, sir. The group JID *${targetGroupId}* was not found or is currently inactive, sir.`;
@@ -1351,7 +1501,7 @@ export async function POST(req: NextRequest) {
 
       const participants = targetGroup.participants || [];
       if (participants.length === 0) {
-        const text = `I apologize, sir. The group *${targetGroup.name}* does not have any participant JIDs registered in our database, sir.`;
+        const text = `I apologize, sir. No participant JIDs were found registered in our database for the selected target, sir.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
         return NextResponse.json({ message: "No participants registered", success: true });

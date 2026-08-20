@@ -165,13 +165,13 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "send_group_message",
-      description: "Send a message to a specific WhatsApp group. Requires the target group's JID (groupId) and the message content.",
+      description: "Send a message to a specific WhatsApp group or to ALL WhatsApp groups. Requires the target group's JID (groupId) or 'all' to target all active groups, and the message content.",
       parameters: {
         type: "object",
         properties: {
           targetGroupId: {
             type: "string",
-            description: "The group JID, e.g. '120363402321564330@g.us'."
+            description: "The group JID, e.g. '120363402321564330@g.us'. Pass 'all' if the user wants to send to all groups."
           },
           messageText: {
             type: "string",
@@ -186,13 +186,13 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "send_broadcast_message",
-      description: "Broadcast a direct message individually to each participant in a specific group. Requires the target group's JID (groupId) and the message content.",
+      description: "Broadcast a direct message individually to each participant in a specific group or ALL active groups. Requires the target group's JID (groupId) or 'all' to target all active groups, and the message content.",
       parameters: {
         type: "object",
         properties: {
           targetGroupId: {
             type: "string",
-            description: "The group JID, e.g. '120363402321564330@g.us'."
+            description: "The group JID, e.g. '120363402321564330@g.us'. Pass 'all' if the user wants to broadcast to all groups' participants."
           },
           messageText: {
             type: "string",
@@ -285,8 +285,8 @@ class AgentClass {
 
             ## Administrative & Broadcasting Commands
             - **List Groups**: The user might ask you to list all the groups. Call the 'list_groups' tool.
-            - **Send Message to Group**: The user might ask to send/post a message to a specific group chat. Call the 'send_group_message' tool with 'targetGroupId' and 'messageText'.
-            - **Send Message to Participants**: The user might ask to broadcast/send a direct message individually to each participant of a specific group. Call the 'send_broadcast_message' tool with 'targetGroupId' and 'messageText'.
+            - **Send Message to Group**: The user might ask to send/post a message to a specific group chat or ALL groups. Call the 'send_group_message' tool with 'targetGroupId' (pass 'all' to target all registered groups) and 'messageText'.
+            - **Send Message to Participants**: The user might ask to broadcast/send a direct message individually to each participant of a specific group or ALL groups. Call the 'send_broadcast_message' tool with 'targetGroupId' (pass 'all' to target all registered groups) and 'messageText'.
 
             ---
 
