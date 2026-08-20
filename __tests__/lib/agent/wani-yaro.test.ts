@@ -349,7 +349,7 @@ describe('Wani Yaro Agent Integration', () => {
       choices: [
         {
           message: {
-            content: 'Yes sir! Here are the correct templates to command me, sir:\n\n1. *Convention Tickets:* `GOSA buy Regular ticket for myself` or `GOSA buy VIP ticket for @John`\n2. *Dinner Tickets:* `GOSA buy Dinner for myself`\n3. *Donations:* `GOSA donate 5000`'
+            content: 'Yes sir! Here are the correct templates to command me, sir:\n\n1. *Convention Tickets:* `GOSA buy ticket for myself` or `GOSA buy ticket for @John`\n2. *Dinner Tickets:* `GOSA buy Dinner for myself`\n3. *Donations:* `GOSA donate 5000`'
           }
         }
       ]
