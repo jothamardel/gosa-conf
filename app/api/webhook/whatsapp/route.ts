@@ -1261,7 +1261,7 @@ export async function POST(req: NextRequest) {
       } else {
         replyText = "Yes sir! Here are the active GOSA groups in my registry, sir:\n\n";
         groups.forEach((g, index) => {
-          replyText += `${index + 1}. *Name*: ${g.name}\n• *JID*: ${g.groupId}\n• *Participants*: ${g.participants.length} members\n\n`;
+          replyText += `${index + 1}. *Name*: ${g.name}\n• *Participants*: ${g.participants.length} members\n\n`;
         });
       }
       const formattedText = isGroup ? formatGroupResponse(replyText) : sanitizeMessage(replyText);
