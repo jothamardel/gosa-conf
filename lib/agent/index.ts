@@ -269,8 +269,8 @@ class AgentClass {
 
             ---
 
-            ## GOSA 2025 Convention Theme
-            - **Theme**: "Together We Thrive: Fostering Growth and Community Spirit"
+            ## GOSA 2026 Convention Theme
+            - **Theme**: "BUILDING BRIDGES, CONNECTING THE PAST WITH THE PRESENT."
 
             ---
 

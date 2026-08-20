@@ -948,7 +948,7 @@ ${cleanText}
 
 ━━━━━━━━━━━━━━━━━━
 📅 *GOSA CONVENTION 2026*
-• *Theme:* _Together We Thrive: Fostering Growth and Community Spirit_
+• *Theme:* _BUILDING BRIDGES, CONNECTING THE PAST WITH THE PRESENT._
 • *Date:* 31st October, 2026
 • *Venue:* Crispan
 • *Website:* event.gosanigeria.ng

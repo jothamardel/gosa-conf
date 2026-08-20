@@ -95,7 +95,7 @@ ${cleanText}
 
 ━━━━━━━━━━━━━━━━━━
 📅 *GOSA CONVENTION 2026*
-• *Theme:* _Together We Thrive: Fostering Growth and Community Spirit_
+• *Theme:* _BUILDING BRIDGES, CONNECTING THE PAST WITH THE PRESENT._
 • *Date:* 31st October, 2026
 • *Venue:* Crispan
 • *Website:* event.gosanigeria.ng
@@ -222,6 +222,50 @@ async function syncAllGroups(sessionId: string) {
     }
   } catch (error) {
     console.error("Failed to sync all groups:", error);
+  }
+}
+
+async function runBroadcast(
+  participants: string[],
+  messageContent: string,
+  targetGroupName: string,
+  remoteJid: string
+) {
+  console.log(`[BROADCAST] Starting async broadcast to ${participants.length} participants of group...`);
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < participants.length; i++) {
+    const participant = participants[i];
+    
+    // Add 10-second delay between consecutive messages
+    if (i > 0) {
+      await new Promise(resolve => setTimeout(resolve, 10000));
+    }
+
+    try {
+      const res = await Wasender.httpSenderMessage({
+        to: participant,
+        text: sanitizeMessage(messageContent)
+      });
+      if (res.success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    } catch (err) {
+      console.error(`Broadcast failed to send to ${participant}:`, err);
+      failCount++;
+    }
+  }
+
+  // Once finished, notify the admin group JID
+  try {
+    const completionText = `Yes sir! I have finished broadcasting the message to the participants of group *${targetGroupName}*, sir.\n\n• *Total*: ${participants.length}\n• *Delivered*: ${successCount}\n• *Failed*: ${failCount}`;
+    const formattedText = formatGroupResponse(completionText);
+    await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+  } catch (confirmErr) {
+    console.error("Failed to send broadcast completion confirmation:", confirmErr);
   }
 }
 
@@ -1201,7 +1245,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (agentResponse.intent === 'list_groups') {
-      const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363402321564330@g.us";
+      const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363408711532693@g.us";
       if (remoteJid !== ADMIN_GROUP_JID) {
         const text = `I apologize, sir. Listing groups is a restricted command and can only be performed from the official Admin group, sir.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
@@ -1226,7 +1270,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (agentResponse.intent === 'send_group_message') {
-      const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363402321564330@g.us";
+      const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363408711532693@g.us";
       if (remoteJid !== ADMIN_GROUP_JID) {
         const text = `I apologize, sir. Sending messages to other groups is a restricted command and can only be performed from the official Admin group, sir.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
@@ -1252,27 +1296,34 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: "Target group not found", success: true });
       }
 
-      // Send message to the target group
-      const formattedMessage = formatGroupResponse(messageContent);
-      const res = await Wasender.httpSenderMessage({
-        to: targetGroupId,
-        text: formattedMessage
-      });
+      // Forward message asynchronously in the background
+      const runGroupSend = async () => {
+        const formattedMessage = formatGroupResponse(messageContent);
+        const res = await Wasender.httpSenderMessage({
+          to: targetGroupId,
+          text: formattedMessage
+        });
 
-      let replyText = "";
-      if (res.success) {
-        replyText = `Yes sir! I have successfully sent the message to the group *${targetGroup.name}*, sir.`;
-      } else {
-        replyText = `I apologize, sir. I failed to send the message to group *${targetGroup.name}*. Error: ${res.error || "unknown"}, sir.`;
-      }
+        let replyText = "";
+        if (res.success) {
+          replyText = `Yes sir! I have successfully forwarded the message to the group *${targetGroup.name}*, sir.`;
+        } else {
+          replyText = `I apologize, sir. I failed to forward the message to group *${targetGroup.name}*. Error: ${res.error || "unknown"}, sir.`;
+        }
+        const formattedText = formatGroupResponse(replyText);
+        await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+      };
 
-      const formattedText = isGroup ? formatGroupResponse(replyText) : sanitizeMessage(replyText);
-      await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-      return NextResponse.json({ message: "Group message processed", success: true });
+      runGroupSend().catch(err => console.error("Error in async group send task:", err));
+
+      const ackText = `Yes sir! I am forwarding the message to the group *${targetGroup.name}* in the background, sir.`;
+      const formattedAck = formatGroupResponse(ackText);
+      await Wasender.httpSenderMessage({ to: remoteJid, text: formattedAck });
+      return NextResponse.json({ message: "Group message send initiated", success: true });
     }
 
     if (agentResponse.intent === 'send_broadcast_message') {
-      const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363402321564330@g.us";
+      const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363408711532693@g.us";
       if (remoteJid !== ADMIN_GROUP_JID) {
         const text = `I apologize, sir. Sending broadcast messages is a restricted command and can only be performed from the official Admin group, sir.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
@@ -1306,26 +1357,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: "No participants registered", success: true });
       }
 
-      // Send direct messages to all participants in the group
-      console.log(`[BROADCAST] Triggering direct message broadcast to ${participants.length} participants of group ${targetGroupId}...`);
-      let successCount = 0;
-      let failCount = 0;
-      for (const participant of participants) {
-        const res = await Wasender.httpSenderMessage({
-          to: participant,
-          text: sanitizeMessage(messageContent)
-        });
-        if (res.success) {
-          successCount++;
-        } else {
-          failCount++;
-        }
-      }
+      // Trigger background broadcast loop asynchronously with 10s delay
+      runBroadcast(participants, messageContent, targetGroup.name, remoteJid)
+        .catch(err => console.error("Error in async broadcast loop:", err));
 
-      const replyText = `Yes sir! I have finished broadcasting the message to the participants of group *${targetGroup.name}*, sir.\n\n• *Total*: ${participants.length}\n• *Delivered*: ${successCount}\n• *Failed*: ${failCount}`;
-      const formattedText = isGroup ? formatGroupResponse(replyText) : sanitizeMessage(replyText);
-      await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-      return NextResponse.json({ message: "Broadcast completed", success: true });
+      const ackText = `Yes sir! I am starting the direct message broadcast to the ${participants.length} participants of group *${targetGroup.name}* in the background, sir. I will notify you in this chat once it is complete, sir.`;
+      const formattedAck = formatGroupResponse(ackText);
+      await Wasender.httpSenderMessage({ to: remoteJid, text: formattedAck });
+      return NextResponse.json({ message: "Broadcast initiated", success: true });
     }
 
     // Payment intents: buy_tickets, buy_product, donation, checkout_cart
