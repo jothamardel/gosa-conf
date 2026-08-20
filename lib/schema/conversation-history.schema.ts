@@ -48,7 +48,7 @@ const ConversationHistorySchema = new Schema<IConversationHistory>(
   }
 );
 
-ConversationHistorySchema.index({ jid: 1 });
+
 
 export const ConversationHistory =
   mongoose.models.ConversationHistory ||
