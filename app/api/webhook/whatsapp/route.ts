@@ -197,7 +197,7 @@ async function handlePaymentFlow(
   if (action.type === 'checkout_cart') {
     let cartBaseTotalAmount = 0;
     const cartItems = action.items || [];
-    
+
     for (const item of cartItems) {
       let itemUnitPrice = 0;
       if (item.type === 'convention') itemUnitPrice = 1000;
@@ -211,7 +211,7 @@ async function handlePaymentFlow(
       const itemQuantity = (item.type === 'convention' || item.type === 'dinner' || item.type === 'donation')
         ? (item.targetJids && item.targetJids.length > 0 ? item.targetJids.length : (item.quantity || 1))
         : (item.quantity || 1);
-      
+
       cartBaseTotalAmount += itemUnitPrice * itemQuantity;
     }
 
@@ -263,7 +263,7 @@ async function handlePaymentFlow(
       const itemQuantity = (item.type === 'convention' || item.type === 'dinner' || item.type === 'donation')
         ? (item.targetJids && item.targetJids.length > 0 ? item.targetJids.length : (item.quantity || 1))
         : (item.quantity || 1);
-      
+
       const itemBaseTotalAmount = itemUnitPrice * itemQuantity;
       const itemRef = `${paymentReference}_${index}`;
 
@@ -514,7 +514,7 @@ ${checkoutUrl}`;
   const prefix = action.type === 'buy_tickets'
     ? action.ticketType
     : (action.type === 'donation' ? 'donation' : action.productType);
-    
+
   const paymentReference = `${prefix}_${Date.now()}_${senderUser.phoneNumber.replace('+', '')}`;
 
   const paystackRes = await Payment.httpInitializePayment({
@@ -873,13 +873,16 @@ export async function POST(req: NextRequest) {
             await connectDB();
             const groupsList = await Wasender.getGroups();
             if (groupsList && groupsList.length > 0) {
+              console.log("GroupList: ", groupsList)
               const { WhatsAppGroup } = await import("@/lib/schema");
               for (const group of groupsList) {
+                console.log("Group: ", group)
                 if (group.jid) {
                   // Fetch participants list for this group to sync it to DB
                   let groupParticipants: string[] = [];
                   try {
                     groupParticipants = await Wasender.getGroupParticipants(group.jid);
+                    console.log("Participants: ", groupParticipants)
                   } catch (pErr) {
                     console.error(`Failed to fetch participants for group ${group.jid}:`, pErr);
                   }
@@ -969,7 +972,7 @@ export async function POST(req: NextRequest) {
         messageText.toLowerCase().includes('waniyaro') ||
         messageText.toLowerCase().includes('gosa') ||
         messageText.toLowerCase().includes('bilkwas');
-      
+
       let isBotMentioned = hasKeyword;
       if (!isBotMentioned && rawMentionedJids.length > 0) {
         if (
@@ -992,7 +995,7 @@ export async function POST(req: NextRequest) {
     if (mentionedJids.length > 0) {
       const textMentions = messageText.match(/@[a-zA-Z0-9_\-]+/g) || [];
       const cleanTextMentions = textMentions.filter((m: string) => m.toLowerCase() !== '@all');
-      
+
       for (let i = 0; i < cleanTextMentions.length; i++) {
         if (i < mentionedJids.length) {
           const mentionHandle = cleanTextMentions[i].replace('@', '').trim();
@@ -1052,9 +1055,9 @@ export async function POST(req: NextRequest) {
       if (emailMatch) {
         const capturedEmail = emailMatch[0];
         const senderPhone = normalizeJidToPhone(senderJid);
-        
+
         let senderUser = await User.findOne({ email: capturedEmail });
-        
+
         if (senderUser) {
           // If user already exists with this email, link current phone number to it
           if (senderUser.phoneNumber !== senderPhone) {
@@ -1109,7 +1112,7 @@ export async function POST(req: NextRequest) {
 
     // Payment intents: buy_tickets, buy_product, donation, checkout_cart
     if (
-      agentResponse.intent === 'buy_tickets' || 
+      agentResponse.intent === 'buy_tickets' ||
       agentResponse.intent === 'buy_product' ||
       agentResponse.intent === 'donation' ||
       agentResponse.intent === 'checkout_cart'
@@ -1122,7 +1125,7 @@ export async function POST(req: NextRequest) {
           let itemTargetJids: string[] = [];
           if (itemTargets.length > 0) {
             itemTargetJids = await resolveMentionsToJids(itemTargets, remoteJid, mentionedJids);
-            
+
             // Pad target JIDs list to match the quantity only if targets are provided
             const qty = item.quantity || 1;
             if (itemTargetJids.length < qty) {
@@ -1144,11 +1147,11 @@ export async function POST(req: NextRequest) {
       }
 
       const rawTargets = agentResponse.data.targets || [];
-      
+
       let targetJids: string[] = [];
       if (rawTargets.length > 0) {
         targetJids = await resolveMentionsToJids(rawTargets, remoteJid, mentionedJids);
-        
+
         // Pad target JIDs list to match the quantity for single ticket purchases only if targets are provided
         if (agentResponse.intent === 'buy_tickets') {
           const qty = agentResponse.data.quantity || 1;
