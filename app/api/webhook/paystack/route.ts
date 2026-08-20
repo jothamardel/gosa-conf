@@ -600,8 +600,7 @@ ${cartSummary.trim()}
 
 💳 *Payment Details:*
 • Total Amount: ₦${record.amount.toLocaleString()}
-• Reference: ${record.paymentReference}
-• Status: Confirmed ✅
+${isGroup ? "" : `• Reference: ${record.paymentReference}\n`}• Status: Confirmed ✅
 
 Thank you for supporting the GOSA community, sir!`;
 
@@ -640,7 +639,6 @@ Your purchase/registration of *${quantityVal}x GOSA ${typeLabel}* has been confi
 
 💳 *Payment Details:*
 • Amount: ₦${amountVal.toLocaleString()}
-• Reference: ${record.paymentReference}
 • Status: Confirmed ✅
 
 Thank you for supporting the GOSA community, sir!`;
@@ -951,7 +949,7 @@ ${cleanText}
 • *Theme:* _BUILDING BRIDGES, CONNECTING THE PAST WITH THE PRESENT._
 • *Date:* 31st October, 2026
 • *Venue:* Crispan
-• *Website:* event.gosanigeria.ng
+• *Website:* events.gosanigeria.ng
 
 📢 *Ad:* Advertise your business here! Contact us at *08098341778*`;
 }

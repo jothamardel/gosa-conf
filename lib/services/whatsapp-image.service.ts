@@ -216,6 +216,7 @@ export class WhatsAppImageService {
   private static createStandardizedGOSAMessage(data: WhatsAppImageData, imageUrl: string): string {
     const { userDetails, operationDetails } = data;
     const serviceTitle = this.getServiceTitle(operationDetails.type);
+    const isGroup = userDetails.phone.endsWith('@g.us');
 
     const baseText = `🎉 GOSA 2025 Convention
 For Light and Truth
@@ -226,8 +227,7 @@ Your ${serviceTitle} has been confirmed!
 
 💳 Payment Details:
 • Amount: ₦${operationDetails.amount.toLocaleString()}
-• Reference: ${operationDetails.paymentReference}
-• Status: Confirmed ✅
+${isGroup ? "" : `• Reference: ${operationDetails.paymentReference}\n`}• Status: Confirmed ✅
 
 📱 Important Instructions:
 • Save this confirmation image to your device
@@ -239,7 +239,6 @@ Your ${serviceTitle} has been confirmed!
 GOSA 2025 Convention Team
 www.gosa.events`;
 
-    const isGroup = userDetails.phone.endsWith('@g.us');
     return isGroup ? this.formatGroupResponse(baseText) : this.sanitizeMessage(baseText);
   }
 
@@ -255,7 +254,7 @@ ${cleanText}
 • *Theme:* _BUILDING BRIDGES, CONNECTING THE PAST WITH THE PRESENT._
 • *Date:* 31st October, 2026
 • *Venue:* Crispan
-• *Website:* event.gosanigeria.ng
+• *Website:* events.gosanigeria.ng
 
 📢 *Ad:* Advertise your business here! Contact us at *08098341778*`;
   }

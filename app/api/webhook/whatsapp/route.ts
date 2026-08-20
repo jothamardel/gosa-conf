@@ -99,7 +99,7 @@ ${cleanText}
 • *Theme:* _BUILDING BRIDGES, CONNECTING THE PAST WITH THE PRESENT._
 • *Date:* 31st October, 2026
 • *Venue:* Crispan
-• *Website:* event.gosanigeria.ng
+• *Website:* events.gosanigeria.ng
 
 📢 *Ad:* Advertise your business here! Contact us at *08098341778*`;
 }
