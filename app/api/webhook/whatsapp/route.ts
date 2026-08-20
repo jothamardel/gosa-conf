@@ -143,20 +143,40 @@ async function resolveMentionsToJids(
   return resolved;
 }
 
-async function syncGroupParticipants(groupId: string, name: string) {
+async function syncGroupParticipants(groupId: string) {
   try {
     const participants = await Wasender.getGroupParticipants(groupId);
     if (participants && participants.length > 0) {
+      // Find existing group record first to see if name is already populated
+      const existingRecord = await WhatsAppGroup.findOne({ groupId });
+      let groupName = existingRecord?.name || "";
+
+      // Try to fetch name from groups API
+      try {
+        const groups = await Wasender.getGroups();
+        const found = groups.find((g: any) => g.jid === groupId);
+        if (found && found.name) {
+          groupName = found.name;
+        }
+      } catch (err) {
+        console.warn(`Failed to resolve group name for ${groupId}:`, err);
+      }
+
+      // Fall back if empty
+      if (!groupName) {
+        groupName = "GOSA Group";
+      }
+
       await WhatsAppGroup.findOneAndUpdate(
         { groupId },
         {
-          name: name || "GOSA Group",
+          name: groupName,
           participants,
           lastSyncedAt: new Date()
         },
         { upsert: true, new: true }
       );
-      console.log(`Synced ${participants.length} participants for group ${groupId}`);
+      console.log(`Synced ${participants.length} participants for group ${groupId} with name "${groupName}"`);
     }
   } catch (error) {
     console.error(`Error syncing group participants for ${groupId}:`, error);
@@ -861,10 +881,14 @@ export async function POST(req: NextRequest) {
 
         // Check if the bot was added
         const isBotAdded = participants.some((p: string) => {
-          const cleanP = p.replace('@s.whatsapp.net', '').replace('@lid', '');
-          const cleanBotJid = botJid.replace('@s.whatsapp.net', '');
-          const cleanBotLid = botLid.replace('@lid', '');
-          return p === botJid || p === botLid || cleanP === cleanBotJid || cleanP === cleanBotLid;
+          const numericP = p.replace(/\D/g, '');
+          const numericBotJid = botJid.replace(/\D/g, '');
+          const numericBotLid = botLid.replace(/\D/g, '');
+          
+          return (
+            (numericBotJid && (numericBotJid.endsWith(numericP) || numericP.endsWith(numericBotJid))) ||
+            (numericBotLid && (numericBotLid.endsWith(numericP) || numericP.endsWith(numericBotLid)))
+          );
         });
 
         if (isBotAdded) {
@@ -873,24 +897,25 @@ export async function POST(req: NextRequest) {
             await connectDB();
             const groupsList = await Wasender.getGroups();
             if (groupsList && groupsList.length > 0) {
-              console.log("GroupList: ", groupsList)
               const { WhatsAppGroup } = await import("@/lib/schema");
               for (const group of groupsList) {
-                console.log("Group: ", group)
                 if (group.jid) {
                   // Fetch participants list for this group to sync it to DB
                   let groupParticipants: string[] = [];
                   try {
                     groupParticipants = await Wasender.getGroupParticipants(group.jid);
-                    console.log("Participants: ", groupParticipants)
                   } catch (pErr) {
                     console.error(`Failed to fetch participants for group ${group.jid}:`, pErr);
                   }
 
+                  // Find existing record to preserve name if needed
+                  const existingRecord = await WhatsAppGroup.findOne({ groupId: group.jid });
+                  const finalName = group.name || existingRecord?.name || "GOSA Group";
+
                   await WhatsAppGroup.findOneAndUpdate(
                     { groupId: group.jid },
                     {
-                      name: group.name || "GOSA Group",
+                      name: finalName,
                       participants: groupParticipants,
                       lastSyncedAt: new Date()
                     },
@@ -1038,7 +1063,7 @@ export async function POST(req: NextRequest) {
       WhatsAppGroup.findOne({ groupId: remoteJid }).then((groupRecord) => {
         const oneDay = 24 * 60 * 60 * 1000;
         if (!groupRecord || Date.now() - new Date(groupRecord.lastSyncedAt).getTime() > oneDay) {
-          syncGroupParticipants(remoteJid, body?.data?.messages?.pushName || "GOSA Group").catch((err) => {
+          syncGroupParticipants(remoteJid).catch((err) => {
             console.error("Failed to sync group participants in background:", err);
           });
         }
