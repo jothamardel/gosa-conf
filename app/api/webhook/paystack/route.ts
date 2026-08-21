@@ -484,6 +484,20 @@ async function findAndConfirmPaymentByReference(reference: string): Promise<{
   }
 }
 
+async function resolveJidToPn(jid: string): Promise<string> {
+  if (jid && jid.endsWith('@lid')) {
+    try {
+      const resolvedPn = await Wasender.getPnFromLid(jid);
+      if (resolvedPn) {
+        return resolvedPn;
+      }
+    } catch (error) {
+      console.error(`Error resolving LID ${jid} to phone JID:`, error);
+    }
+  }
+  return jid;
+}
+
 // Enhanced notification service for different payment types with image generation
 async function sendServiceNotification(
   serviceType: string,
@@ -527,20 +541,43 @@ async function sendServiceNotification(
     }
 
     let targetJid = "";
+    let initiatorPhone = "";
+    let payerUser: any = null;
+    let txRecord: any = null;
+
     try {
       const { Transaction } = await import("@/lib/schema");
       // Split reference to match the exact parent transaction reference prefix
       const parts = record.paymentReference?.split("_") || [];
       const baseRef = parts.slice(0, 3).join("_");
       console.log(`[PAYSTACK-WEBHOOK] Looking up transaction with reference: ${baseRef}`);
-      const tx = await Transaction.findOne({ paymentReference: baseRef });
-      if (tx) {
-        if (tx.source) {
-          targetJid = tx.source;
-          console.log(`[PAYSTACK-WEBHOOK] Resolved target JID from Transaction source field: ${targetJid}`);
-        } else if (tx.metadata?.groupJid) {
-          targetJid = tx.metadata.groupJid;
-          console.log(`[PAYSTACK-WEBHOOK] Resolved target JID from Transaction metadata groupJid: ${targetJid}`);
+      txRecord = await Transaction.findOne({ paymentReference: baseRef }).populate("userId");
+      if (txRecord) {
+        payerUser = txRecord.userId;
+        
+        // Resolve initiator phone number from initiatorLid or payerUser
+        if (txRecord.initiatorLid) {
+          try {
+            initiatorPhone = await resolveJidToPn(txRecord.initiatorLid);
+          } catch (pnErr) {
+            console.error("Error resolving initiatorLid to phone number JID:", pnErr);
+          }
+        }
+        
+        if (!initiatorPhone && payerUser?.phoneNumber) {
+          initiatorPhone = payerUser.phoneNumber;
+        }
+
+        // Determine target JID based on where it was initiated
+        if (txRecord.source && txRecord.source.endsWith('@g.us')) {
+          targetJid = txRecord.source;
+          console.log(`[PAYSTACK-WEBHOOK] Routing to group where initiated: ${targetJid}`);
+        } else if (txRecord.metadata?.groupJid) {
+          targetJid = txRecord.metadata.groupJid;
+          console.log(`[PAYSTACK-WEBHOOK] Routing to group JID from metadata: ${targetJid}`);
+        } else {
+          targetJid = initiatorPhone || txRecord.initiatorLid || txRecord.source || "";
+          console.log(`[PAYSTACK-WEBHOOK] Routing privately to initiator: ${targetJid}`);
         }
       }
     } catch (e) {
@@ -548,8 +585,8 @@ async function sendServiceNotification(
     }
 
     if (!targetJid) {
-      // Fallback 1: Prioritize populated user phoneNumber
-      const rawPhone = record.userId?.phoneNumber || record.donorPhone || "";
+      // Fallback 1: Prioritize populated donor/user phoneNumber
+      const rawPhone = record.donorPhone || record.userId?.phoneNumber || "";
       if (rawPhone) {
         targetJid = convertToInternationalFormat(rawPhone);
         console.log(`[PAYSTACK-WEBHOOK] Fallback: Routing privately to user phone JID: ${targetJid}`);
@@ -574,10 +611,10 @@ async function sendServiceNotification(
     internationalPhone = targetJid;
 
     // Prepare user details for image generation (use personal phone number, not group JID, to prevent exposure)
-    const personalPhone = record.userId?.phoneNumber || record.donorPhone || "";
+    const personalPhone = initiatorPhone || payerUser?.phoneNumber || record.donorPhone || record.userId?.phoneNumber || "";
     const userDetails = {
-      name: record.userId?.fullName || record.fullName || "Unknown User",
-      email: record.userId?.email || record.email || "unknown@email.com",
+      name: payerUser?.fullName || record.donorName || record.attributionName || record.userId?.fullName || record.fullName || "Unknown User",
+      email: payerUser?.email || record.donorEmail || record.userId?.email || record.email || "unknown@email.com",
       phone: personalPhone || targetJid,
       registrationId: record._id?.toString(),
     };

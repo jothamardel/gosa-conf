@@ -91,10 +91,23 @@ export async function GET(request: NextRequest) {
     }
 
     // Prepare image data
+    let payerUser: any = null;
+    try {
+      const { Transaction } = await import("@/lib/schema");
+      const parts = record.paymentReference?.split("_") || [];
+      const baseRef = parts.slice(0, 3).join("_");
+      const tx = await Transaction.findOne({ paymentReference: baseRef }).populate("userId");
+      if (tx && tx.userId) {
+        payerUser = tx.userId;
+      }
+    } catch (e) {
+      console.error("Failed to query transaction for download route:", e);
+    }
+
     const userDetails = {
-      name: record.userId?.fullName || record.fullName || "Unknown User",
-      email: record.userId?.email || record.email || "unknown@email.com",
-      phone: record.userId?.phoneNumber || "Unknown Phone",
+      name: payerUser?.fullName || record.donorName || record.attributionName || record.userId?.fullName || record.fullName || "Unknown User",
+      email: payerUser?.email || record.donorEmail || record.userId?.email || record.email || "unknown@email.com",
+      phone: payerUser?.phoneNumber || record.donorPhone || record.userId?.phoneNumber || "Unknown Phone",
       registrationId: record._id?.toString(),
     };
 
