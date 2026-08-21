@@ -59,7 +59,7 @@ describe('Wani Yaro Agent Integration', () => {
       choices: [
         {
           message: {
-            content: 'Yes sir, the GOSA convention is scheduled for November 1–2, 2025, sir!'
+            content: 'The GOSA convention is scheduled for November 1–2, 2025!'
           }
         }
       ]
@@ -70,7 +70,7 @@ describe('Wani Yaro Agent Integration', () => {
     const result = await Agent.httpSendMessage('when is the convention');
 
     expect(result.intent).toBe('general_query');
-    expect(result.response).toContain('sir');
+    expect(result.response).toContain('convention');
     expect(mockCreateFn).toHaveBeenCalled();
   });
 
@@ -103,7 +103,7 @@ describe('Wani Yaro Agent Integration', () => {
     expect(result.data.ticketType).toBe('convention');
     expect(result.data.targets).toContain('@john');
     expect(result.data.targets).toContain('@mary');
-    expect(result.response).toContain('sir');
+    expect(result.response).toContain('generating');
   });
 
   it('should parse product purchases correctly', async () => {
@@ -134,7 +134,7 @@ describe('Wani Yaro Agent Integration', () => {
     expect(result.intent).toBe('buy_product');
     expect(result.data.productType).toBe('uniform');
     expect(result.data.quantity).toBe(2);
-    expect(result.response).toContain('sir');
+    expect(result.response).toContain('initialized');
   });
 
   it('should parse donation requests correctly', async () => {
@@ -164,7 +164,7 @@ describe('Wani Yaro Agent Integration', () => {
 
     expect(result.intent).toBe('donation');
     expect(result.data.amount).toBe(5000);
-    expect(result.response).toContain('sir');
+    expect(result.response).toContain('initialized');
   });
 
   it('should gracefully fall back in case of parsing or api errors', async () => {
@@ -173,7 +173,6 @@ describe('Wani Yaro Agent Integration', () => {
     const result = await Agent.httpSendMessage('hello');
 
     expect(result.intent).toBe('general_query');
-    expect(result.response).toContain('sir');
     expect(result.response).toContain('apologize');
   });
 
@@ -187,7 +186,7 @@ describe('Wani Yaro Agent Integration', () => {
       jid: 'test-jid',
       messages: [
         { role: 'user', content: 'hello', name: 'User', timestamp: new Date() },
-        { role: 'assistant', content: 'Yes sir, how can I help you, sir?', timestamp: new Date() }
+        { role: 'assistant', content: 'How can I help you?', timestamp: new Date() }
       ],
       save: jest.fn().mockResolvedValue(true)
     } as any);
@@ -196,7 +195,7 @@ describe('Wani Yaro Agent Integration', () => {
       choices: [
         {
           message: {
-            content: 'Hello again, sir!'
+            content: 'Hello again!'
           }
         }
       ]
@@ -206,14 +205,14 @@ describe('Wani Yaro Agent Integration', () => {
     const result = await Agent.httpSendMessage('what did we talk about?', 'test-jid', 'User');
 
     expect(result.intent).toBe('general_query');
-    expect(result.response).toBe('Hello again, sir!');
+    expect(result.response).toBe('Hello again!');
     expect(mockFindOne).toHaveBeenCalledWith({ jid: 'test-jid' });
 
     // Verify history messages were included in the OpenAI payload
     const callArgs = mockCreateFn.mock.calls[0][0];
     expect(callArgs.messages).toHaveLength(4); // system, user(hello), assistant(help), user(what did we talk about)
     expect(callArgs.messages[1]).toEqual({ role: 'user', content: 'hello', name: 'User' });
-    expect(callArgs.messages[2]).toEqual({ role: 'assistant', content: 'Yes sir, how can I help you, sir?', name: undefined });
+    expect(callArgs.messages[2]).toEqual({ role: 'assistant', content: 'How can I help you?', name: undefined });
 
     // Restore mocks
     mockFindOne.mockRestore();
@@ -253,7 +252,7 @@ describe('Wani Yaro Agent Integration', () => {
     expect(result.data.items![0]).toEqual({ type: 'convention', quantity: 1, targets: ['@john'] });
     expect(result.data.items![1]).toEqual({ type: 'dinner', quantity: 1, targets: ['@mary'] });
     expect(result.data.items![2]).toEqual({ type: 'uniform', quantity: 2 });
-    expect(result.response).toContain('sir');
+    expect(result.response).toContain('generating');
   });
 
   it('should parse list groups request correctly', async () => {
@@ -279,7 +278,7 @@ describe('Wani Yaro Agent Integration', () => {
     const result = await Agent.httpSendMessage('list all groups');
 
     expect(result.intent).toBe('list_groups');
-    expect(result.response).toContain('sir');
+    expect(result.response).toContain('Retrieving');
   });
 
   it('should parse send group message request correctly', async () => {
@@ -310,7 +309,7 @@ describe('Wani Yaro Agent Integration', () => {
     expect(result.intent).toBe('send_group_message');
     expect(result.data.targetGroupId).toBe('120363402321564330@g.us');
     expect(result.data.messageText).toBe('Hello group!');
-    expect(result.response).toContain('sir');
+    expect(result.response).toContain('forward');
   });
 
   it('should parse send broadcast message request correctly', async () => {
@@ -341,7 +340,7 @@ describe('Wani Yaro Agent Integration', () => {
     expect(result.intent).toBe('send_broadcast_message');
     expect(result.data.targetGroupId).toBe('120363402321564330@g.us');
     expect(result.data.messageText).toBe('Hello members!');
-    expect(result.response).toContain('sir');
+    expect(result.response).toContain('broadcast');
   });
 
   it('should handle help request and teach commands correctly', async () => {
@@ -349,7 +348,7 @@ describe('Wani Yaro Agent Integration', () => {
       choices: [
         {
           message: {
-            content: 'Yes sir! Here are the correct templates to command me, sir:\n\n1. *Convention Tickets:* `GOSA buy ticket for myself` or `GOSA buy ticket for @John`\n2. *Dinner Tickets:* `GOSA buy Dinner for myself`\n3. *Donations:* `GOSA donate 5000`'
+            content: 'Here are the correct templates to command me:\n\n1. *Convention Tickets:* `GOSA buy ticket for myself` or `GOSA buy ticket for @John`\n2. *Dinner Tickets:* `GOSA buy Dinner for myself`\n3. *Donations:* `GOSA donate 5000`'
           }
         }
       ]
@@ -360,7 +359,7 @@ describe('Wani Yaro Agent Integration', () => {
     const result = await Agent.httpSendMessage('help');
 
     expect(result.intent).toBe('general_query');
-    expect(result.response).toContain('sir');
+    expect(result.response).toContain('templates');
     expect(result.response).toContain('GOSA buy');
   });
 });

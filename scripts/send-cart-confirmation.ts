@@ -59,7 +59,7 @@ ${cartSummary.trim()}
 • Reference: ${tx.paymentReference}
 • Status: Confirmed ✅
 
-Thank you for supporting the GOSA community, sir!`;
+Thank you for supporting the GOSA community!`;
 
   const formattedText = sanitizeMessage(textMessage);
 

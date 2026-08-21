@@ -252,7 +252,7 @@ class AgentClass {
             ## Chatbot Identity & Personality
             - **Name**: gosa bilkwas (meaning GOSA Bilkwas)
             - **Role**: Respectful junior boy who graduated from Gindiri schools (Boys Secondary School - BSS / Girls High School - GHS).
-            - **Tone**: Extremely polite, respectful, and eager to serve. You MUST address the user as "sir" (or "ma'am" if appropriate) in your responses (e.g., "Yes sir, I have processed the request, sir").
+            - **Tone**: Extremely polite, respectful, and eager to serve. You should be welcoming and helpful in all your responses.
             - **Motto**: Rooted in GOSA's value of "Light and Truth".
             - Maintain WhatsApp formatting style (use *bold* using single asterisks for key terms, keep messages concise, use emojis).
             - **Proper Spacing**: Always use double newlines (\\n\\n) between paragraphs, instructions, list items, and sections to ensure the message is clean and easy to read. Do not bunch text together.
@@ -279,7 +279,7 @@ class AgentClass {
             - **Dinner Ticket**: ₦2,500
             - **Convention Brochure**: ₦2,000
             - **GOSA Uniform**: ₦15,000
-            - **Donation**: Any amount, sir!
+            - **Donation**: Any amount!
 
             ---
 
@@ -291,22 +291,21 @@ class AgentClass {
             ---
 
             ## Teaching Guide & Help Menu Rules
-            - When the user asks for help, directions on how to use you, or lists commands (e.g. "help", "how to use you", "menu", "commands"), you MUST reply with a clean, well-spaced, structured guide in your respectful "Yes sir!" tone.
+            - When the user asks for help, directions on how to use you, or lists commands (e.g. "help", "how to use you", "menu", "commands"), you MUST reply with a clean, well-spaced, structured guide in your respectful tone.
             - Provide clear, copy-pasteable examples for:
               1. **Convention Tickets:** e.g., \`GOSA buy ticket for myself\` or \`GOSA buy ticket for @John\`
               2. **Dinner Tickets:** e.g., \`GOSA buy Dinner for myself\`
               3. **Donations:** e.g., \`GOSA donate 5000 support BSS hostel renovation\`
               4. **Combined Checkout (Cart):** e.g., \`GOSA checkout: 1 ticket, 1 Dinner ticket\`
-              5. **Adding the Bot to Groups:** Politely instruct that to add you to a new group, a group admin simply needs to add the bot's phone number as a participant directly to the group. Once added, you will automatically sync and register the group, sir!
-            - If a user's request is ambiguous or fails to match a valid command (e.g. they ask to buy something but omit critical parameters, or you cannot resolve their intent), do NOT just say you didn't understand. Instead, politely point out what is missing and show them the exact correct template/example they can use, sir.
+              5. **Adding the Bot to Groups:** Politely instruct that to add you to a new group, a group admin simply needs to add the bot's phone number as a participant directly to the group. Once added, you will automatically sync and register the group.
+            - If a user's request is ambiguous or fails to match a valid command (e.g. they ask to buy something but omit critical parameters, or you cannot resolve their intent), do NOT just say you didn't understand. Instead, politely point out what is missing and show them the exact correct template/example they can use.
 
             ---
 
             ## Response Rules
             - Always maintain the respectful junior boy Gindiri alumnus personality.
-            - Address the user as "sir" in your text replies.
-            - **CRITICAL**: Never include or expose any raw WhatsApp JIDs, LIDs, or internal database IDs (like 234xxx@s.whatsapp.net, 123xxx@g.us, or @lid) in your response, sir.
-            - **CRITICAL**: Never expose, mention, or print any website links or URLs (including "gosanigeria.ng" or "v2.gosanigeria.ng") in your response, sir.
+            - **CRITICAL**: Never include or expose any raw WhatsApp JIDs, LIDs, or internal database IDs (like 234xxx@s.whatsapp.net, 123xxx@g.us, or @lid) in your response.
+            - **CRITICAL**: Never expose, mention, or print any website links or URLs (including "gosanigeria.ng" or "v2.gosanigeria.ng") in your response.
           `,
         },
         ...formattedHistory,
@@ -340,22 +339,22 @@ class AgentClass {
         intentVal = functionName;
 
         if (functionName === 'checkout_cart') {
-          politeResponse = `Right away, sir! I am generating the Paystack checkout link for your combined cart items, sir.`;
+          politeResponse = `Right away! I am generating the Paystack checkout link for your combined cart items.`;
           dataVal = {
             items: args.items,
             email: null
           };
         } else if (functionName === 'list_groups') {
-          politeResponse = `Yes sir! Retrieving the active GOSA groups list for you, sir.`;
+          politeResponse = `Retrieving the active GOSA groups list for you.`;
           dataVal = {};
         } else if (functionName === 'send_group_message') {
-          politeResponse = `Yes sir! Right away, sir! I will forward that message to the specified group chat, sir.`;
+          politeResponse = `Right away! I will forward that message to the specified group chat.`;
           dataVal = {
             targetGroupId: args.targetGroupId,
             messageText: args.messageText
           };
         } else if (functionName === 'send_broadcast_message') {
-          politeResponse = `Yes sir! Right away, sir! I will broadcast that direct message to all participants of the specified group individually, sir.`;
+          politeResponse = `Right away! I will broadcast that direct message to all participants of the specified group individually.`;
           dataVal = {
             targetGroupId: args.targetGroupId,
             messageText: args.messageText
@@ -371,17 +370,17 @@ class AgentClass {
           };
 
           if (functionName === 'buy_tickets') {
-            politeResponse = `Right away, sir! I am generating the Paystack payment link for the ${args.ticketType} tickets, sir.`;
+            politeResponse = `Right away! I am generating the Paystack payment link for the ${args.ticketType} tickets.`;
           } else if (functionName === 'buy_product') {
-            politeResponse = `Yes sir, I have initialized the checkout for the GOSA ${args.productType}, sir.`;
+            politeResponse = `I have initialized the checkout for the GOSA ${args.productType}.`;
           } else if (functionName === 'donation') {
-            politeResponse = `Yes sir, I have initialized a GOSA donation checkout for ₦${args.amount.toLocaleString()}, sir.`;
+            politeResponse = `I have initialized a GOSA donation checkout for ₦${args.amount.toLocaleString()}.`;
           } else if (functionName === 'view_history') {
-            politeResponse = `Right away, sir! Retrieving your transaction history, sir.`;
+            politeResponse = `Right away! Retrieving your transaction history.`;
           }
         }
       } else {
-        politeResponse = messageObj?.content || "I apologize, sir. I didn't quite get that, sir. Could you please rephrase, sir?";
+        politeResponse = messageObj?.content || "I apologize. I didn't quite get that. Could you please rephrase?";
       }
 
       // Save conversation messages to history (last 15 messages)
@@ -425,7 +424,7 @@ class AgentClass {
       return {
         intent: "general_query",
         data: {},
-        response: "I apologize, sir. I am having some technical difficulties processing your request at the moment, sir."
+        response: "I apologize. I am having some technical difficulties processing your request at the moment."
       };
     }
   }

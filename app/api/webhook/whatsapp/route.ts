@@ -262,7 +262,7 @@ async function runBroadcast(
 
   // Once finished, notify the admin group JID
   try {
-    const completionText = `Yes sir! I have finished broadcasting the message to the participants of group *${targetGroupName}*, sir.\n\n• *Total*: ${participants.length}\n• *Delivered*: ${successCount}\n• *Failed*: ${failCount}`;
+    const completionText = `I have finished broadcasting the message to the participants of group *${targetGroupName}*.\n\n• *Total*: ${participants.length}\n• *Delivered*: ${successCount}\n• *Failed*: ${failCount}`;
     const formattedText = formatGroupResponse(completionText);
     await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
   } catch (confirmErr) {
@@ -332,7 +332,7 @@ async function handlePaymentFlow(
     });
 
     if (!paystackRes?.status || !paystackRes?.data?.authorization_url) {
-      throw new Error("Failed to initialize payment with Paystack, sir.");
+      throw new Error("Failed to initialize payment with Paystack.");
     }
 
     const checkoutUrl = paystackRes.data.authorization_url;
@@ -565,7 +565,7 @@ Fee: ₦${feeAmount.toLocaleString()}
 Email: ${senderUser.email}
 Type: Combined Purchase
 
-👉 Tap the link below to make payment, sir:
+👉 Tap the link below to make payment:
 ${checkoutUrl}`;
 
     const formattedText = isGroup ? formatGroupResponse(responseText) : sanitizeMessage(responseText);
@@ -609,7 +609,7 @@ ${checkoutUrl}`;
   }
 
   if (unitPrice === 0) {
-    throw new Error("Invalid product, donation, or ticket type requested, sir.");
+    throw new Error("Invalid product, donation, or ticket type requested.");
   }
 
   const quantity = (action.type === 'buy_tickets' || action.type === 'donation')
@@ -631,7 +631,7 @@ ${checkoutUrl}`;
   });
 
   if (!paystackRes?.status || !paystackRes?.data?.authorization_url) {
-    throw new Error("Failed to initialize payment with Paystack, sir.");
+    throw new Error("Failed to initialize payment with Paystack.");
   }
 
   const checkoutUrl = paystackRes.data.authorization_url;
@@ -844,7 +844,7 @@ Fee: ₦${feeAmount.toLocaleString()}
 Email: ${senderUser.email}
 Type: ${typeLabel}
 
-👉 Tap the link below to make payment, sir:
+👉 Tap the link below to make payment:
 ${checkoutUrl}`;
 
   const formattedText = isGroup ? formatGroupResponse(responseText) : sanitizeMessage(responseText);
@@ -860,7 +860,7 @@ async function handleHistoryQuery(senderJid: string, remoteJid: string) {
   const user = await User.findOne({ phoneNumber: senderPhone });
 
   if (!user) {
-    const defaultResponse = "I searched our GOSA records, sir, but I couldn't find your profile, sir. Therefore, you don't have any transaction history yet, sir.";
+    const defaultResponse = "I searched our GOSA records, but I couldn't find your profile. Therefore, you don't have any transaction history yet.";
     const isGroup = remoteJid.endsWith('@g.us');
     const formattedText = isGroup ? formatGroupResponse(defaultResponse) : sanitizeMessage(defaultResponse);
 
@@ -877,7 +877,7 @@ async function handleHistoryQuery(senderJid: string, remoteJid: string) {
   const donations = await Donation.find({ userId: user._id });
   const brochures = await ConventionBrochure.find({ userId: user._id });
 
-  let text = `Here is your transaction summary, sir:\n\n`;
+  let text = `Here is your transaction summary:\n\n`;
   let hasTransactions = false;
 
   if (conventions.length > 0) {
@@ -927,9 +927,9 @@ async function handleHistoryQuery(senderJid: string, remoteJid: string) {
   }
 
   if (!hasTransactions) {
-    text = "I see your profile, sir, but you have not made any purchases or registrations yet, sir.";
+    text = "I see your profile, but you have not made any purchases or registrations yet.";
   } else {
-    text += `Always at your service, sir!`;
+    text += `Always at your service!`;
   }
 
   const isGroup = remoteJid.endsWith('@g.us');
@@ -1138,7 +1138,7 @@ export async function POST(req: NextRequest) {
               }
             }
 
-            const completionText = `Yes sir! I have finished forwarding the message to all GOSA groups, sir.\n\n• *Total Groups*: ${groupsList.length}\n• *Sent*: ${successCount}\n• *Failed*: ${failCount}`;
+            const completionText = `I have finished forwarding the message to all GOSA groups.\n\n• *Total Groups*: ${groupsList.length}\n• *Sent*: ${successCount}\n• *Failed*: ${failCount}`;
             const formattedText = formatGroupResponse(completionText);
             await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
           };
@@ -1147,18 +1147,18 @@ export async function POST(req: NextRequest) {
 
           await WhatsAppSession.deleteOne({ jid: senderJid });
 
-          const text = `Yes sir! Message approved. Starting the forward to all GOSA groups in the background, sir.`;
+          const text = `Message approved. Starting the forward to all GOSA groups in the background.`;
           const formattedText = formatGroupResponse(text);
           await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
           return NextResponse.json({ message: "Group message send approved", success: true });
         } else if (cleanMsg === 'no' || cleanMsg === 'cancel' || cleanMsg === 'n') {
           await WhatsAppSession.deleteOne({ jid: senderJid });
-          const text = `Yes sir! Cancelled the announcement send, sir.`;
+          const text = `Cancelled the announcement send.`;
           const formattedText = formatGroupResponse(text);
           await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
           return NextResponse.json({ message: "Group message send cancelled", success: true });
         } else {
-          const text = `I apologize, sir. Please reply with *yes* to approve sending the message to all groups, or *no* to cancel, sir.`;
+          const text = `I apologize, Please reply with *yes* to approve sending the message to all groups, or *no* to cancel.`;
           const formattedText = formatGroupResponse(text);
           await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
           return NextResponse.json({ message: "Awaiting approval response", success: true });
@@ -1185,18 +1185,18 @@ export async function POST(req: NextRequest) {
 
           await WhatsAppSession.deleteOne({ jid: senderJid });
 
-          const text = `Yes sir! Message approved. Starting the direct message broadcast to the ${participants.length} unique participants in the background, sir.`;
+          const text = `Message approved. Starting the direct message broadcast to the ${participants.length} unique participants in the background.`;
           const formattedText = formatGroupResponse(text);
           await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
           return NextResponse.json({ message: "Broadcast approved", success: true });
         } else if (cleanMsg === 'no' || cleanMsg === 'cancel' || cleanMsg === 'n') {
           await WhatsAppSession.deleteOne({ jid: senderJid });
-          const text = `Yes sir! Cancelled the broadcast send, sir.`;
+          const text = `Cancelled the broadcast send.`;
           const formattedText = formatGroupResponse(text);
           await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
           return NextResponse.json({ message: "Broadcast cancelled", success: true });
         } else {
-          const text = `I apologize, sir. Please reply with *yes* to approve sending the broadcast to all groups' participants, or *no* to cancel, sir.`;
+          const text = `I apologize. Please reply with *yes* to approve sending the broadcast to all groups' participants, or *no* to cancel.`;
           const formattedText = formatGroupResponse(text);
           await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
           return NextResponse.json({ message: "Awaiting approval response", success: true });
@@ -1351,7 +1351,7 @@ export async function POST(req: NextRequest) {
       const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363408711532693@g.us";
       const APPROVED_ADMIN_JIDS = [ADMIN_GROUP_JID, "120363402321564330@g.us"];
       if (!APPROVED_ADMIN_JIDS.includes(remoteJid)) {
-        const text = `I apologize, sir. Listing groups is a restricted command and can only be performed from the official Admin group, sir.`;
+        const text = `I apologize. Listing groups is a restricted command and can only be performed from the official Admin group.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
         return NextResponse.json({ message: "Restricted command rejected", success: true });
@@ -1361,9 +1361,9 @@ export async function POST(req: NextRequest) {
       const groups = await WhatsAppGroup.find({ active: true });
       let replyText = "";
       if (groups.length === 0) {
-        replyText = "Yes sir! I couldn't find any active groups in my registry, sir.";
+        replyText = "I couldn't find any active groups in my registry.";
       } else {
-        replyText = "Yes sir! Here are the active GOSA groups in my registry, sir:\n\n";
+        replyText = "Here are the active GOSA groups in my registry:\n\n";
         groups.forEach((g, index) => {
           replyText += `${index + 1}. *Name*: ${g.name}\n• *Participants*: ${g.participants.length} members\n\n`;
         });
@@ -1377,7 +1377,7 @@ export async function POST(req: NextRequest) {
       const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363408711532693@g.us";
       const APPROVED_ADMIN_JIDS = [ADMIN_GROUP_JID, "120363402321564330@g.us"];
       if (!APPROVED_ADMIN_JIDS.includes(remoteJid)) {
-        const text = `I apologize, sir. Sending messages to other groups is a restricted command and can only be performed from the official Admin group, sir.`;
+        const text = `I apologize. Sending messages to other groups is a restricted command and can only be performed from the official Admin group.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
         return NextResponse.json({ message: "Restricted command rejected", success: true });
@@ -1385,7 +1385,7 @@ export async function POST(req: NextRequest) {
 
       const { targetGroupId, messageText: messageContent } = agentResponse.data;
       if (!targetGroupId || !messageContent) {
-        const text = `I apologize, sir. I couldn't resolve the target group or message content, sir. Could you please specify them clearly, sir?`;
+        const text = `I apologize. I couldn't resolve the target group or message content. Could you please specify them clearly?`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
         return NextResponse.json({ message: "Invalid command parameters", success: true });
@@ -1408,14 +1408,14 @@ export async function POST(req: NextRequest) {
           { upsert: true, new: true }
         );
 
-        const ackText = `Yes sir! I have prepared the announcement to be sent to all active GOSA groups.
+        const ackText = `I have prepared the announcement to be sent to all active GOSA groups.
 
 📢 *Announcement Preview:*
 ━━━━━━━━━━━━━━━━━━
 ${messageContent}
 ━━━━━━━━━━━━━━━━━━
 
-Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, sir.`;
+Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel.`;
         const formattedAck = formatGroupResponse(ackText);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedAck });
         return NextResponse.json({ message: "Group message confirmation requested", success: true });
@@ -1424,7 +1424,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
       // Check if specific target group is active in DB
       const targetGroup = await WhatsAppGroup.findOne({ groupId: targetGroupId, active: true });
       if (!targetGroup) {
-        const text = `I apologize, sir. The group JID *${targetGroupId}* was not found or is currently inactive, sir.`;
+        const text = `I apologize. The group JID *${targetGroupId}* was not found or is currently inactive.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
         return NextResponse.json({ message: "Target group not found", success: true });
@@ -1440,9 +1440,9 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
 
         let replyText = "";
         if (res.success) {
-          replyText = `Yes sir! I have successfully forwarded the message to the group *${targetGroup.name}*, sir.`;
+          replyText = `I have successfully forwarded the message to the group *${targetGroup.name}*.`;
         } else {
-          replyText = `I apologize, sir. I failed to forward the message to group *${targetGroup.name}*. Error: ${res.error || "unknown"}, sir.`;
+          replyText = `I apologize. I failed to forward the message to group *${targetGroup.name}*. Error: ${res.error || "unknown"}.`;
         }
         const formattedText = formatGroupResponse(replyText);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
@@ -1450,7 +1450,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
 
       waitUntil(runGroupSend().catch(err => console.error("Error in async group send task:", err)));
 
-      const ackText = `Yes sir! I am forwarding the message to the group *${targetGroup.name}* in the background, sir.`;
+      const ackText = `I am forwarding the message to the group *${targetGroup.name}* in the background.`;
       const formattedAck = formatGroupResponse(ackText);
       await Wasender.httpSenderMessage({ to: remoteJid, text: formattedAck });
       return NextResponse.json({ message: "Group message send initiated", success: true });
@@ -1460,7 +1460,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
       const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363408711532693@g.us";
       const APPROVED_ADMIN_JIDS = [ADMIN_GROUP_JID, "120363402321564330@g.us"];
       if (!APPROVED_ADMIN_JIDS.includes(remoteJid)) {
-        const text = `I apologize, sir. Sending broadcast messages is a restricted command and can only be performed from the official Admin group, sir.`;
+        const text = `I apologize. Sending broadcast messages is a restricted command and can only be performed from the official Admin group.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
         return NextResponse.json({ message: "Restricted command rejected", success: true });
@@ -1468,7 +1468,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
 
       const { targetGroupId, messageText: messageContent } = agentResponse.data;
       if (!targetGroupId || !messageContent) {
-        const text = `I apologize, sir. I couldn't resolve the target group or message content, sir. Could you please specify them clearly, sir?`;
+        const text = `I apologize. I couldn't resolve the target group or message content. Could you please specify them clearly?`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
         return NextResponse.json({ message: "Invalid command parameters", success: true });
@@ -1491,14 +1491,14 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
           { upsert: true, new: true }
         );
 
-        const ackText = `Yes sir! I have prepared the direct message broadcast to unique participants of all active groups.
+        const ackText = `I have prepared the direct message broadcast to unique participants of all active groups.
 
 📢 *Broadcast Message Preview:*
 ━━━━━━━━━━━━━━━━━━
 ${messageContent}
 ━━━━━━━━━━━━━━━━━━
 
-Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, sir.`;
+Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel.`;
         const formattedAck = formatGroupResponse(ackText);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedAck });
         return NextResponse.json({ message: "Broadcast confirmation requested", success: true });
@@ -1507,7 +1507,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
       // Check if target group is active in DB
       const targetGroup = await WhatsAppGroup.findOne({ groupId: targetGroupId, active: true });
       if (!targetGroup) {
-        const text = `I apologize, sir. The group JID *${targetGroupId}* was not found or is currently inactive, sir.`;
+        const text = `I apologize. The group JID *${targetGroupId}* was not found or is currently inactive.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
         return NextResponse.json({ message: "Target group not found", success: true });
@@ -1515,7 +1515,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
 
       const participants = targetGroup.participants || [];
       if (participants.length === 0) {
-        const text = `I apologize, sir. No participant JIDs were found registered in our database for the selected target, sir.`;
+        const text = `I apologize. No participant JIDs were found registered in our database for the selected target.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
         return NextResponse.json({ message: "No participants registered", success: true });
@@ -1527,7 +1527,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
           .catch(err => console.error("Error in async broadcast loop:", err))
       );
 
-      const ackText = `Yes sir! I am starting the direct message broadcast to the ${participants.length} participants of group *${targetGroup.name}* in the background, sir. I will notify you in this chat once it is complete, sir.`;
+      const ackText = `I am starting the direct message broadcast to the ${participants.length} participants of group *${targetGroup.name}* in the background. I will notify you in this chat once it is complete.`;
       const formattedAck = formatGroupResponse(ackText);
       await Wasender.httpSenderMessage({ to: remoteJid, text: formattedAck });
       return NextResponse.json({ message: "Broadcast initiated", success: true });
@@ -1614,8 +1614,8 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel, s
         );
 
         const responseText = agentResponse.intent === 'checkout_cart'
-          ? `Yes sir! I see you want to make a combined checkout, sir. However, I don't have your email address on file to process the receipt. Could you please reply with your email address, sir?`
-          : `Yes sir! I see you want to make a purchase, sir. However, I don't have your email address on file to process the receipt. Could you please reply with your email address, sir?`;
+          ? `I see you want to make a combined checkout. However, I don't have your email address on file to process the receipt. Could you please reply with your email address?`
+          : `I see you want to make a purchase. However, I don't have your email address on file to process the receipt. Could you please reply with your email address?`;
         const formattedText = isGroup ? formatGroupResponse(responseText) : sanitizeMessage(responseText);
 
         await Wasender.httpSenderMessage({
