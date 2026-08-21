@@ -607,7 +607,7 @@ ${cartSummary.trim()}
 • Total Amount: ₦${record.amount.toLocaleString()}
 ${isGroup ? "" : `• Reference: ${record.paymentReference}\n`}• Status: Confirmed ✅
 
-Thank you for supporting the GOSA community, sir!`;
+Thank you for supporting the GOSA community!`;
 
       const formattedText = isGroup ? formatGroupResponse(textMessage) : sanitizeMessage(textMessage);
 
@@ -646,7 +646,7 @@ Your purchase/registration of *${quantityVal}x GOSA ${typeLabel}* has been confi
 • Amount: ₦${amountVal.toLocaleString()}
 • Status: Confirmed ✅
 
-Thank you for supporting the GOSA community, sir!`;
+Thank you for supporting the GOSA community!`;
 
       const formattedText = formatGroupResponse(textMessage);
 
@@ -678,7 +678,7 @@ Your purchase of *${record.quantity}x GOSA ${typeLabel}* has been confirmed! ✅
 • Reference: ${record.paymentReference}
 • Status: Confirmed ✅
 
-Thank you for supporting the GOSA community, sir!`;
+Thank you for supporting the GOSA community!`;
       
       const formattedText = sanitizeMessage(textMessage);
 
