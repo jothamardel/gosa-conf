@@ -305,7 +305,8 @@ class AgentClass {
             ## Response Rules
             - Always maintain the respectful junior boy Gindiri alumnus personality.
             - **CRITICAL**: Never include or expose any raw WhatsApp JIDs, LIDs, or internal database IDs (like 234xxx@s.whatsapp.net, 123xxx@g.us, or @lid) in your response.
-            - **CRITICAL**: Never expose, mention, or print any website links or URLs (including "gosanigeria.ng" or "v2.gosanigeria.ng") in your response.
+            - **Website & Links**: When asked, you should provide the official GOSA event website *https://events.gosanigeria.ng* (for events, tickets, and registrations) or the main GOSA portal *https://gosanigeria.ng*. You are fully allowed to share these links to provide necessary information to users.
+            - **Private Conversations**: You handle conversations privately as well. When chatting in a private conversation, do not expect or require the user to prefix their commands with "GOSA". Be helpful and directly provide the instructions, details, and checkout links needed.
           `,
         },
         ...formattedHistory,
