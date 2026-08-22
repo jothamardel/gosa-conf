@@ -15,7 +15,7 @@ export function EventDetails() {
   const events = [
     {
       title: "Annual General Meeting(AGM)",
-      date: "1st Nov. 2025",
+      date: "1st Nov. 2026",
       time: "9:00am - 1:00pm",
       location: "Crispan Events Centre",
       description: "GOSA general meeting",
@@ -23,7 +23,7 @@ export function EventDetails() {
     },
     {
       title: "Dinner and Award Night",
-      date: "1st November, 2025",
+      date: "1st November, 2026",
       time: "4:00pm – 9:00pm",
       location: "Crispan Events Centre",
       description: "Dinner and Award Night",
@@ -32,7 +32,7 @@ export function EventDetails() {
     },
     {
       title: "Re-Union",
-      date: "2nd November, 2025",
+      date: "2nd November, 2026",
       time: "6:00 AM - 4:00 PM",
       location: "COCIN Ulster Church Gindiri",
       description: "Re-Union service gindiri | Town hall meeting",
@@ -46,7 +46,7 @@ export function EventDetails() {
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
             Convention
-            <span className="gradient-text"> Schedule 2025</span>
+            <span className="gradient-text"> Schedule 2026</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Two(2) days packed with inspiring sessions, networking, community

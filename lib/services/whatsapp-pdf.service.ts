@@ -257,7 +257,7 @@ export class WhatsAppPDFService {
     const { userDetails, operationDetails } = data;
     const serviceTitle = this.getServiceTitle(operationDetails.type);
 
-    return `🎉 GOSA 2025 Convention
+    return `🎉 GOSA 2026 Convention
 For Light and Truth
 
 Dear ${userDetails.name},
@@ -280,7 +280,7 @@ ${documentUrl}
 
 🔗 Need help? Contact gosasecretariat@gmail.com
 
-GOSA 2025 Convention Team
+GOSA 2026 Convention Team
 www.gosa.events`;
   }
 
@@ -291,14 +291,14 @@ www.gosa.events`;
     const { userDetails, operationDetails } = data;
     const serviceTitle = this.getServiceTitle(operationDetails.type);
 
-    const baseMessage = `🎉 *GOSA 2025 Convention*\n*For Light and Truth*\n\nDear ${userDetails.name},\n\nYour ${serviceTitle} has been confirmed! 📄\n\n`;
+    const baseMessage = `🎉 *GOSA 2026 Convention*\n*For Light and Truth*\n\nDear ${userDetails.name},\n\nYour ${serviceTitle} has been confirmed! 📄\n\n`;
 
     const serviceSpecificContent = this.getServiceSpecificContent(operationDetails);
 
     const instructions = this.getServiceInstructions(operationDetails.type);
 
     const footer = `\n📱 *Important:*\n• Save this PDF to your device\n• Present the QR code when required\n• Keep this document for your records\n\n🔗 *Need help?* Contact gosasecretariat@gmail.com\n📞 Phone: +234 816 2329 082\n📍 Address: J.D Gomwalk National Secretariat Ahead Mu'azu House Dogon Karfe
-P.O. Box, 8126 Jos, Nigeria\n\n*GOSA 2025 Convention Team*`;
+P.O. Box, 8126 Jos, Nigeria\n\n*GOSA 2026 Convention Team*`;
 
     return baseMessage + serviceSpecificContent + instructions + footer;
   }
@@ -324,13 +324,13 @@ P.O. Box, 8126 Jos, Nigeria\n\n*GOSA 2025 Convention Team*`;
   private static getServiceSpecificContent(operationDetails: WhatsAppPDFData['operationDetails']): string {
     switch (operationDetails.type) {
       case 'convention':
-        return `✅ *Registration Details:*\n• Amount: ₦${operationDetails.amount.toLocaleString()}\n• Reference: ${operationDetails.paymentReference}\n• Convention Dates: Dec 26-29, 2025\n\n`;
+        return `✅ *Registration Details:*\n• Amount: ₦${operationDetails.amount.toLocaleString()}\n• Reference: ${operationDetails.paymentReference}\n• Convention Dates: Oct 31 - Nov 2, 2026\n\n`;
 
       case 'dinner':
-        return `🍽️ *Dinner Details:*\n• Amount: ₦${operationDetails.amount.toLocaleString()}\n• Reference: ${operationDetails.paymentReference}\n• Date: December 28, 2025 at 7:00 PM\n• Venue: Grand Ballroom\n\n`;
+        return `🍽️ *Dinner Details:*\n• Amount: ₦${operationDetails.amount.toLocaleString()}\n• Reference: ${operationDetails.paymentReference}\n• Date: November 1, 2026 at 7:00 PM\n• Venue: Grand Ballroom\n\n`;
 
       case 'accommodation':
-        return `🏨 *Accommodation Details:*\n• Amount: ₦${operationDetails.amount.toLocaleString()}\n• Reference: ${operationDetails.paymentReference}\n• Check-in: Dec 25, 2025 (3:00 PM)\n• Check-out: Dec 30, 2025 (11:00 AM)\n\n`;
+        return `🏨 *Accommodation Details:*\n• Amount: ₦${operationDetails.amount.toLocaleString()}\n• Reference: ${operationDetails.paymentReference}\n• Check-in: Oct 31, 2026 (3:00 PM)\n• Check-out: Nov 2, 2026 (11:00 AM)\n\n`;
 
       case 'brochure':
         return `📚 *Brochure Order:*\n• Amount: ₦${operationDetails.amount.toLocaleString()}\n• Reference: ${operationDetails.paymentReference}\n• Status: Processing\n\n`;

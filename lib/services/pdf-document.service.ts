@@ -72,7 +72,7 @@ export class PDFDocumentService {
     const sanitizedName = userName.replace(/[^a-zA-Z0-9]/g, '_');
     const operationTitle = this.getOperationTypeTitle(operationType);
 
-    return `GOSA_2025_${operationTitle}_${sanitizedName}_${timestamp}.pdf`;
+    return `GOSA_2026_${operationTitle}_${sanitizedName}_${timestamp}.pdf`;
   }
 
   /**

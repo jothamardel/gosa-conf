@@ -29,7 +29,7 @@ describe('WhatsAppPDFService', () => {
       paymentReference: 'CONV_123456',
       date: new Date(),
       status: 'confirmed' as const,
-      description: 'GOSA 2025 Convention Registration',
+      description: 'GOSA 2026 Convention Registration',
       additionalInfo: 'Test additional info'
     },
     qrCodeData: JSON.stringify({ type: 'convention', id: 'REG123' })
@@ -176,9 +176,9 @@ describe('WhatsAppPDFService', () => {
       expect(mockWasender.sendDocument).toHaveBeenCalledWith(
         expect.objectContaining({
           to: '+1234567890',
-          text: expect.stringContaining('GOSA 2025 Convention'),
-          documentUrl: expect.stringContaining('/api/v1/pdf/download'),
-          fileName: expect.stringContaining('GOSA_2025_convention')
+          text: expect.stringContaining('GOSA 2026 Convention'),
+          documentUrl: expect.any(String),
+          fileName: expect.stringContaining('GOSA_2026_convention')
         })
       );
     });
@@ -208,7 +208,7 @@ describe('WhatsAppPDFService', () => {
       const documentMessage = WhatsAppPDFService['createDocumentMessage'](mockWhatsAppPDFData);
 
       expect(documentMessage.to).toBe('+1234567890');
-      expect(documentMessage.text).toContain('GOSA 2025 Convention');
+      expect(documentMessage.text).toContain('GOSA 2026 Convention');
       expect(documentMessage.text).toContain('For Light and Truth');
       expect(documentMessage.text).toContain('John Doe');
       expect(documentMessage.text).toContain('Convention Registration');

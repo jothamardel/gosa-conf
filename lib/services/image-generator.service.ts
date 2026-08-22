@@ -219,7 +219,7 @@ export class ImageGeneratorService {
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
       ctx.font = getFontString("24", "bold");
-      ctx.fillText("GOSA 2025 Convention", 170, 85);
+      ctx.fillText("GOSA 2026 Convention", 170, 85);
 
       ctx.font = getFontString("16", "normal");
       ctx.fillText("Payment Receipt", 170, 110);
@@ -445,7 +445,7 @@ export class ImageGeneratorService {
       ctx.font = getFontString("14", "bold");
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillText("GOSA 2025 Convention", 400, 980);
+      ctx.fillText("GOSA 2026 Convention", 400, 980);
 
       ctx.fillStyle = "#374151";
       ctx.font = getFontString("12", "normal");
@@ -604,7 +604,7 @@ export class ImageGeneratorService {
   <circle cx="120" cy="110" r="30" fill="white"/>
   <text x="120" y="118" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#16A34A">GOSA</text>
 
-  <text x="170" y="95" font-family="Arial" font-size="24" font-weight="bold" fill="white">GOSA 2025 Convention</text>
+  <text x="170" y="95" font-family="Arial" font-size="24" font-weight="bold" fill="white">GOSA 2026 Convention</text>
   <text x="170" y="115" font-family="Arial" font-size="16" fill="white">Payment Receipt</text>
   <text x="170" y="135" font-family="Arial" font-size="14" fill="white">${this.escapeXML(serviceTitle)}</text>
 
@@ -657,7 +657,7 @@ export class ImageGeneratorService {
   }
 
   private static generateTextFallback(data: ImageData): Buffer {
-    const fallbackText = `GOSA 2025 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ${formatDisplayPrice(data.operationDetails.amount)}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data?.operationDetails?.paymentReference?.split("_")[1] || data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: gosasecretariat@gmail.com\nPhone: +234816 2329 082\nAddress: J.D Gomwalk National Secretariat
+    const fallbackText = `GOSA 2026 CONVENTION RECEIPT\n\nPayment Reference: ${data.operationDetails.paymentReference}\nAmount: ${formatDisplayPrice(data.operationDetails.amount)}\nName: ${data.userDetails.name}\nEmail: ${data.userDetails.email}\nPhone: ${data?.operationDetails?.paymentReference?.split("_")[1] || data.userDetails.phone}\nDate: ${new Date(data.operationDetails.date).toLocaleDateString()}\n\nStatus: SUCCESSFUL\n\nContact: gosasecretariat@gmail.com\nPhone: +234816 2329 082\nAddress: J.D Gomwalk National Secretariat
 Ahead Mu'azu House
 Dogon Karfe
 P.O. Box, 8126
@@ -1510,7 +1510,7 @@ Jos, Nigeria`;
 
       // Generate filename with correct extension
       const timestamp = Date.now();
-      const baseFilename = `gosa-2025-${data.operationDetails.type}-${data.userDetails.name.toLowerCase().replace(/\s+/g, '-')}-${timestamp}`;
+      const baseFilename = `gosa-2026-${data.operationDetails.type}-${data.userDetails.name.toLowerCase().replace(/\s+/g, '-')}-${timestamp}`;
       const filename = isPNG
         ? `${baseFilename}.png`
         : isSVG
@@ -1575,7 +1575,7 @@ Jos, Nigeria`;
       .replace(/[^a-z0-9]/g, "-");
 
     // Use PNG extension for better WhatsApp compatibility
-    return `gosa-2025-${sanitizedServiceType}-${sanitizedName}-${timestamp}.png`;
+    return `gosa-2026-${sanitizedServiceType}-${sanitizedName}-${timestamp}.png`;
   }
 
   /**
@@ -1664,7 +1664,7 @@ Jos, Nigeria`;
       ctx.fillStyle = "white";
       ctx.font = "bold 24px Arial";
       ctx.textAlign = "left";
-      ctx.fillText("GOSA 2025 Convention", 180, 125);
+      ctx.fillText("GOSA 2026 Convention", 180, 125);
 
       ctx.font = "16px Arial";
       ctx.fillText("For Light and Truth", 180, 150);
@@ -1850,7 +1850,7 @@ Jos, Nigeria`;
       ctx.fillStyle = "#16A34A";
       ctx.font = "bold 14px Arial";
       ctx.textAlign = "center";
-      ctx.fillText("GOSA 2025 Convention Team", 400, 1140);
+      ctx.fillText("GOSA 2026 Convention Team", 400, 1140);
 
       ctx.fillStyle = "#6B7280";
       ctx.font = "12px Arial";

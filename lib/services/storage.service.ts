@@ -88,7 +88,7 @@ class StorageService {
     const uploadOptions = {
       fileName: options.fileName || fileName,
       folder: options.folder || '/gosa-convention',
-      tags: options.tags || ['gosa', 'convention', '2025'],
+      tags: options.tags || ['gosa', 'convention', '2026'],
       isPrivateFile: options.isPrivate || false,
     };
 
@@ -164,7 +164,7 @@ class StorageService {
     return this.uploadFile(pdfBuffer, `${fileName}.pdf`, {
       folder: '/receipts',
       contentType: 'application/pdf',
-      tags: ['receipt', 'pdf', userDetails.type, 'gosa-2025'],
+      tags: ['receipt', 'pdf', userDetails.type, 'gosa-2026'],
       userDetails,
     });
   }

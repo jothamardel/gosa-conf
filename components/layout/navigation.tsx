@@ -493,21 +493,21 @@ export function Navigation() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 flex items-center justify-center group-hover:scale-105 transition-transform duration-200 shadow-lg">
+              <div className="w-10 h-10 flex items-center justify-center group-hover:scale-105 transition-transform duration-200 shadow-md rounded-xl bg-emerald-50 p-1 border border-emerald-100">
                 <Image
                   src={"/images/gosa.png"}
-                  alt=""
-                  className="w-10 h-10 text-white"
-                  width={10}
-                  height={10}
+                  alt="GOSA Logo"
+                  className="w-8 h-8 object-contain"
+                  width={32}
+                  height={32}
                 />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-bold gradient-text">
-                  GOSA Convention 2025
+                <span className="text-lg sm:text-xl font-black bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-800 bg-clip-text text-transparent tracking-tight font-display">
+                  GOSA Convention 2026
                 </span>
-                <span className="text-xs text-gray-500 -mt-1">
-                  For light and truth
+                <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-widest -mt-0.5">
+                  For Light and Truth
                 </span>
               </div>
             </Link>

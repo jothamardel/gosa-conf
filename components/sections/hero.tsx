@@ -93,7 +93,7 @@ export function Hero() {
           <div className="flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-primary-100/90 to-secondary-100/90 backdrop-blur-sm text-primary-800 text-xs sm:text-sm font-medium mb-6 sm:mb-8 animate-fade-in max-w-lg mx-auto border border-white/50 text-center">
             <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
             <span className="text-center ">
-              Alumni Convention & Reunion 2025 • Register
+              Alumni Convention & Reunion 2026 • Register
             </span>
           </div>
 

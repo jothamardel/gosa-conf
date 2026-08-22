@@ -7,7 +7,7 @@ import { Toaster } from '@/components/ui/sonner';
 const inter = Inter({ subsets: ['latin'], display: 'swap', fallback: ['system-ui', 'sans-serif'] });
 
 export const metadata: Metadata = {
-  title: 'GOSA Convention 2025 | For Light and Truth',
+  title: 'GOSA Convention 2026 | For Light and Truth',
   description: 'GOSA Gindiri Old Students Association | Annual Convention Registration',
   keywords: ['convention', 'registration', 'events', 'GOSA', 'Gindiri Old Students Association'],
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'GOSA Convention 2025'
+    title: 'GOSA Convention 2026'
   },
   formatDetection: {
     telephone: false,
@@ -39,7 +39,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#16A34A" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="GOSA Convention 2025" />
+        <meta name="apple-mobile-web-app-title" content="GOSA Convention 2026" />
         <meta name="format-detection" content="telephone=no" />
         
         {/* Favicon links */}

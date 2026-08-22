@@ -15,7 +15,7 @@ export interface PDFTemplate {
 
 export class PDFGeneratorService {
   private static readonly DEFAULT_TEMPLATE: PDFTemplate = {
-    title: 'GOSA 2025 Convention',
+    title: 'GOSA 2026 Convention',
     subtitle: 'For Light and Truth',
     primaryColor: '#16A34A',
     secondaryColor: '#F59E0B',
@@ -470,7 +470,7 @@ export class PDFGeneratorService {
             
             <div class="footer">
               <div class="footer-brand">
-                GOSA 2025 Convention - For Light and Truth
+                GOSA 2026 Convention - For Light and Truth
               </div>
               <div class="footer-contact">
                 For support, contact us at gosasecretariat@gmail.com | www.gosa.events<br>
@@ -568,7 +568,7 @@ export class PDFGeneratorService {
   static generateFilename(userDetails: PDFData['userDetails'], operationType: string): string {
     const timestamp = new Date().toISOString().split('T')[0];
     const sanitizedName = userDetails.name.replace(/[^a-zA-Z0-9]/g, '_');
-    return `GOSA_2025_${operationType}_${sanitizedName}_${timestamp}.pdf`;
+    return `GOSA_2026_${operationType}_${sanitizedName}_${timestamp}.pdf`;
   }
 
   /**
@@ -695,7 +695,7 @@ export class PDFGeneratorService {
           </div>
           <div class="info-item">
             <div class="info-label">Convention Dates</div>
-            <div class="info-value">December 26-29, 2025</div>
+            <div class="info-value">October 31 - November 2, 2026</div>
           </div>
           <div class="info-item">
             <div class="info-label">Venue</div>
@@ -772,11 +772,11 @@ export class PDFGeneratorService {
         <div class="info-grid">
           <div class="info-item">
             <div class="info-label">Event</div>
-            <div class="info-value">GOSA 2025 Convention Gala Dinner</div>
+            <div class="info-value">GOSA 2026 Convention Gala Dinner</div>
           </div>
           <div class="info-item">
             <div class="info-label">Date & Time</div>
-            <div class="info-value">December 28, 2025 at 7:00 PM</div>
+            <div class="info-value">November 1, 2026 at 7:00 PM</div>
           </div>
           <div class="info-item">
             <div class="info-label">Venue</div>
@@ -954,7 +954,7 @@ export class PDFGeneratorService {
         <div class="info-grid">
           <div class="info-item">
             <div class="info-label">Publication</div>
-            <div class="info-value">GOSA 2025 Convention Brochure</div>
+            <div class="info-value">GOSA 2026 Convention Brochure</div>
           </div>
           <div class="info-item">
             <div class="info-label">Format</div>
@@ -1080,7 +1080,7 @@ export class PDFGeneratorService {
         <div class="info-item" style="grid-column: 1 / -1; margin-top: 15px; background: #dcfce7; border-left: 5px solid ${template.primaryColor};">
           <div class="info-label" style="color: #166534;">Thank You</div>
           <div class="info-value" style="color: #166534;">
-            Your goodwill message and generous donation help make the GOSA 2025 Convention a memorable experience for all attendees. Your message will be reviewed and may be featured in convention materials.
+            Your goodwill message and generous donation help make the GOSA 2026 Convention a memorable experience for all attendees. Your message will be reviewed and may be featured in convention materials.
           </div>
         </div>
       </div>
@@ -1256,7 +1256,7 @@ P.O. Box, 8126 Jos, Nigeria
    * Helper method to extract message from additional info
    */
   private static extractMessageFromAdditionalInfo(additionalInfo?: string): string {
-    if (!additionalInfo) return 'Thank you for your support of GOSA 2025 Convention.';
+    if (!additionalInfo) return 'Thank you for your support of GOSA 2026 Convention.';
 
     const messageMatch = additionalInfo.match(/message:\s*([^|]+)/i);
     if (messageMatch) {
@@ -1385,8 +1385,8 @@ P.O. Box, 8126 Jos, Nigeria
   } {
     const defaultInfo = {
       accommodationType: 'standard',
-      checkInDate: 'December 25, 2025',
-      checkOutDate: 'December 30, 2025',
+      checkInDate: 'October 31, 2026',
+      checkOutDate: 'November 2, 2026',
       numberOfGuests: 1,
       confirmationCode: 'GOSA-' + Math.random().toString(36).substr(2, 8).toUpperCase()
     };

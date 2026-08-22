@@ -91,7 +91,7 @@ class ImageKitService {
         file,
         fileName: options.fileName || fileName,
         folder: options.folder || '/gosa-convention',
-        tags: options.tags || ['gosa', 'convention', '2025'],
+        tags: options.tags || ['gosa', 'convention', '2026'],
         isPrivateFile: options.isPrivateFile || false,
         useUniqueFileName: options.useUniqueFileName !== false,
       };
@@ -195,7 +195,7 @@ class ImageKitService {
     const options: UploadOptions = {
       fileName: `${fileName}.pdf`,
       folder: '/gosa-convention/receipts',
-      tags: ['receipt', 'pdf', userDetails.type, 'gosa-2025'],
+      tags: ['receipt', 'pdf', userDetails.type, 'gosa-2026'],
       isPrivateFile: false,
       useUniqueFileName: true,
     };
@@ -214,7 +214,7 @@ class ImageKitService {
     const options: UploadOptions = {
       fileName: `${fileName}.png`,
       folder: '/gosa-convention/images',
-      tags: ['receipt', 'image', userDetails.type, 'gosa-2025'],
+      tags: ['receipt', 'image', userDetails.type, 'gosa-2026'],
       isPrivateFile: false,
       useUniqueFileName: true,
       transformation: {
@@ -236,7 +236,7 @@ class ImageKitService {
     const options: UploadOptions = {
       fileName: `badge-${fileName}.png`,
       folder: '/gosa-convention/badges',
-      tags: ['badge', 'convention', userDetails.registrationId, 'gosa-2025'],
+      tags: ['badge', 'convention', userDetails.registrationId, 'gosa-2026'],
       isPrivateFile: false,
       useUniqueFileName: true,
       transformation: {

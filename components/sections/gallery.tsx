@@ -89,7 +89,7 @@ export function GallerySection() {
             Moments That Define Us
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Relive past conventions and preview what awaits in 2025
+            Relive past conventions and preview what awaits in 2026
           </p>
         </div>
 

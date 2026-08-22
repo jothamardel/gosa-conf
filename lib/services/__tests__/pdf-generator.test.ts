@@ -39,7 +39,7 @@ describe('PDFGeneratorService', () => {
       paymentReference: 'CONV_123456',
       date: new Date('2025-01-15T10:00:00Z'),
       status: 'confirmed',
-      description: 'GOSA 2025 Convention Registration',
+      description: 'GOSA 2026 Convention Registration',
       additionalInfo: 'Quantity: 1 | Registration ID: REG123'
     },
     qrCodeData: JSON.stringify({ type: 'convention', id: 'REG123' })
@@ -58,7 +58,7 @@ describe('PDFGeneratorService', () => {
     it('should generate HTML for convention registration', async () => {
       const html = await PDFGeneratorService.generatePDFHTML(basePDFData);
 
-      expect(html).toContain('GOSA 2025 Convention');
+      expect(html).toContain('GOSA 2026 Convention');
       expect(html).toContain('For Light and Truth');
       expect(html).toContain('John Doe');
       expect(html).toContain('john.doe@example.com');
@@ -85,7 +85,7 @@ describe('PDFGeneratorService', () => {
 
       expect(mockCacheService.cacheHTML).toHaveBeenCalledWith(
         'mock-cache-key',
-        expect.stringContaining('GOSA 2025 Convention')
+        expect.stringContaining('GOSA 2026 Convention')
       );
     });
 
@@ -134,7 +134,7 @@ describe('PDFGeneratorService', () => {
         operationDetails: {
           ...basePDFData.operationDetails,
           type: 'dinner',
-          description: 'GOSA 2025 Convention Gala Dinner',
+          description: 'GOSA 2026 Convention Gala Dinner',
           additionalInfo: 'Guests: 2 | Guest Names: Jane Doe, Bob Smith'
         }
       };
@@ -328,7 +328,7 @@ describe('PDFGeneratorService', () => {
 
       const filename = PDFGeneratorService.generateFilename(userDetails, 'convention');
 
-      expect(filename).toMatch(/GOSA_2025_convention_John_O_Doe_Smith_Jr__\d{4}-\d{2}-\d{2}\.pdf/);
+      expect(filename).toMatch(/GOSA_2026_convention_John_O_Doe_Smith_Jr__\d{4}-\d{2}-\d{2}\.pdf/);
     });
 
     it('should create PDF data structure correctly', () => {

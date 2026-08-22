@@ -76,7 +76,7 @@ export class ImageBlobService {
 
   /**
    * Generate descriptive filename for blob storage
-   * Format: gosa-2025-{serviceType}-{userName}-{timestamp}.png
+   * Format: gosa-2026-{serviceType}-{userName}-{timestamp}.png
    */
   static generateBlobFilename(userDetails: UserDetails, serviceType: string): string {
     const timestamp = Date.now();
@@ -91,7 +91,7 @@ export class ImageBlobService {
       .replace(/[^a-z0-9]/g, '-');
 
     // Use .png as default, but this will be adjusted based on actual content type
-    return `gosa-2025-${sanitizedServiceType}-${sanitizedName}-${timestamp}.png`;
+    return `gosa-2026-${sanitizedServiceType}-${sanitizedName}-${timestamp}.png`;
   }
 
   /**
