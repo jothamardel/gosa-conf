@@ -29,6 +29,7 @@ import {
   Activity,
   Users,
   Compass,
+  Award,
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -144,11 +145,12 @@ export default function LandingPage() {
                       <ArrowRight className="w-4 h-4" />
                     </Button>
                   </Link>
-                  <a href="#journey" className="w-full sm:w-auto" id="hero-cta-learn-more">
-                    <Button variant="outline" className="border-emerald-700 hover:bg-emerald-900/50 text-white hover:text-emerald-100 font-semibold text-base py-6 px-8 rounded-xl transition-all w-full">
-                      Learn More
+                  <Link href="/badge" className="w-full sm:w-auto" id="hero-cta-generate-badge">
+                    <Button className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-base py-6 px-8 rounded-xl shadow-lg shadow-emerald-950/40 border border-emerald-300/40 hover:scale-[1.02] active:scale-[0.98] transition-all w-full flex items-center justify-center gap-2.5">
+                      <Award className="w-5 h-5 text-amber-300 shrink-0" />
+                      <span>Generate Badge</span>
                     </Button>
-                  </a>
+                  </Link>
                 </div>
               </div>
 

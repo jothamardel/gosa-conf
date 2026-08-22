@@ -235,7 +235,7 @@ export function BusinessShowcase() {
                   <div className="flex items-center justify-between text-xs text-slate-400">
                     <span className="truncate max-w-[180px]">{brand.location}</span>
                     <span className="text-emerald-400 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
-                      Learn More
+                      View Offer
                       <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
