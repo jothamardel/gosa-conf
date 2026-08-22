@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PDFMonitoringService } from '@/lib/services/pdf-monitoring.service';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/v1/admin/test-alert
  * Test admin alert system
