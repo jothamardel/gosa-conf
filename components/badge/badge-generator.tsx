@@ -129,7 +129,7 @@ export function BadgeGenerator({
 
       // Auto-set first house if school changes to prevent invalid house state
       if (field === "school") {
-        updated.house = value === "GHS" ? "alama" : "aggrey";
+        updated.house = value === "GHS" ? "curie" : "aggrey";
       }
 
       return updated;
@@ -139,10 +139,10 @@ export function BadgeGenerator({
   const getHousesForSchool = (school: string) => {
     if (school === "GHS") {
       return [
-        { value: "alama", label: "Alama House" },
-        { value: "bowen", label: "Bowen House" },
-        { value: "monro", label: "Monro House" },
-        { value: "slessor", label: "Slessor House" },
+        { value: "curie", label: "Curie" },
+        { value: "keller", label: "Keller" },
+        { value: "nightangle", label: "Nightangle" },
+        { value: "slessor", label: "Slessor" },
       ];
     }
     return [
