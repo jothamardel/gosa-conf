@@ -131,7 +131,7 @@ export default function BadgePage() {
                           <img
                             src={previewData.imageUrl}
                             alt="Preview"
-                            className="w-full h-full object-cover rounded-full"
+                            className="w-full h-full object-contain rounded-full"
                             style={{ borderRadius: "9999px" }}
                           />
                         ) : (

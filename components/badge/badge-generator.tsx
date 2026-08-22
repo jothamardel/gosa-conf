@@ -378,7 +378,7 @@ export function BadgeGenerator({
                     <img
                       src={previewUrl}
                       alt=""
-                      className="w-full h-full object-cover rounded-full"
+                      className="w-full h-full object-contain rounded-full"
                       style={{ borderRadius: "9999px" }}
                     />
                   ) : (
