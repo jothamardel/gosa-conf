@@ -251,6 +251,26 @@ export default function BadgePage() {
               </div>
             ))}
           </div>
+
+          {/* Badge Sponsorship Callout Banner */}
+          <div className="mt-12 bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 border border-emerald-800/60 rounded-3xl p-6 sm:p-10 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 text-white text-center md:text-left">
+            <div className="max-w-xl">
+              <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block mb-1">
+                Corporate Badge Branding Slot
+              </span>
+              <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+                Put Your Brand on Every Attendee's Badge
+              </h3>
+              <p className="text-slate-300 text-xs sm:text-sm mt-1.5 leading-relaxed">
+                Over 1,000 delegates generate and share their official GOSA 2026 badges across social media and wear them at the venue. Lock in your sponsor logo strip placement today.
+              </p>
+            </div>
+            <Link href="/donate#badge-sponsor">
+              <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold h-11 px-6 rounded-xl shadow-md shrink-0">
+                Sponsor Badge Banners
+              </Button>
+            </Link>
+          </div>
         </section>
 
       </main>

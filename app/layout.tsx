@@ -4,7 +4,7 @@ import { Inter } from 'next/font/google';
 import { Providers } from '@/components/providers';
 import { Toaster } from '@/components/ui/sonner';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], display: 'swap', fallback: ['system-ui', 'sans-serif'] });
 
 export const metadata: Metadata = {
   title: 'GOSA Convention 2025 | For Light and Truth',

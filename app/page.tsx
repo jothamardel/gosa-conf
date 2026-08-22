@@ -6,6 +6,8 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Navigation } from "@/components/layout/navigation";
 import { Footer } from "@/components/layout/footer";
+import { Sponsors } from "@/components/sections/sponsors";
+import { BusinessShowcase } from "@/components/sections/business-showcase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -399,6 +401,9 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Official Convention Sponsors Ticker */}
+      <Sponsors />
+
       {/* Solutions Section: Reconnecting Generations */}
       <section className="py-20 md:py-28 relative bg-white overflow-hidden" id="solutions">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-20" style={{
@@ -469,6 +474,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* GOSA Alumni Business Directory & Corporate Brand Showcase */}
+      <BusinessShowcase />
 
       {/* Features Grid: Everything for a Seamless Convention */}
       <section className="bg-slate-100 relative py-20 md:py-28 border-t border-b border-slate-200/60" id="features">
