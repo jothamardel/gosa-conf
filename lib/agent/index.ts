@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import mongoose from "mongoose";
+import { ConversationHistory } from "../schema";
 
 export interface AgentResponse {
   intent: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query' | 'checkout_cart' | 'list_groups' | 'send_group_message' | 'send_broadcast_message';
@@ -205,6 +207,33 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   }
 ];
 
+const OPENAI_TIMEOUT_MS = 25_000;
+const OPENAI_MAX_RETRIES = 2;
+
+async function callOpenAIWithRetry(
+  fn: () => Promise<any>,
+  attempt = 1
+): Promise<any> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("OpenAI request timed out")), OPENAI_TIMEOUT_MS)
+  );
+  try {
+    return await Promise.race([fn(), timeout]);
+  } catch (err: any) {
+    const isRetryable =
+      err?.status === 429 ||
+      err?.status === 503 ||
+      err?.message === "OpenAI request timed out";
+    if (isRetryable && attempt < OPENAI_MAX_RETRIES) {
+      const delay = attempt * 1000;
+      console.warn(`[Agent] OpenAI call failed (attempt ${attempt}), retrying in ${delay}ms...`, err?.message);
+      await new Promise(r => setTimeout(r, delay));
+      return callOpenAIWithRetry(fn, attempt + 1);
+    }
+    throw err;
+  }
+}
+
 class AgentClass {
   private openAI: OpenAI;
   constructor() {
@@ -213,9 +242,6 @@ class AgentClass {
 
   async httpSendMessage(message: string, jid?: string, senderName?: string): Promise<AgentResponse> {
     try {
-      const mongoose = (await import("mongoose")).default;
-      const { ConversationHistory } = await import("../schema");
-
       const isDbConnected = mongoose.connection.readyState === 1;
       let historyMessages: any[] = [];
       let historyRecord: any = null;
@@ -259,6 +285,11 @@ class AgentClass {
 
             ---
 
+            ## Language Requirement
+            - **ENGLISH ONLY**: You MUST ALWAYS respond to the user ONLY in English, regardless of the language, dialect, or slang used by the user. Never reply in any language other than English.
+
+            ---
+
             ## About GOSA & Gindiri Schools (Scraped Knowledge Base)
             - **Gindiri Schools**: Located in Gindiri town, Mangu Local Government Area of Plateau State, Nigeria. They form a historic education hub affiliated with the Church of Christ in Nations (COCIN).
             - **Boys' Secondary School (BSS), Gindiri**: Established in 1950 by the Sudan United Mission (SUM) missionaries. Motto is *"For Light and Truth"*.
@@ -283,10 +314,11 @@ class AgentClass {
 
             ---
 
-            ## Administrative & Broadcasting Commands
-            - **List Groups**: The user might ask you to list all the groups. Call the 'list_groups' tool. Only call this when the user explicitly asks to list or show the groups.
-            - **Send Message to Group**: The user might ask to send/post a message to a specific group chat or ALL groups. Call the 'send_group_message' tool with 'targetGroupId' (pass 'all' to target all registered groups) and 'messageText'. Do NOT list the groups first when the user asks you to send a message; call 'send_group_message' directly with 'all' as the targetGroupId.
-            - **Send Message to Participants**: The user might ask to broadcast/send a direct message individually to each participant of a specific group or ALL groups. Call the 'send_broadcast_message' tool with 'targetGroupId' (pass 'all' to target all registered groups) and 'messageText'. Do NOT list the groups first when the user asks you to broadcast; call 'send_broadcast_message' directly with 'all' as the targetGroupId.
+            ## Administrative Commands & Single Group Restriction
+            - **Single Authorized Admin Group Restriction**: Group listing ('list_groups') and administrative broadcast commands ('send_group_message', 'send_broadcast_message') can ONLY be issued from the SINGLE official GOSA Admin group.
+            - **List Groups**: The user might ask you to list all the groups. Call the 'list_groups' tool only when explicitly asked.
+            - **Send Message to Group**: The user might ask to send/post a message to a specific group chat or ALL groups. Call the 'send_group_message' tool with 'targetGroupId' and 'messageText'.
+            - **Send Message to Participants**: The user might ask to broadcast/send a direct message individually to each participant of a specific group or ALL groups. Call the 'send_broadcast_message' tool with 'targetGroupId' and 'messageText'.
 
             ---
 
@@ -317,12 +349,14 @@ class AgentClass {
         },
       ];
 
-      const response = await this.openAI.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: apiMessages,
-        tools,
-        max_tokens: 400,
-      });
+      const response = await callOpenAIWithRetry(() =>
+        this.openAI.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: apiMessages,
+          tools,
+          max_tokens: 750,
+        })
+      );
 
       const messageObj = response.choices[0]?.message;
       const toolCalls = messageObj?.tool_calls;
@@ -346,16 +380,16 @@ class AgentClass {
             email: null
           };
         } else if (functionName === 'list_groups') {
-          politeResponse = `Retrieving the active GOSA groups list for you.`;
+          politeResponse = `Processing group listing request.`;
           dataVal = {};
         } else if (functionName === 'send_group_message') {
-          politeResponse = `Right away! I will forward that message to the specified group chat.`;
+          politeResponse = `Processing group message request.`;
           dataVal = {
             targetGroupId: args.targetGroupId,
             messageText: args.messageText
           };
         } else if (functionName === 'send_broadcast_message') {
-          politeResponse = `Right away! I will broadcast that direct message to all participants of the specified group individually.`;
+          politeResponse = `Processing broadcast message request.`;
           dataVal = {
             targetGroupId: args.targetGroupId,
             messageText: args.messageText
@@ -409,7 +443,10 @@ class AgentClass {
           if (historyRecord.messages.length > maxHistory) {
             historyRecord.messages = historyRecord.messages.slice(-maxHistory);
           }
-          await historyRecord.save();
+          // Fire-and-forget — don't block the response on a DB write
+          historyRecord.save().catch((e: any) =>
+            console.error("[Agent] Failed to save conversation history:", e)
+          );
         } catch (dbSaveErr) {
           console.error("Failed to save conversation history:", dbSaveErr);
         }

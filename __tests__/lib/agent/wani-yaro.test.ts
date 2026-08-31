@@ -255,7 +255,7 @@ describe('Wani Yaro Agent Integration', () => {
     expect(result.response).toContain('generating');
   });
 
-  it('should parse list groups request correctly', async () => {
+  it('should parse list groups request correctly with neutral pre-response', async () => {
     const mockLLMResponse = {
       choices: [
         {
@@ -278,10 +278,10 @@ describe('Wani Yaro Agent Integration', () => {
     const result = await Agent.httpSendMessage('list all groups');
 
     expect(result.intent).toBe('list_groups');
-    expect(result.response).toContain('Retrieving');
+    expect(result.response).toContain('Processing group listing');
   });
 
-  it('should parse send group message request correctly', async () => {
+  it('should parse send group message request correctly with neutral pre-response', async () => {
     const mockLLMResponse = {
       choices: [
         {
@@ -309,10 +309,10 @@ describe('Wani Yaro Agent Integration', () => {
     expect(result.intent).toBe('send_group_message');
     expect(result.data.targetGroupId).toBe('120363402321564330@g.us');
     expect(result.data.messageText).toBe('Hello group!');
-    expect(result.response).toContain('forward');
+    expect(result.response).toContain('Processing group message');
   });
 
-  it('should parse send broadcast message request correctly', async () => {
+  it('should parse send broadcast message request correctly with neutral pre-response', async () => {
     const mockLLMResponse = {
       choices: [
         {
@@ -340,7 +340,28 @@ describe('Wani Yaro Agent Integration', () => {
     expect(result.intent).toBe('send_broadcast_message');
     expect(result.data.targetGroupId).toBe('120363402321564330@g.us');
     expect(result.data.messageText).toBe('Hello members!');
-    expect(result.response).toContain('broadcast');
+    expect(result.response).toContain('Processing broadcast message');
+  });
+
+  it('should include English-only mandate and max_tokens 750 in OpenAI completion params', async () => {
+    const mockLLMResponse = {
+      choices: [
+        {
+          message: {
+            content: 'Hello! I am ready to assist you in English.'
+          }
+        }
+      ]
+    };
+
+    mockCreateFn.mockResolvedValue(mockLLMResponse);
+
+    await Agent.httpSendMessage('Sannu bilkwas');
+
+    const callArgs = mockCreateFn.mock.calls[0][0];
+    expect(callArgs.max_tokens).toBe(750);
+    expect(callArgs.messages[0].content).toContain('ENGLISH ONLY');
+    expect(callArgs.messages[0].content).toContain('Single Authorized Admin Group Restriction');
   });
 
   it('should handle help request and teach commands correctly', async () => {

@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../../fleet-managment/mosaic-next"
+		},
+		{
+			"path": "../../../finance"
+		}
+	],
+	"settings": {}
+}

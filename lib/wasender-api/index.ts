@@ -281,12 +281,7 @@ class Sender {
       throw new Error("Invalid response format from WASender API");
     } catch (err: any) {
       console.warn("Failed to fetch group metadata from WASender API:", err?.response?.data || err?.message);
-      console.log("Using mock/simulated participant JIDs fallback");
-      return [
-        "2347033680280@s.whatsapp.net",
-        "2348162329082@s.whatsapp.net",
-        "2348031234567@s.whatsapp.net"
-      ];
+      return [];
     }
   };
 

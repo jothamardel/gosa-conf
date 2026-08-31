@@ -23,6 +23,48 @@ export const dynamic = "force-dynamic";
 let cachedBotJid: string | null = null;
 let cachedBotLid: string | null = null;
 
+// ---------------------------------------------------------------------------
+// In-memory deduplication: prevents Wasender retries from reprocessing the
+// same event when the function is slow under load. Capped to avoid memory
+// growth; oldest entries are evicted once the cap is reached.
+// ---------------------------------------------------------------------------
+const DEDUP_CAP = 5_000;
+const processedRequestIds = new Set<string>();
+
+function markProcessed(id: string): boolean {
+  if (processedRequestIds.has(id)) return false; // already seen
+  if (processedRequestIds.size >= DEDUP_CAP) {
+    // Evict the oldest entry (first item in insertion-order set)
+    const first = processedRequestIds.values().next().value;
+    if (first !== undefined) processedRequestIds.delete(first);
+  }
+  processedRequestIds.add(id);
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Per-JID in-progress lock: if a second message from the same JID arrives
+// while the first is still being processed (AI call in flight), we drop the
+// second and reply with "still processing" (Option A).
+// A lock older than LOCK_STALE_MS is automatically considered released.
+// ---------------------------------------------------------------------------
+const LOCK_STALE_MS = 30_000;
+const jidInProgress = new Map<string, number>(); // jid → timestamp
+
+function acquireJidLock(jid: string): boolean {
+  const now = Date.now();
+  const existing = jidInProgress.get(jid);
+  if (existing !== undefined && now - existing < LOCK_STALE_MS) {
+    return false; // locked
+  }
+  jidInProgress.set(jid, now);
+  return true;
+}
+
+function releaseJidLock(jid: string): void {
+  jidInProgress.delete(jid);
+}
+
 function normalizeJidToPhone(jid: string): string {
   const rawNumber = jid.split('@')[0];
   if (rawNumber.startsWith('+')) return rawNumber;
@@ -941,12 +983,12 @@ async function handleHistoryQuery(senderJid: string, remoteJid: string) {
   });
 }
 
-export async function POST(req: NextRequest) {
+// ---------------------------------------------------------------------------
+// handleMessageAsync — contains all the heavy processing logic.
+// This is called inside waitUntil() so the POST handler can return 200 fast.
+// ---------------------------------------------------------------------------
+async function handleMessageAsync(body: any): Promise<void> {
   try {
-    const body = await req.json();
-
-    console.log(body)
-
     // Prevent duplicate processing by only listening to allowed events
     const allowedEvents = [
       'messages.received',
@@ -955,7 +997,7 @@ export async function POST(req: NextRequest) {
       'groups.upsert'
     ];
     if (body?.event && !allowedEvents.includes(body.event)) {
-      return NextResponse.json({ message: `Ignoring event ${body.event}`, success: true });
+      return;
     }
 
     if (body?.event === 'groups.upsert') {
@@ -966,7 +1008,7 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         console.error("Error handling groups.upsert event:", err);
       }
-      return NextResponse.json({ message: "Groups upsert processed", success: true });
+      return;
     }
 
     if (body?.event === 'group-participants.update') {
@@ -1040,19 +1082,19 @@ export async function POST(req: NextRequest) {
           }
         }
       }
-      return NextResponse.json({ message: "Group participants update processed", success: true });
+      return;
     }
 
     // Self-message prevention
     if (body?.data?.messages?.key?.fromMe) {
-      return NextResponse.json({ message: "Ignore self message", success: true });
+      return;
     }
 
     const remoteJid = body?.data?.messages?.key?.remoteJid;
     const rawSenderJid = body?.data?.messages?.key?.participant || remoteJid;
 
     if (!remoteJid || !rawSenderJid) {
-      return NextResponse.json({ message: "No JID provided", success: false });
+      return;
     }
 
     const msgObj = body?.data?.messages?.message;
@@ -1065,7 +1107,7 @@ export async function POST(req: NextRequest) {
     ).trim();
 
     if (!messageText) {
-      return NextResponse.json({ message: "Empty message", success: true });
+      return;
     }
 
     const isGroup = remoteJid.endsWith('@g.us');
@@ -1150,18 +1192,18 @@ export async function POST(req: NextRequest) {
           const text = `Message approved. Starting the forward to all GOSA groups in the background.`;
           const formattedText = formatGroupResponse(text);
           await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-          return NextResponse.json({ message: "Group message send approved", success: true });
+          return;
         } else if (cleanMsg === 'no' || cleanMsg === 'cancel' || cleanMsg === 'n') {
           await WhatsAppSession.deleteOne({ jid: senderJid });
           const text = `Cancelled the announcement send.`;
           const formattedText = formatGroupResponse(text);
           await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-          return NextResponse.json({ message: "Group message send cancelled", success: true });
+          return;
         } else {
           const text = `I apologize, Please reply with *yes* to approve sending the message to all groups, or *no* to cancel.`;
           const formattedText = formatGroupResponse(text);
           await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-          return NextResponse.json({ message: "Awaiting approval response", success: true });
+          return;
         }
       }
 
@@ -1188,18 +1230,18 @@ export async function POST(req: NextRequest) {
           const text = `Message approved. Starting the direct message broadcast to the ${participants.length} unique participants in the background.`;
           const formattedText = formatGroupResponse(text);
           await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-          return NextResponse.json({ message: "Broadcast approved", success: true });
+          return;
         } else if (cleanMsg === 'no' || cleanMsg === 'cancel' || cleanMsg === 'n') {
           await WhatsAppSession.deleteOne({ jid: senderJid });
           const text = `Cancelled the broadcast send.`;
           const formattedText = formatGroupResponse(text);
           await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-          return NextResponse.json({ message: "Broadcast cancelled", success: true });
+          return;
         } else {
           const text = `I apologize. Please reply with *yes* to approve sending the broadcast to all groups' participants, or *no* to cancel.`;
           const formattedText = formatGroupResponse(text);
           await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-          return NextResponse.json({ message: "Awaiting approval response", success: true });
+          return;
         }
       }
 
@@ -1238,7 +1280,7 @@ export async function POST(req: NextRequest) {
         await handlePaymentFlow(senderUser, pendingAction as any, remoteJid, senderJid, rawSenderJid, rawMentionedJids);
         await WhatsAppSession.deleteOne({ jid: senderJid });
 
-        return NextResponse.json({ message: "Email captured, checkout generated", success: true });
+        return;
       } else {
         // Unrelated message typed during email request -> delete session to allow normal conversation
         await WhatsAppSession.deleteOne({ jid: senderJid });
@@ -1267,7 +1309,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (!isBotMentioned) {
-        return NextResponse.json({ message: "Ignore group message without mention", success: true });
+        return;
       }
     }
 
@@ -1339,22 +1381,22 @@ export async function POST(req: NextRequest) {
         to: remoteJid,
         text: formattedText
       });
-      return NextResponse.json({ message: "General query handled", success: true });
+      return;
     }
 
     if (agentResponse.intent === 'view_history') {
       await handleHistoryQuery(senderJid, remoteJid);
-      return NextResponse.json({ message: "History query handled", success: true });
+      return;
     }
 
     if (agentResponse.intent === 'list_groups') {
       const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363408711532693@g.us";
-      const APPROVED_ADMIN_JIDS = [ADMIN_GROUP_JID, "120363402321564330@g.us"];
+      const APPROVED_ADMIN_JIDS = [ADMIN_GROUP_JID];
       if (!APPROVED_ADMIN_JIDS.includes(remoteJid)) {
         const text = `I apologize. Listing groups is a restricted command and can only be performed from the official Admin group.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-        return NextResponse.json({ message: "Restricted command rejected", success: true });
+        return;
       }
 
       await connectDB();
@@ -1370,17 +1412,17 @@ export async function POST(req: NextRequest) {
       }
       const formattedText = isGroup ? formatGroupResponse(replyText) : sanitizeMessage(replyText);
       await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-      return NextResponse.json({ message: "Groups listed successfully", success: true });
+      return;
     }
 
     if (agentResponse.intent === 'send_group_message') {
       const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363408711532693@g.us";
-      const APPROVED_ADMIN_JIDS = [ADMIN_GROUP_JID, "120363402321564330@g.us"];
+      const APPROVED_ADMIN_JIDS = [ADMIN_GROUP_JID];
       if (!APPROVED_ADMIN_JIDS.includes(remoteJid)) {
         const text = `I apologize. Sending messages to other groups is a restricted command and can only be performed from the official Admin group.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-        return NextResponse.json({ message: "Restricted command rejected", success: true });
+        return;
       }
 
       const { targetGroupId, messageText: messageContent } = agentResponse.data;
@@ -1388,7 +1430,7 @@ export async function POST(req: NextRequest) {
         const text = `I apologize. I couldn't resolve the target group or message content. Could you please specify them clearly?`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-        return NextResponse.json({ message: "Invalid command parameters", success: true });
+        return;
       }
 
       await connectDB();
@@ -1418,7 +1460,7 @@ ${messageContent}
 Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel.`;
         const formattedAck = formatGroupResponse(ackText);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedAck });
-        return NextResponse.json({ message: "Group message confirmation requested", success: true });
+        return;
       }
 
       // Check if specific target group is active in DB
@@ -1427,7 +1469,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel.`;
         const text = `I apologize. The group JID *${targetGroupId}* was not found or is currently inactive.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-        return NextResponse.json({ message: "Target group not found", success: true });
+        return;
       }
 
       // Forward message asynchronously in the background
@@ -1453,17 +1495,17 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel.`;
       const ackText = `I am forwarding the message to the group *${targetGroup.name}* in the background.`;
       const formattedAck = formatGroupResponse(ackText);
       await Wasender.httpSenderMessage({ to: remoteJid, text: formattedAck });
-      return NextResponse.json({ message: "Group message send initiated", success: true });
+      return;
     }
 
     if (agentResponse.intent === 'send_broadcast_message') {
       const ADMIN_GROUP_JID = process.env.ADMIN_GROUP_JID || "120363408711532693@g.us";
-      const APPROVED_ADMIN_JIDS = [ADMIN_GROUP_JID, "120363402321564330@g.us"];
+      const APPROVED_ADMIN_JIDS = [ADMIN_GROUP_JID];
       if (!APPROVED_ADMIN_JIDS.includes(remoteJid)) {
         const text = `I apologize. Sending broadcast messages is a restricted command and can only be performed from the official Admin group.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-        return NextResponse.json({ message: "Restricted command rejected", success: true });
+        return;
       }
 
       const { targetGroupId, messageText: messageContent } = agentResponse.data;
@@ -1471,7 +1513,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel.`;
         const text = `I apologize. I couldn't resolve the target group or message content. Could you please specify them clearly?`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-        return NextResponse.json({ message: "Invalid command parameters", success: true });
+        return;
       }
 
       await connectDB();
@@ -1501,7 +1543,7 @@ ${messageContent}
 Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel.`;
         const formattedAck = formatGroupResponse(ackText);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedAck });
-        return NextResponse.json({ message: "Broadcast confirmation requested", success: true });
+        return;
       }
 
       // Check if target group is active in DB
@@ -1510,7 +1552,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel.`;
         const text = `I apologize. The group JID *${targetGroupId}* was not found or is currently inactive.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-        return NextResponse.json({ message: "Target group not found", success: true });
+        return;
       }
 
       const participants = targetGroup.participants || [];
@@ -1518,7 +1560,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel.`;
         const text = `I apologize. No participant JIDs were found registered in our database for the selected target.`;
         const formattedText = isGroup ? formatGroupResponse(text) : sanitizeMessage(text);
         await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
-        return NextResponse.json({ message: "No participants registered", success: true });
+        return;
       }
 
       // Trigger background broadcast loop asynchronously with 10s delay
@@ -1530,7 +1572,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel.`;
       const ackText = `I am starting the direct message broadcast to the ${participants.length} participants of group *${targetGroup.name}* in the background. I will notify you in this chat once it is complete.`;
       const formattedAck = formatGroupResponse(ackText);
       await Wasender.httpSenderMessage({ to: remoteJid, text: formattedAck });
-      return NextResponse.json({ message: "Broadcast initiated", success: true });
+      return;
     }
 
     // Payment intents: buy_tickets, buy_product, donation, checkout_cart
@@ -1623,7 +1665,7 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel.`;
           text: formattedText
         });
 
-        return NextResponse.json({ message: "Session created, email requested", success: true });
+        return;
       }
 
       // Execute payment link generation
@@ -1644,14 +1686,100 @@ Please reply with *yes* (or *approve*) to confirm and send, or *no* to cancel.`;
         }, remoteJid, senderJid, rawSenderJid, rawMentionedJids);
       }
 
-      return NextResponse.json({ message: "Checkout generated", success: true });
+      return;
     }
 
-    return NextResponse.json({ message: "Unsupported intent", success: false });
+    console.warn("[handleMessageAsync] Unsupported agent intent:", (agentResponse as any).intent);
   } catch (error) {
-    console.error("Error processing request:", error);
+    console.error("[handleMessageAsync] Unhandled error:", error);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// POST — returns 200 immediately; all heavy work runs inside waitUntil().
+// ---------------------------------------------------------------------------
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+
+    // ── 1. Fast event filter ─────────────────────────────────────────────
+    const allowedEvents = [
+      'messages.received',
+      'messages-group.received',
+      'group-participants.update',
+      'groups.upsert'
+    ];
+    if (body?.event && !allowedEvents.includes(body.event)) {
+      return NextResponse.json({ message: `Ignoring event ${body.event}`, success: true });
+    }
+
+    // ── 2. Request-level deduplication (Wasender retry guard) ────────────
+    // Use a composite key: requestId + event type to uniquely identify this
+    // webhook delivery. Non-message events (group sync etc.) bypass dedup.
+    const isMessageEvent =
+      body?.event === 'messages.received' ||
+      body?.event === 'messages-group.received';
+
+    if (isMessageEvent) {
+      const requestId = body?.data?.messages?.key?.id || body?.requestId;
+      if (requestId) {
+        const dedupKey = `${body.event}:${requestId}`;
+        if (!markProcessed(dedupKey)) {
+          console.log(`[DEDUP] Duplicate request dropped: ${dedupKey}`);
+          return NextResponse.json({ message: "Duplicate event ignored", success: true });
+        }
+      }
+    }
+
+    // ── 3. Per-JID in-progress lock (burst / rapid-message guard) ────────
+    // Only applied to message events where a JID is identifiable.
+    if (isMessageEvent) {
+      const rawSenderJid =
+        body?.data?.messages?.key?.participant ||
+        body?.data?.messages?.key?.remoteJid;
+
+      if (rawSenderJid && !body?.data?.messages?.key?.fromMe) {
+        if (!acquireJidLock(rawSenderJid)) {
+          // Still processing previous message — reply instantly and drop
+          console.log(`[JID-LOCK] JID ${rawSenderJid} is still in-progress, dropping message.`);
+          waitUntil(
+            (async () => {
+              try {
+                const remoteJid = body?.data?.messages?.key?.remoteJid;
+                if (!remoteJid) return;
+                const isGroup = remoteJid.endsWith('@g.us');
+                const busyText = `I'm still processing your previous message. Please wait a moment and try again. 🙏`;
+                const formattedText = isGroup ? formatGroupResponse(busyText) : sanitizeMessage(busyText);
+                await Wasender.httpSenderMessage({ to: remoteJid, text: formattedText });
+              } catch (e) {
+                console.error("[JID-LOCK] Failed to send busy reply:", e);
+              }
+            })()
+          );
+          return NextResponse.json({ message: "Request throttled", success: true });
+        }
+
+        // ── 4. Dispatch to background; return 200 immediately ─────────────
+        waitUntil(
+          handleMessageAsync(body)
+            .catch(err => console.error("[POST] Background task error:", err))
+            .finally(() => releaseJidLock(rawSenderJid))
+        );
+        return NextResponse.json({ message: "Processing", success: true });
+      }
+    }
+
+    // For non-message events (group sync, participant updates) — still dispatch
+    // async but no JID lock needed.
+    waitUntil(
+      handleMessageAsync(body)
+        .catch(err => console.error("[POST] Background task error (non-message):", err))
+    );
+    return NextResponse.json({ message: "Processing", success: true });
+  } catch (error) {
+    console.error("Error parsing request:", error);
     return NextResponse.json(
-      { error: "Failed to process request" },
+      { error: "Failed to parse request" },
       { status: 500 },
     );
   }
