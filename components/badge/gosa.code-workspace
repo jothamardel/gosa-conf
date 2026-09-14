@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "../../../finance"
+		},
+		{
+			"path": "../../../agent-service"
 		}
 	],
 	"settings": {}
