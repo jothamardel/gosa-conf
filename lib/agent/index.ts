@@ -300,7 +300,9 @@ class AgentClass {
 
             ---
 
-            ## GOSA 2026 Convention Theme
+            ## GOSA 2026 Convention Details
+            - **Convention Dates**: October 31 – November 2, 2026
+            - **Convention Location & Venue**: Gindiri Compound, Mangu Local Government Area, Plateau State, Nigeria (BSS & GHS Gindiri Campus).
             - **Theme**: "BUILDING BRIDGES, CONNECTING THE PAST WITH THE PRESENT."
 
             ---
