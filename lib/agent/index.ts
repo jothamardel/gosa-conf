@@ -68,10 +68,10 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           quantity: {
             type: "number",
             minimum: 1,
-            description: "Number of items to purchase."
+            description: "Number of items to purchase. Defaults to 1."
           }
         },
-        required: ["productType", "quantity"]
+        required: ["productType"]
       }
     }
   },
@@ -329,9 +329,11 @@ class AgentClass {
             - Provide clear, copy-pasteable examples for:
               1. **Convention Tickets:** e.g., \`GOSA buy ticket for myself\` or \`GOSA buy ticket for @John\`
               2. **Dinner Tickets:** e.g., \`GOSA buy Dinner for myself\`
-              3. **Donations:** e.g., \`GOSA donate 5000 support BSS hostel renovation\`
-              4. **Combined Checkout (Cart):** e.g., \`GOSA checkout: 1 ticket, 1 Dinner ticket\`
-              5. **Adding the Bot to Groups:** Politely instruct that to add you to a new group, a group admin simply needs to add the bot's phone number as a participant directly to the group. Once added, you will automatically sync and register the group.
+              3. **Convention Brochure:** e.g., \`GOSA buy brochure\` or \`GOSA buy 2 brochures\`
+              4. **GOSA Uniform:** e.g., \`GOSA buy uniform\` or \`GOSA buy 1 GOSA uniform\`
+              5. **Donations:** e.g., \`GOSA donate 5000 support BSS hostel renovation\`
+              6. **Combined Checkout (Cart):** e.g., \`GOSA checkout: 1 ticket, 1 Dinner ticket, 1 brochure, 1 uniform\`
+              7. **Adding the Bot to Groups:** Politely instruct that to add you to a new group, a group admin simply needs to add the bot's phone number as a participant directly to the group. Once added, you will automatically sync and register the group.
             - If a user's request is ambiguous or fails to match a valid command (e.g. they ask to buy something but omit critical parameters, or you cannot resolve their intent), do NOT just say you didn't understand. Instead, politely point out what is missing and show them the exact correct template/example they can use.
 
             ---
