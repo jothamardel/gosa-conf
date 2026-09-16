@@ -441,7 +441,7 @@ export default function TicketPage() {
                     <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
                       <span className="font-bold text-slate-400 uppercase block text-[8px]">Venue</span>
-                      <span className="font-extrabold text-white truncate block">Gindiri Compound</span>
+                      <span className="font-extrabold text-white truncate block">Crispan</span>
                     </div>
                   </div>
                 </div>
