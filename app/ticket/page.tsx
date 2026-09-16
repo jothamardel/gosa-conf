@@ -6,11 +6,9 @@ import { Navigation } from "@/components/layout/navigation";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import {
   Download,
   FileText,
-  Share2,
   CheckCircle2,
   Calendar,
   MapPin,
@@ -21,16 +19,32 @@ import {
   Loader2,
   Ticket,
   Copy,
-  Check
+  Check,
+  Utensils,
+  BookOpen,
+  Shirt,
+  HeartHandshake,
+  ShoppingBag,
+  PackageCheck
 } from "lucide-react";
 import Link from "next/link";
 import QRCode from "qrcode";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
+interface PaidServiceItem {
+  id: string;
+  name: string;
+  category: string;
+  quantity: number;
+  amount: number;
+  badgeText: string;
+  icon: string;
+}
+
 interface TicketData {
   _id: string;
-  ticketType: string;
+  primaryTitle: string;
   paymentReference: string;
   amount: number;
   status: string;
@@ -43,10 +57,7 @@ interface TicketData {
     year?: string;
   };
   createdAt: string;
-  details?: {
-    quantity?: number;
-    items?: any[];
-  };
+  serviceItems: PaidServiceItem[];
 }
 
 export default function TicketPage() {
@@ -75,12 +86,11 @@ export default function TicketPage() {
         setLoading(true);
         setError(null);
 
-        // Try primary ticket API
+        // Fetch expanded ticket data with itemized breakdown
         let res = await fetch(`/api/v1/ticket/${id}`);
         let data = await res.json();
 
         if (!res.ok || !data.ticket) {
-          // Fallback to scan ticket API
           res = await fetch(`/api/v1/scan/ticket/${id}`);
           data = await res.json();
         }
@@ -88,13 +98,12 @@ export default function TicketPage() {
         if (data.ticket) {
           setTicket(data.ticket);
 
-          // Generate QR code canvas data URL
           const qrText = data.ticket.paymentReference || data.ticket._id || id;
           const qrDataUrl = await QRCode.toDataURL(qrText, {
-            width: 300,
+            width: 320,
             margin: 1,
             color: {
-              dark: "#0F172A",
+              dark: "#09172A",
               light: "#FFFFFF",
             },
           });
@@ -154,10 +163,10 @@ export default function TicketPage() {
         format: "a4",
       });
 
-      const imgWidth = 170;
+      const imgWidth = 175;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       const x = (210 - imgWidth) / 2;
-      const y = 25;
+      const y = 20;
 
       pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
       pdf.save(`GOSA-2026-Ticket-${ticket?.user?.fullName?.replace(/\s+/g, "_") || "Pass"}.pdf`);
@@ -176,12 +185,29 @@ export default function TicketPage() {
     }
   };
 
+  const renderServiceIcon = (icon: string, category: string) => {
+    switch (category) {
+      case "dinner":
+        return <Utensils className="w-4 h-4 text-amber-400 shrink-0" />;
+      case "brochure":
+        return <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />;
+      case "uniform":
+        return <Shirt className="w-4 h-4 text-amber-400 shrink-0" />;
+      case "donation":
+        return <HeartHandshake className="w-4 h-4 text-emerald-400 shrink-0" />;
+      case "product":
+        return <ShoppingBag className="w-4 h-4 text-amber-400 shrink-0" />;
+      default:
+        return <Ticket className="w-4 h-4 text-amber-400 shrink-0" />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950 overflow-x-hidden">
       <Navigation />
 
       <main className="grow container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
-        {/* Top Header */}
+        {/* Top Header Controls */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
           <Link href="/">
             <Button variant="outline" className="border-slate-700 bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 gap-2">
@@ -192,15 +218,15 @@ export default function TicketPage() {
 
           <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold">
             <Sparkles className="w-3.5 h-3.5" />
-            Official GOSA 2026 E-Ticket Portal
+            Official GOSA 2026 E-Ticket & Credentials Portal
           </div>
         </div>
 
         {loading ? (
           <div className="min-h-[450px] flex flex-col items-center justify-center text-center p-8 bg-slate-900/60 border border-slate-800 rounded-3xl">
             <Loader2 className="w-12 h-12 text-amber-400 animate-spin mb-4" />
-            <h2 className="text-xl font-bold text-white">Fetching Your Official Ticket Pass...</h2>
-            <p className="text-slate-400 text-sm mt-1">Please wait while we generate your credentials.</p>
+            <h2 className="text-xl font-bold text-white">Loading Paid Services & Ticket Credentials...</h2>
+            <p className="text-slate-400 text-sm mt-1">Please wait while we resolve your event pass.</p>
           </div>
         ) : error || !ticket ? (
           <div className="min-h-[400px] flex flex-col items-center justify-center text-center p-8 bg-slate-900/60 border border-rose-950 rounded-3xl max-w-xl mx-auto">
@@ -217,15 +243,15 @@ export default function TicketPage() {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Download Action Controls */}
+            {/* Action Bar */}
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  Your Ticket Pass is Ready
+                  Official GOSA Pass Confirmed
                 </h2>
                 <p className="text-slate-400 text-xs sm:text-sm">
-                  Save your official pass image or PDF directly to your device for easy event entry.
+                  Download your pass with all your paid services (convention, dinner, brochure, uniform, donation) for presentation at the convention venue.
                 </p>
               </div>
 
@@ -236,7 +262,7 @@ export default function TicketPage() {
                   className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold gap-2 shadow-lg shadow-amber-500/20 flex-1 sm:flex-none"
                 >
                   {downloadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                  Download PNG
+                  Download PNG Pass
                 </Button>
 
                 <Button
@@ -246,7 +272,7 @@ export default function TicketPage() {
                   className="border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 font-bold gap-2 flex-1 sm:flex-none"
                 >
                   {downloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-                  Download PDF
+                  Download PDF Pass
                 </Button>
 
                 <Button
@@ -265,13 +291,13 @@ export default function TicketPage() {
               <div
                 ref={ticketCardRef}
                 id="ticket-pass-card"
-                className="w-full max-w-[440px] rounded-[32px] p-6 text-white relative overflow-hidden shadow-2xl border-4 border-amber-400/40 flex flex-col justify-between"
+                className="w-full max-w-[460px] rounded-[32px] p-6 text-white relative overflow-hidden shadow-2xl border-4 border-amber-400/40 flex flex-col justify-between"
                 style={{
                   backgroundImage: "linear-gradient(135deg, #09172A 0%, #102A43 45%, #0A192F 100%)",
                   boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(217, 119, 6, 0.15)",
                 }}
               >
-                {/* Background Pattern Overlay */}
+                {/* Subtle Radial Pattern Overlay */}
                 <div
                   className="absolute inset-0 opacity-10 pointer-events-none"
                   style={{
@@ -281,7 +307,7 @@ export default function TicketPage() {
                 />
 
                 {/* Top Metallic Banner */}
-                <div className="relative z-10 flex items-center justify-between border-b border-amber-400/20 pb-4 mb-4">
+                <div className="relative z-10 flex items-center justify-between border-b border-amber-400/20 pb-4 mb-3">
                   <div className="flex items-center gap-3">
                     <img
                       src="/images/gosa.png"
@@ -289,7 +315,7 @@ export default function TicketPage() {
                       className="w-10 h-10 object-contain drop-shadow-md brightness-0 invert"
                     />
                     <div>
-                      <h3 className="text-sm font-black tracking-wider text-amber-400 uppercase leading-none">
+                      <h3 className="text-xs font-black tracking-wider text-amber-400 uppercase leading-none">
                         GOSA 2026
                       </h3>
                       <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-1">
@@ -303,30 +329,73 @@ export default function TicketPage() {
                   </Badge>
                 </div>
 
-                {/* Attendee Name & Pass Details */}
-                <div className="relative z-10 text-center my-3 py-2 bg-slate-900/60 border border-amber-400/20 rounded-2xl p-4">
-                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-amber-400/80 block mb-1">
-                    DELEGATE / ATTENDEE PASS
+                {/* Attendee Name & Pass Header */}
+                <div className="relative z-10 text-center mb-3 bg-slate-900/70 border border-amber-400/20 rounded-2xl p-4">
+                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-amber-400/90 block mb-1">
+                    DELEGATE / ATTENDEE NAME
                   </span>
 
                   <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight drop-shadow-md">
                     {ticket.user.fullName}
                   </h2>
 
-                  <div className="mt-3 inline-block px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md">
-                    {ticket.ticketType || "Convention Registration"}
+                  <div className="mt-2.5 inline-block px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md">
+                    {ticket.primaryTitle || "COMBINED GOSA CONVENTION PASS"}
+                  </div>
+                </div>
+
+                {/* Itemized Paid Services Breakdown Section */}
+                <div className="relative z-10 my-2 bg-slate-900/80 border border-amber-400/30 rounded-2xl p-3.5 space-y-2">
+                  <div className="flex items-center justify-between border-b border-slate-700/60 pb-2 mb-2">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1.5">
+                      <PackageCheck className="w-3.5 h-3.5" />
+                      Services & Items Included
+                    </span>
+                    <span className="text-[9px] font-mono text-slate-300 font-bold">
+                      Total: ₦{ticket.amount.toLocaleString()}
+                    </span>
                   </div>
 
-                  {ticket.amount > 0 && (
-                    <p className="text-xs font-semibold text-slate-300 mt-2">
-                      Amount Paid: <span className="text-amber-400 font-bold">₦{ticket.amount.toLocaleString()}</span>
-                    </p>
-                  )}
+                  <div className="space-y-1.5">
+                    {ticket.serviceItems && ticket.serviceItems.length > 0 ? (
+                      ticket.serviceItems.map((item, idx) => (
+                        <div
+                          key={item.id || idx}
+                          className="flex items-center justify-between bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-xs"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            {renderServiceIcon(item.icon, item.category)}
+                            <div>
+                              <span className="font-bold text-white text-xs block leading-tight">
+                                {item.name}
+                              </span>
+                              {item.quantity > 1 && (
+                                <span className="text-[10px] text-amber-400/90 font-semibold">
+                                  Quantity: {item.quantity}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <Badge className="bg-amber-500/10 text-amber-300 border border-amber-500/30 font-semibold text-[9px] px-2 py-0.5 whitespace-nowrap">
+                            {item.badgeText}
+                          </Badge>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex items-center justify-between bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-xs">
+                        <span className="font-bold text-white">Convention Registration Ticket</span>
+                        <Badge className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-[9px]">
+                          Confirmed Ticket 🎟️
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Event Schedule & Location Grid */}
                 <div className="relative z-10 grid grid-cols-2 gap-2 my-2 text-[10px]">
-                  <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-2.5 flex items-start gap-2">
+                  <div className="bg-slate-900/50 border border-slate-700/60 rounded-xl p-2.5 flex items-start gap-2">
                     <Calendar className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
                       <span className="font-bold text-slate-400 uppercase block text-[8px]">Dates</span>
@@ -334,7 +403,7 @@ export default function TicketPage() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-2.5 flex items-start gap-2">
+                  <div className="bg-slate-900/50 border border-slate-700/60 rounded-xl p-2.5 flex items-start gap-2">
                     <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
                       <span className="font-bold text-slate-400 uppercase block text-[8px]">Venue</span>
@@ -344,7 +413,7 @@ export default function TicketPage() {
                 </div>
 
                 {/* QR Code Container */}
-                <div className="relative z-10 my-3 bg-white text-slate-950 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-inner border border-amber-400/30">
+                <div className="relative z-10 my-2 bg-white text-slate-950 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-inner border border-amber-400/30">
                   <span className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-2">
                     Official Verification QR Code
                   </span>
@@ -362,7 +431,7 @@ export default function TicketPage() {
                   </p>
                 </div>
 
-                {/* Bottom Security Footer */}
+                {/* Security Seal & Motto Footer */}
                 <div className="relative z-10 border-t border-amber-400/20 pt-3 flex items-center justify-between text-[9px] text-slate-400 font-medium">
                   <div className="flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
