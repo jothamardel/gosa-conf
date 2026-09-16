@@ -32,6 +32,12 @@ import QRCode from "qrcode";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
+interface ServiceBeneficiary {
+  name: string;
+  phone?: string;
+  email?: string;
+}
+
 interface PaidServiceItem {
   id: string;
   name: string;
@@ -40,6 +46,7 @@ interface PaidServiceItem {
   amount: number;
   badgeText: string;
   icon: string;
+  beneficiaries?: ServiceBeneficiary[];
 }
 
 interface TicketData {
