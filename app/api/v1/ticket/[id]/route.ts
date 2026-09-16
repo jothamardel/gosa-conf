@@ -18,6 +18,12 @@ ProductPurchase;
 Donation;
 Transaction;
 
+export interface ServiceBeneficiary {
+  name: string;
+  phone?: string;
+  email?: string;
+}
+
 export interface PaidServiceItem {
   id: string;
   name: string;
@@ -26,6 +32,7 @@ export interface PaidServiceItem {
   amount: number;
   badgeText: string;
   icon: string;
+  beneficiaries?: ServiceBeneficiary[];
 }
 
 export async function GET(
@@ -135,6 +142,11 @@ export async function GET(
 
     // Convention Tickets
     for (const item of conventionRegs) {
+      const beneficiaries = item.persons?.map((p: any) => ({
+        name: p.name,
+        phone: p.phone,
+        email: p.email,
+      }));
       serviceItems.push({
         id: item._id.toString(),
         name: 'Convention Registration Ticket',
@@ -143,11 +155,17 @@ export async function GET(
         amount: item.amount || 1000,
         badgeText: 'Confirmed Ticket 🎟️',
         icon: 'Ticket',
+        beneficiaries: beneficiaries && beneficiaries.length > 0 ? beneficiaries : undefined,
       });
     }
 
     // Dinner Tickets
     for (const item of dinnerRes) {
+      const beneficiaries = item.guestDetails?.map((g: any) => ({
+        name: g.name,
+        phone: g.phone,
+        email: g.email,
+      }));
       serviceItems.push({
         id: item._id.toString(),
         name: 'Dinner Ticket Pass',
@@ -156,11 +174,17 @@ export async function GET(
         amount: item.totalAmount || 2500,
         badgeText: 'Dinner Reserved 🍷',
         icon: 'Utensils',
+        beneficiaries: beneficiaries && beneficiaries.length > 0 ? beneficiaries : undefined,
       });
     }
 
     // Brochures
     for (const item of brochureOrders) {
+      const beneficiaries = item.recipientDetails?.map((r: any) => ({
+        name: r.name,
+        phone: r.phone,
+        email: r.email,
+      }));
       serviceItems.push({
         id: item._id.toString(),
         name: 'Convention Brochure',
@@ -169,12 +193,18 @@ export async function GET(
         amount: item.totalAmount || 2000,
         badgeText: item.collected ? 'Collected 📦' : 'Collect at Venue 📦',
         icon: 'BookOpen',
+        beneficiaries: beneficiaries && beneficiaries.length > 0 ? beneficiaries : undefined,
       });
     }
 
     // Product Purchases (Uniforms, Emblems, Magazines)
     for (const item of productPurchases) {
       const isUniform = item.productType === 'uniform';
+      const beneficiaries = item.recipientDetails?.map((r: any) => ({
+        name: r.name,
+        phone: r.phone,
+        email: r.email,
+      }));
       serviceItems.push({
         id: item._id.toString(),
         name: isUniform ? 'GOSA Uniform' : `GOSA Merchandise (${item.productType})`,
@@ -183,11 +213,18 @@ export async function GET(
         amount: item.totalAmount || (isUniform ? 15000 : 2000),
         badgeText: isUniform ? 'Uniform Order 👕' : 'Merchandise 🛒',
         icon: isUniform ? 'Shirt' : 'ShoppingBag',
+        beneficiaries: beneficiaries && beneficiaries.length > 0 ? beneficiaries : undefined,
       });
     }
 
     // Donations
     for (const item of donationRecords) {
+      const beneficiaries = item.recipientDetails?.map((r: any) => ({
+        name: r.name,
+        phone: r.phone,
+        email: r.email,
+      })) || (item.donorName ? [{ name: item.donorName, phone: item.donorPhone, email: item.donorEmail }] : undefined);
+
       serviceItems.push({
         id: item._id.toString(),
         name: 'GOSA Development Donation',
@@ -196,6 +233,7 @@ export async function GET(
         amount: item.amount || 0,
         badgeText: 'Donation Contributed 💚',
         icon: 'HeartHandshake',
+        beneficiaries: beneficiaries && beneficiaries.length > 0 ? beneficiaries : undefined,
       });
     }
 
@@ -210,6 +248,12 @@ export async function GET(
         else if (item.type === 'uniform') { label = 'GOSA Uniform'; badge = 'Uniform Order 👕'; }
         else if (item.type === 'donation') { label = 'GOSA Donation'; badge = 'Donation Contributed 💚'; }
 
+        const beneficiaries = (item.beneficiaries || item.recipientDetails)?.map((b: any) => ({
+          name: b.name,
+          phone: b.phone,
+          email: b.email,
+        }));
+
         serviceItems.push({
           id: primaryRecord._id.toString(),
           name: label,
@@ -218,12 +262,19 @@ export async function GET(
           amount: item.amount || 0,
           badgeText: badge,
           icon: 'CheckCircle',
+          beneficiaries: beneficiaries && beneficiaries.length > 0 ? beneficiaries : undefined,
         });
       }
     }
 
     // If still empty (single standalone record)
     if (serviceItems.length === 0) {
+      const beneficiaries = (primaryRecord.persons || primaryRecord.guestDetails || primaryRecord.recipientDetails)?.map((b: any) => ({
+        name: b.name,
+        phone: b.phone,
+        email: b.email,
+      })) || (primaryRecord.donorName ? [{ name: primaryRecord.donorName, phone: primaryRecord.donorPhone, email: primaryRecord.donorEmail }] : undefined);
+
       serviceItems.push({
         id: primaryRecord._id.toString(),
         name: primaryRecord.productType ? `GOSA Product (${primaryRecord.productType})` : 'GOSA Convention Pass',

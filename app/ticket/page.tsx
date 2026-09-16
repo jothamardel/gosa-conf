@@ -339,6 +339,12 @@ export default function TicketPage() {
                     {ticket.user.fullName}
                   </h2>
 
+                  {ticket.user.phone && (
+                    <span className="text-xs font-mono font-bold text-amber-300 block mt-1">
+                      📱 {ticket.user.phone}
+                    </span>
+                  )}
+
                   <div className="mt-2.5 inline-block px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md">
                     {ticket.primaryTitle || "COMBINED GOSA CONVENTION PASS"}
                   </div>
@@ -356,30 +362,51 @@ export default function TicketPage() {
                     </span>
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {ticket.serviceItems && ticket.serviceItems.length > 0 ? (
                       ticket.serviceItems.map((item, idx) => (
                         <div
                           key={item.id || idx}
-                          className="flex items-center justify-between bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-xs"
+                          className="bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2.5 text-xs space-y-1.5"
                         >
-                          <div className="flex items-center gap-2.5">
-                            {renderServiceIcon(item.icon, item.category)}
-                            <div>
-                              <span className="font-bold text-white text-xs block leading-tight">
-                                {item.name}
-                              </span>
-                              {item.quantity > 1 && (
-                                <span className="text-[10px] text-amber-400/90 font-semibold">
-                                  Quantity: {item.quantity}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                              {renderServiceIcon(item.icon, item.category)}
+                              <div>
+                                <span className="font-bold text-white text-xs block leading-tight">
+                                  {item.name}
                                 </span>
-                              )}
+                                {item.quantity > 1 && (
+                                  <span className="text-[10px] text-amber-400/90 font-semibold">
+                                    Quantity: {item.quantity}
+                                  </span>
+                                )}
+                              </div>
                             </div>
+
+                            <Badge className="bg-amber-500/10 text-amber-300 border border-amber-500/30 font-semibold text-[9px] px-2 py-0.5 whitespace-nowrap">
+                              {item.badgeText}
+                            </Badge>
                           </div>
 
-                          <Badge className="bg-amber-500/10 text-amber-300 border border-amber-500/30 font-semibold text-[9px] px-2 py-0.5 whitespace-nowrap">
-                            {item.badgeText}
-                          </Badge>
+                          {/* Beneficiaries & Phone Numbers list */}
+                          {item.beneficiaries && item.beneficiaries.length > 0 && (
+                            <div className="pt-1.5 border-t border-slate-800/80 space-y-1">
+                              <span className="text-[8px] font-black uppercase text-amber-400/90 block tracking-widest">
+                                Delegates & Phone Numbers:
+                              </span>
+                              {item.beneficiaries.map((b, bIdx) => (
+                                <div key={bIdx} className="flex items-center justify-between text-[10px] font-mono">
+                                  <span className="font-semibold text-slate-200 truncate max-w-[200px]">
+                                    • {b.name}
+                                  </span>
+                                  <span className="text-amber-300 font-bold ml-2">
+                                    {b.phone || 'N/A'}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))
                     ) : (
