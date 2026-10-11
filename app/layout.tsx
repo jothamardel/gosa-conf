@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Providers } from '@/components/providers';
 import { Toaster } from '@/components/ui/sonner';
+import { WhatsAppFloatingButton } from '@/components/whatsapp-floating-button';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap', fallback: ['system-ui', 'sans-serif'] });
 
@@ -61,6 +62,7 @@ export default function RootLayout({
               },
             }}
           />
+          <WhatsAppFloatingButton />
         </Providers>
       </body>
     </html>

@@ -15,6 +15,14 @@ interface BrochureOrderRequest {
 
 export async function POST(req: NextRequest) {
   try {
+    if (process.env.NEXT_PUBLIC_DISABLE_WEB_PAYMENTS === "true") {
+      return NextResponse.json({
+        success: false,
+        message: "Direct website purchases are currently paused. Please order your convention brochure via our official WhatsApp bot GOSA Bilkwas at 08102481754.",
+        whatsappUrl: "https://wa.me/2348102481754?text=Hello%20GOSA%20Bilkwas%2C%20I%20want%20to%20order%20the%20GOSA%20Convention%20Brochure",
+      }, { status: 403 });
+    }
+
     const body: BrochureOrderRequest = await req.json();
 
     // Validate required fields

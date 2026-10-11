@@ -16,6 +16,14 @@ interface GoodwillMessageRequest {
 
 export async function POST(req: NextRequest) {
   try {
+    if (process.env.NEXT_PUBLIC_DISABLE_WEB_PAYMENTS === "true") {
+      return NextResponse.json({
+        success: false,
+        message: "Direct website goodwill messages & donations are currently paused. Please submit via our official WhatsApp bot GOSA Bilkwas at 08102481754.",
+        whatsappUrl: "https://wa.me/2348102481754?text=Hello%20GOSA%20Bilkwas%2C%20I%20want%20to%20submit%20a%20goodwill%20message%20and%20make%20a%20donation%20for%20GOSA%202026",
+      }, { status: 403 });
+    }
+
     const body: GoodwillMessageRequest = await req.json();
 
     // Validate required fields

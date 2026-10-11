@@ -15,6 +15,14 @@ interface DinnerReservationRequest {
 
 export async function POST(req: NextRequest) {
   try {
+    if (process.env.NEXT_PUBLIC_DISABLE_WEB_PAYMENTS === "true") {
+      return NextResponse.json({
+        success: false,
+        message: "Direct website payments are currently paused. Please complete your dinner reservation via our official WhatsApp bot GOSA Bilkwas at 08102481754.",
+        whatsappUrl: "https://wa.me/2348102481754?text=Hello%20GOSA%20Bilkwas%2C%20I%20want%20to%20reserve%20a%20dinner%20ticket",
+      }, { status: 403 });
+    }
+
     const body: DinnerReservationRequest = await req.json();
     console.log('Enhanced dinner reservation request:', body);
 
