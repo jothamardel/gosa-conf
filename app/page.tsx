@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Navigation } from "@/components/layout/navigation";
 import { Footer } from "@/components/layout/footer";
 import { Sponsors } from "@/components/sections/sponsors";
-import { BusinessShowcase } from "@/components/sections/business-showcase";
+import { PackagesShowcase } from "@/components/sections/packages-showcase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -477,8 +477,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* GOSA Alumni Business Directory & Corporate Brand Showcase */}
-      <BusinessShowcase />
+      {/* Official GOSA Convention Packages & Instant Pass Checkout */}
+      <PackagesShowcase />
 
       {/* Features Grid: Everything for a Seamless Convention */}
       <section className="bg-slate-100 relative py-20 md:py-28 border-t border-b border-slate-200/60" id="features">
