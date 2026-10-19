@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Heart, Loader2, Users, Lightbulb, BookOpen, Shield, User, Mail, Phone, EyeOff, DollarSign } from 'lucide-react'
 import { toast } from 'sonner'
-import { formatDisplayPrice, validatePrice } from '@/lib/utils/price-formatter'
+import { formatDisplayPrice, validatePrice, calculatePaystackBreakdown } from '@/lib/utils/price-formatter'
 
 interface FormData {
   donationAmount: number
@@ -393,8 +393,30 @@ const DonationForm = () => {
               )}
             </div>
 
+            {/* Donation Total with Charges */}
+            {getDonationAmount() >= MIN_DONATION && (
+              <div className="mb-6 bg-primary-50 rounded-xl p-4 border border-primary-200 space-y-2">
+                <div className="flex justify-between items-center text-sm text-gray-700">
+                  <span>Donation Contribution:</span>
+                  <span className="font-semibold">{formatDisplayPrice(getDonationAmount())}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <span>Paystack Processing Fee:</span>
+                  <span>{formatDisplayPrice(calculatePaystackBreakdown(getDonationAmount()).fee)}</span>
+                </div>
+                <div className="border-t border-primary-200/60 pt-2 flex justify-between items-center">
+                  <div>
+                    <div className="font-bold text-gray-800 text-base">Total Payable:</div>
+                  </div>
+                  <div className="text-2xl font-extrabold text-primary-600">
+                    {formatDisplayPrice(calculatePaystackBreakdown(getDonationAmount()).total)}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Submit Button */}
-            <div className="pt-4">
+            <div className="pt-2">
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || getDonationAmount() < MIN_DONATION || !formData.agreeToTerms}
@@ -408,7 +430,7 @@ const DonationForm = () => {
                 ) : (
                   <>
                     <Heart className="w-5 h-5 mr-2" />
-                    Donate ₦{getDonationAmount() || MIN_DONATION}
+                    Donate {formatDisplayPrice(calculatePaystackBreakdown(getDonationAmount()).total)}
                   </>
                 )}
               </button>

@@ -69,16 +69,22 @@ export async function POST(req: NextRequest) {
       phoneNumber: body.phoneNumber,
     });
 
+    // Calculate goodwill contribution total including Paystack charges
+    const { calculatePaystackTotal } = await import("@/lib/utils/price-formatter");
+    const totalPayable = calculatePaystackTotal(body.donationAmount);
+
     // Initialize payment with Paystack
     const paymentData = {
       email: body.email,
-      amount: body.donationAmount,
+      amount: totalPayable,
       callback_url: `${process.env.NEXTAUTH_URL}/api/webhook/paystack`,
       metadata: {
         type: 'goodwill',
         userId: (user as any)._id.toString(),
         anonymous: body.anonymous,
         messageLength: body.message.length,
+        baseAmount: body.donationAmount,
+        totalWithCharges: totalPayable,
       },
     };
 

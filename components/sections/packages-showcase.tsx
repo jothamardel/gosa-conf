@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { formatDisplayPrice } from "@/lib/utils/price-formatter";
+import { formatDisplayPrice, calculatePaystackBreakdown } from "@/lib/utils/price-formatter";
 
 export interface PackageItem {
   type: 'convention' | 'dinner' | 'brochure';
@@ -131,17 +131,7 @@ const SINGLE_OPTIONS = [
   },
 ];
 
-function calculatePaystackFee(baseAmount: number): { fee: number; total: number } {
-  if (!baseAmount || baseAmount <= 0) return { fee: 0, total: 0 };
-  let total = 0;
-  if (baseAmount < 2500) {
-    total = Math.ceil(baseAmount / 0.985);
-  } else {
-    total = Math.ceil((baseAmount + 100) / 0.985);
-  }
-  const fee = total > baseAmount ? total - baseAmount : 0;
-  return { fee, total };
-}
+
 
 export function PackagesShowcase() {
   const [selectedPackage, setSelectedPackage] = useState<{
@@ -168,7 +158,7 @@ export function PackagesShowcase() {
   };
 
   const baseSubtotal = (selectedPackage?.basePrice || 0) * quantity;
-  const { fee: paystackFee, total: grandTotal } = calculatePaystackFee(baseSubtotal);
+  const { fee: paystackFee, total: grandTotal } = calculatePaystackBreakdown(baseSubtotal);
 
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -288,9 +278,11 @@ export function PackagesShowcase() {
                 <div className="bg-slate-900/90 rounded-2xl p-4 border border-slate-800/80 mb-6 flex items-baseline justify-between">
                   <div>
                     <div className="text-3xl sm:text-4xl font-extrabold text-emerald-400">
-                      {formatDisplayPrice(pkg.basePrice)}
+                      {formatDisplayPrice(calculatePaystackBreakdown(pkg.basePrice).total)}
                     </div>
-                    <span className="text-xs text-slate-400">per person (excl. processing fee)</span>
+                    <span className="text-xs text-slate-400">
+                      Total per pass ({formatDisplayPrice(pkg.basePrice)} base + ₦{calculatePaystackBreakdown(pkg.basePrice).fee} fee)
+                    </span>
                   </div>
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
                     Instant Pass
@@ -366,9 +358,13 @@ export function PackagesShowcase() {
                 <div>
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="text-base font-bold text-white">{opt.title}</h4>
-                    <span className="text-lg font-black text-emerald-400">{formatDisplayPrice(opt.price)}</span>
+                    <span className="text-lg font-black text-emerald-400">
+                      {formatDisplayPrice(calculatePaystackBreakdown(opt.price).total)}
+                    </span>
                   </div>
-                  <p className="text-xs text-slate-400 mb-4 leading-relaxed">{opt.desc}</p>
+                  <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+                    {opt.desc} ({formatDisplayPrice(opt.price)} base + ₦{calculatePaystackBreakdown(opt.price).fee} fee)
+                  </p>
                 </div>
                 <Button
                   onClick={() => openCheckout({ id: opt.id, name: opt.title, items: opt.items, basePrice: opt.price })}

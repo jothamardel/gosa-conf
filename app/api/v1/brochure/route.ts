@@ -59,8 +59,10 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Calculate total amount
-    const totalAmount = BrochureUtils.calculateTotalAmount(body.quantity, body.brochureType);
+    // Calculate base total amount and grand total with Paystack charges
+    const baseTotalAmount = BrochureUtils.calculateTotalAmount(body.quantity, body.brochureType);
+    const { calculatePaystackTotal } = await import("@/lib/utils/price-formatter");
+    const totalPayable = calculatePaystackTotal(baseTotalAmount);
 
     // Find or create user
     const user: any = await UserUtils.findOrCreateUser({
@@ -72,13 +74,15 @@ export async function POST(req: NextRequest) {
     // Initialize payment with Paystack
     const paymentData = {
       email: body.email,
-      amount: totalAmount,
+      amount: totalPayable,
       callback_url: `${process.env.NEXTAUTH_URL}/api/webhook/paystack`,
       metadata: {
         type: 'brochure',
         userId: user._id.toString(),
         brochureType: body.brochureType,
         quantity: body.quantity,
+        baseAmount: baseTotalAmount,
+        totalWithCharges: totalPayable,
       },
     };
 
@@ -101,7 +105,7 @@ export async function POST(req: NextRequest) {
       quantity: body.quantity,
       brochureType: body.brochureType,
       recipientDetails: body.recipientDetails,
-      totalAmount,
+      totalAmount: baseTotalAmount,
     });
 
     // Get brochure pricing info
@@ -115,7 +119,8 @@ export async function POST(req: NextRequest) {
         order,
         paymentLink: paymentResponse.data.authorization_url,
         paymentReference: paymentResponse.data.reference,
-        totalAmount,
+        totalAmount: baseTotalAmount,
+        totalPayable,
         brochureType: body.brochureType,
         quantity: body.quantity,
         pricePerUnit: pricingInfo[body.brochureType],

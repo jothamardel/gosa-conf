@@ -18,7 +18,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { User, CreditCard, CheckCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { formatDisplayPrice } from "@/lib/utils/price-formatter";
+import { formatDisplayPrice, calculatePaystackBreakdown } from "@/lib/utils/price-formatter";
 import {
   Select,
   SelectContent,
@@ -65,7 +65,9 @@ type RegistrationData = z.infer<typeof registrationSchema>;
 export function RegistrationForm() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [calculatedTotal, setCalculatedTotal] = useState(0);
+  const [subtotalAmount, setSubtotalAmount] = useState(1000);
+  const [processingFee, setProcessingFee] = useState(16);
+  const [calculatedTotal, setCalculatedTotal] = useState(1016);
 
   const {
     register,
@@ -80,12 +82,15 @@ export function RegistrationForm() {
 
   const watchedValues = watch();
 
-  // Calculate total cost
+  // Calculate total cost including Paystack charges
   const calculateTotal = () => {
-    const basePrice = process.env.NEXT_APP_REGISTRATION_FEE || 1000; // Base registration fee per person in Naira
+    const basePrice = +(process.env.NEXT_APP_REGISTRATION_FEE || 1000);
     const quantity = watchedValues.quantity || 1;
-    const total = +basePrice * quantity;
+    const subtotal = basePrice * quantity;
+    const { fee, total } = calculatePaystackBreakdown(subtotal);
 
+    setSubtotalAmount(subtotal);
+    setProcessingFee(fee);
     setCalculatedTotal(total);
   };
 
@@ -563,18 +568,17 @@ export function RegistrationForm() {
                         <span>{watchedValues.quantity || 1}</span>
                       </div>
                       <div className="flex justify-between text-sm sm:text-base">
-                        <span>Subtotal</span>
-                        <span>
-                          {formatDisplayPrice(
-                            +(process.env.NEXT_APP_REGISTRATION_FEE || 1000) *
-                            (watchedValues.quantity || 1)
-                          )}
-                        </span>
+                        <span>Base Subtotal</span>
+                        <span>{formatDisplayPrice(subtotalAmount)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm sm:text-base text-slate-600">
+                        <span>Paystack Processing Fee</span>
+                        <span>{formatDisplayPrice(processingFee)}</span>
                       </div>
 
                       <Separator />
                       <div className="flex justify-between font-semibold text-lg sm:text-xl text-primary-700">
-                        <span>Total</span>
+                        <span>Total Payable</span>
                         <span>{formatDisplayPrice(calculatedTotal)}</span>
                       </div>
                     </div>

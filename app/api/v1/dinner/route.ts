@@ -36,10 +36,12 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Calculate total amount and per-guest amount
-    const totalAmount = DinnerUtils.calculateTotalAmount(body.numberOfGuests);
-    const amountPerGuest = totalAmount / body.numberOfGuests;
-    console.log(`💰 Total: ₦${totalAmount}, Per Guest: ₦${amountPerGuest}`);
+    // Calculate base total amount and grand total with Paystack charges
+    const baseTotalAmount = DinnerUtils.calculateTotalAmount(body.numberOfGuests);
+    const amountPerGuest = baseTotalAmount / body.numberOfGuests;
+    const { calculatePaystackTotal } = await import("@/lib/utils/price-formatter");
+    const totalPayable = calculatePaystackTotal(baseTotalAmount);
+    console.log(`💰 Base Total: ₦${baseTotalAmount}, Paystack Total: ₦${totalPayable}, Per Guest: ₦${amountPerGuest}`);
 
     // Format primary contact phone number
     const formattedPrimaryPhone = DinnerUtils.formatPhoneNumber(body.phoneNumber);
@@ -54,12 +56,14 @@ export async function POST(req: NextRequest) {
     // Initialize payment with Paystack
     const paymentData = {
       email: body.email,
-      amount: totalAmount,
+      amount: totalPayable,
       callback_url: `${process.env.NEXTAUTH_URL}/api/webhook/paystack`,
       metadata: {
         type: 'dinner',
         numberOfGuests: body.numberOfGuests,
         primaryUserId: (primaryUser as any)._id.toString(),
+        baseAmount: baseTotalAmount,
+        totalWithCharges: totalPayable,
       },
     };
 
@@ -143,7 +147,8 @@ export async function POST(req: NextRequest) {
       data: {
         paymentLink: paymentResponse.data.authorization_url,
         reservations: allReservations,
-        totalAmount,
+        totalAmount: baseTotalAmount,
+        totalPayable,
         amountPerGuest,
         paystackReference: paymentResponse.data.reference,
         numberOfGuests: body.numberOfGuests,

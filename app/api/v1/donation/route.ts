@@ -66,16 +66,22 @@ export async function POST(req: NextRequest) {
       phoneNumber: body.phoneNumber,
     });
 
+    // Calculate donation total including Paystack charges
+    const { calculatePaystackTotal } = await import("@/lib/utils/price-formatter");
+    const totalPayable = calculatePaystackTotal(body.amount);
+
     // Initialize payment with Paystack
     const paymentData = {
       email: body.email,
-      amount: body.amount,
+      amount: totalPayable,
       callback_url: `${process.env.NEXTAUTH_URL}/api/webhook/paystack`,
       metadata: {
         type: 'donation',
         userId: user._id.toString(),
         anonymous: body.anonymous,
         onBehalfOf: body.onBehalfOf || null,
+        baseAmount: body.amount,
+        totalWithCharges: totalPayable,
       },
     };
 

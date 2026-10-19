@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { BookOpen, Loader2, Download, Check, FileText, Users, Calendar, MapPin, Star, Plus, Minus, Package, Monitor } from 'lucide-react'
 import { toast } from 'sonner'
-import { formatDisplayPrice } from '@/lib/utils/price-formatter'
+import { formatDisplayPrice, calculatePaystackBreakdown } from '@/lib/utils/price-formatter'
 
 interface RecipientDetails {
   name: string
@@ -45,9 +45,16 @@ const ConventionBrochure = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [brochureUnlocked] = useState(false)
 
+  const getPricingBreakdown = () => {
+    if (!formData.purchaseBrochure || !formData.brochureType) {
+      return { baseAmount: 0, fee: 0, total: 0 }
+    }
+    const subtotal = +BROCHURE_PRICING[formData.brochureType] * formData.quantity
+    return calculatePaystackBreakdown(subtotal)
+  }
+
   const calculateTotal = (): number => {
-    if (!formData.purchaseBrochure || !formData.brochureType) return 0
-    return +BROCHURE_PRICING[formData.brochureType] * formData.quantity
+    return getPricingBreakdown().total
   }
 
   const getPricePerUnit = (): number => {
@@ -533,15 +540,20 @@ const ConventionBrochure = () => {
                       </div>
 
                       {/* Total */}
-                      <div className="bg-primary-50 rounded-lg p-3 border border-primary-200">
-                        <div className="flex justify-between items-center">
+                      <div className="bg-primary-50 rounded-xl p-4 border border-primary-200 space-y-2">
+                        <div className="flex justify-between items-center text-xs text-gray-700">
+                          <span>Base Subtotal ({formData.quantity} × {formatDisplayPrice(getPricePerUnit())})</span>
+                          <span className="font-semibold">{formatDisplayPrice(getPricingBreakdown().baseAmount)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs text-gray-600">
+                          <span>Paystack Processing Fee</span>
+                          <span>{formatDisplayPrice(getPricingBreakdown().fee)}</span>
+                        </div>
+                        <div className="border-t border-primary-200/60 pt-2 flex justify-between items-center">
                           <div>
-                            <div className="text-gray-700 font-medium text-sm">Total Amount</div>
-                            <div className="text-xs text-gray-500">
-                              {formData.quantity} × {formatDisplayPrice(getPricePerUnit())}
-                            </div>
+                            <div className="font-bold text-gray-800 text-sm">Total Payable</div>
                           </div>
-                          <div className="text-xl font-bold text-primary-600">{formatDisplayPrice(calculateTotal())}</div>
+                          <div className="text-xl font-bold text-primary-600">{formatDisplayPrice(getPricingBreakdown().total)}</div>
                         </div>
                       </div>
                     </div>

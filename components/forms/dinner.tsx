@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Utensils, Loader2, Users, Calendar, Clock, MapPin, Plus, Minus, User, Mail, Phone } from 'lucide-react'
 import { toast } from 'sonner'
-import { formatDisplayPrice } from '@/lib/utils/price-formatter'
+import { formatDisplayPrice, calculatePaystackBreakdown } from '@/lib/utils/price-formatter'
 
 interface GuestDetails {
   name: string
@@ -39,7 +39,14 @@ const DinnerPayment = () => {
 
   const calculateTotal = (): number => {
     const unitPrice = process.env.NEXT_APP_DINNER_FEE ? +process.env.NEXT_APP_DINNER_FEE : 2500
-    return formData.dinnerTicket ? unitPrice * formData.numberOfGuests : 0
+    const subtotal = formData.dinnerTicket ? unitPrice * formData.numberOfGuests : 0
+    return calculatePaystackBreakdown(subtotal).total
+  }
+
+  const getPricingBreakdown = () => {
+    const unitPrice = process.env.NEXT_APP_DINNER_FEE ? +process.env.NEXT_APP_DINNER_FEE : 2500
+    const subtotal = formData.dinnerTicket ? unitPrice * formData.numberOfGuests : 0
+    return calculatePaystackBreakdown(subtotal)
   }
 
   const validateForm = (): boolean => {
@@ -391,13 +398,21 @@ const DinnerPayment = () => {
                 </div>
 
                 {/* Total */}
-                <div className="bg-gradient-to-r from-primary-100 to-secondary-100 rounded-2xl p-6 border border-primary-200">
-                  <div className="flex justify-between items-center">
+                <div className="bg-gradient-to-r from-primary-50 to-secondary-50 rounded-2xl p-6 border border-primary-200 space-y-3">
+                  <div className="flex justify-between items-center text-sm text-gray-700">
+                    <span>Base Subtotal ({formData.numberOfGuests} {formData.numberOfGuests === 1 ? 'guest' : 'guests'} × {formatDisplayPrice(process.env.NEXT_APP_DINNER_FEE ? +process.env.NEXT_APP_DINNER_FEE : 2500)})</span>
+                    <span className="font-semibold">{formatDisplayPrice(getPricingBreakdown().baseAmount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm text-gray-600">
+                    <span>Paystack Processing Fee</span>
+                    <span>{formatDisplayPrice(getPricingBreakdown().fee)}</span>
+                  </div>
+                  <div className="border-t border-primary-200/60 pt-3 flex justify-between items-center">
                     <div>
-                      <div className="text-gray-700">Total Amount</div>
-                      <div className="text-sm text-gray-500">{formData.numberOfGuests} {formData.numberOfGuests === 1 ? 'guest' : 'guests'} × {formatDisplayPrice(process.env.NEXT_APP_DINNER_FEE ? +process.env.NEXT_APP_DINNER_FEE : 2500)}</div>
+                      <div className="font-bold text-gray-800 text-base">Total Payable</div>
+                      <div className="text-xs text-gray-500">Includes processing charges</div>
                     </div>
-                    <div className="text-4xl font-bold text-primary-600">{formatDisplayPrice(calculateTotal())}</div>
+                    <div className="text-3xl font-extrabold text-primary-600">{formatDisplayPrice(getPricingBreakdown().total)}</div>
                   </div>
                 </div>
 

@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { MessageCircle, Loader2, Heart, Users, Sparkles, Star, DollarSign, User, EyeOff, Edit3 } from 'lucide-react'
 import { toast } from 'sonner'
-import { formatDisplayPrice, formatInputPrice, validatePrice } from '@/lib/utils/price-formatter'
+import { formatDisplayPrice, formatInputPrice, validatePrice, calculatePaystackBreakdown } from '@/lib/utils/price-formatter'
 
 interface FormData {
   includeMessage: boolean
@@ -553,6 +553,28 @@ const GoodwillMessage = () => {
                   )}
                 </div>
 
+                {/* Total with Charges */}
+                {getDonationAmount() >= MIN_DONATION && (
+                  <div className="mb-6 bg-primary-50 rounded-xl p-4 border border-primary-200 space-y-2">
+                    <div className="flex justify-between items-center text-sm text-gray-700">
+                      <span>Contribution Amount:</span>
+                      <span className="font-semibold">{formatDisplayPrice(getDonationAmount())}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm text-gray-600">
+                      <span>Paystack Processing Fee:</span>
+                      <span>{formatDisplayPrice(calculatePaystackBreakdown(getDonationAmount()).fee)}</span>
+                    </div>
+                    <div className="border-t border-primary-200/60 pt-2 flex justify-between items-center">
+                      <div>
+                        <div className="font-bold text-gray-800 text-sm">Total Payable:</div>
+                      </div>
+                      <div className="text-xl font-extrabold text-primary-600">
+                        {formatDisplayPrice(calculatePaystackBreakdown(getDonationAmount()).total)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Submit Button */}
                 <button
                   onClick={handleSubmit}
@@ -568,8 +590,8 @@ const GoodwillMessage = () => {
                     <>
                       <Heart className="w-5 h-5 mr-2" />
                       {formData.includeMessage
-                        ? `Send Message ${formatDisplayPrice(getDonationAmount())}`
-                        : `Pay ${formatDisplayPrice(getDonationAmount())}`}
+                        ? `Send Message (${formatDisplayPrice(calculatePaystackBreakdown(getDonationAmount()).total)})`
+                        : `Pay ${formatDisplayPrice(calculatePaystackBreakdown(getDonationAmount()).total)}`}
                     </>
                   )}
                 </button>

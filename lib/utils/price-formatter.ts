@@ -92,3 +92,38 @@ export function validatePrice(amount: number | string, minimum: number = 0): {
 
   return { isValid: true };
 }
+
+/**
+ * Calculate the total amount payable including Paystack processing fee.
+ * Formula for Nigeria:
+ * - 1.5% processing fee
+ * - Flat ₦100 fee added if baseAmount >= ₦2,500 (waived for baseAmount < ₦2,500)
+ * - Maximum fee cap: ₦2,000
+ * - Gross-up formula ensures organization receives exact base amount:
+ *   - base < 2500: Math.ceil(base / 0.985)
+ *   - base >= 2500: Math.ceil((base + 100) / 0.985)
+ */
+export function calculatePaystackTotal(baseAmount: number): number {
+  if (!baseAmount || baseAmount <= 0) return 0;
+  if (baseAmount < 2500) {
+    return Math.ceil(baseAmount / 0.985);
+  }
+  const gross = Math.ceil((baseAmount + 100) / 0.985);
+  if (gross - baseAmount > 2000) {
+    return baseAmount + 2000;
+  }
+  return gross;
+}
+
+/**
+ * Return detailed breakdown of base amount, processing fee, and grand total.
+ */
+export function calculatePaystackBreakdown(baseAmount: number): {
+  baseAmount: number;
+  fee: number;
+  total: number;
+} {
+  const total = calculatePaystackTotal(baseAmount);
+  const fee = total > baseAmount ? total - baseAmount : 0;
+  return { baseAmount, fee, total };
+}

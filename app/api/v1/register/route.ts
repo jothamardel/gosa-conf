@@ -26,10 +26,21 @@ export async function POST(req: NextRequest) {
     }
     console.log(body);
     const newUser = await UserUtils.findOrCreateUser(body);
-    console.log();
-    const paymentUrl = await Payment.httpInitializePayment(body);
+
+    // Calculate base registration subtotal and grand total with Paystack charges
+    const baseRegistrationFee = +(process.env.NEXT_APP_REGISTRATION_FEE || 1000);
+    const quantity = Math.max(1, body.quantity || 1);
+    const baseSubtotal = baseRegistrationFee * quantity;
+    const { calculatePaystackTotal } = await import("@/lib/utils/price-formatter");
+    const totalPayable = calculatePaystackTotal(baseSubtotal);
+
+    const paymentUrl = await Payment.httpInitializePayment({
+      ...body,
+      amount: totalPayable,
+    });
+
     const newConventionRecord = await ConventionUtils.createRegistration({
-      amount: body?.amount,
+      amount: baseSubtotal,
       paymentReference: `${paymentUrl?.data?.reference}_${body?.phoneNumber}`,
       quantity: body?.quantity,
       userId: new mongoose.Types.ObjectId(newUser?._id as string),
