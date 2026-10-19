@@ -38,7 +38,8 @@ const DinnerPayment = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const calculateTotal = (): number => {
-    return formData.dinnerTicket ? 2200 * formData.numberOfGuests : 0
+    const unitPrice = process.env.NEXT_APP_DINNER_FEE ? +process.env.NEXT_APP_DINNER_FEE : 2500
+    return formData.dinnerTicket ? unitPrice * formData.numberOfGuests : 0
   }
 
   const validateForm = (): boolean => {
@@ -246,7 +247,7 @@ const DinnerPayment = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-primary-600">{formatDisplayPrice(2200)}</div>
+                  <div className="text-2xl font-bold text-primary-600">{formatDisplayPrice(process.env.NEXT_APP_DINNER_FEE ? +process.env.NEXT_APP_DINNER_FEE : 2500)}</div>
                   <div className="text-gray-600 text-sm">per person</div>
                 </div>
               </div>
@@ -394,7 +395,7 @@ const DinnerPayment = () => {
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="text-gray-700">Total Amount</div>
-                      <div className="text-sm text-gray-500">{formData.numberOfGuests} {formData.numberOfGuests === 1 ? 'guest' : 'guests'} × {formatDisplayPrice(2200)}</div>
+                      <div className="text-sm text-gray-500">{formData.numberOfGuests} {formData.numberOfGuests === 1 ? 'guest' : 'guests'} × {formatDisplayPrice(process.env.NEXT_APP_DINNER_FEE ? +process.env.NEXT_APP_DINNER_FEE : 2500)}</div>
                     </div>
                     <div className="text-4xl font-bold text-primary-600">{formatDisplayPrice(calculateTotal())}</div>
                   </div>

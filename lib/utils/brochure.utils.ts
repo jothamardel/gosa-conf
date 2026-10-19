@@ -19,8 +19,8 @@ export interface BrochureOrderData {
 export class BrochureUtils {
   // Brochure pricing
   static readonly PRICING = {
-    digital: 1200,
-    physical: 1200
+    digital: 2000,
+    physical: 2000
   };
 
   /**

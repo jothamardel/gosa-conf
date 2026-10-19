@@ -2,7 +2,7 @@
 
 import { Navigation } from '@/components/layout/navigation';
 import { Footer } from '@/components/layout/footer';
-import { WhatsAppRedirectBanner } from '@/components/sections/whatsapp-redirect-banner';
+import GoodwillMessageForm from '@/components/forms/goodwill-message';
 import { HeartHandshake, Award, Sparkles, Building2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -22,24 +22,7 @@ export default function GoodwillMessagePage() {
       
       <main className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-          <WhatsAppRedirectBanner
-            serviceTitle="Goodwill Messages & Alumni Tributes"
-            serviceCategory="goodwill"
-            headline="Send congratulatory messages, alumni tributes, and prayers to GOSA 2026"
-            description="Online submissions and payments are paused on the website. You can submit your goodwill message, set tribute, or congratulatory note directly to GOSA Bilkwas on WhatsApp for publication in the convention program."
-            unitPrice="Donation + Tribute"
-            prefilledPrompt="Hello GOSA Bilkwas, I want to submit a goodwill message and make a donation for GOSA 2026"
-            suggestedCommands={[
-              "GOSA donate 5000 with goodwill message",
-              "GOSA donate 10000 congratulations from BSS Class of 95",
-            ]}
-            bulletPoints={[
-              "Featured in official digital & print Convention Brochure",
-              "Attributed to your name, class set, or submitted anonymously",
-              "Instant confirmation of approval and receipt on WhatsApp",
-              "Proceeds support Gindiri student development programs",
-            ]}
-          />
+          <GoodwillMessageForm />
 
 
           {/* Corporate Goodwill & CSR Partners */}

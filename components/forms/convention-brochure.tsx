@@ -27,8 +27,8 @@ interface Errors {
 }
 
 const BROCHURE_PRICING = {
-  digital: process.env.NEXT_APP_BROCHURE_PHYSICAL_FEE || 1200,
-  physical: process.env.NEXT_APP_BROCHURE_PHYSICAL_FEE || 1200
+  digital: process.env.NEXT_APP_BROCHURE_DIGITAL_FEE ? +process.env.NEXT_APP_BROCHURE_DIGITAL_FEE : 2000,
+  physical: process.env.NEXT_APP_BROCHURE_PHYSICAL_FEE ? +process.env.NEXT_APP_BROCHURE_PHYSICAL_FEE : 2000
 }
 // BROCHURE_PHYSICAL_FEE=1200
 // BROCHURE_DIGITAL_FEE=1200
@@ -360,7 +360,7 @@ const ConventionBrochure = () => {
                 <div className="p-6">
                   <div className="text-center mb-6">
                     <div className="text-2xl font-bold text-primary-600">
-                      {formData.brochureType ? formatDisplayPrice(getPricePerUnit()) : '₦1,200-2,200'}
+                      {formData.brochureType ? formatDisplayPrice(getPricePerUnit()) : '₦2,000'}
                     </div>
                     <div className="text-gray-500 text-sm">
                       {formData.brochureType ? 'per brochure' : 'per brochure (varies by type)'}

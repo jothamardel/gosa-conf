@@ -2,7 +2,7 @@
 
 import { Navigation } from '@/components/layout/navigation';
 import { Footer } from '@/components/layout/footer';
-import { WhatsAppRedirectBanner } from '@/components/sections/whatsapp-redirect-banner';
+import ConventionBrochureForm from '@/components/forms/convention-brochure';
 import { Building2, Megaphone, CheckCircle2, Sparkles, Tag, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -48,25 +48,7 @@ export default function BrochurePage() {
       <main className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
           
-          <WhatsAppRedirectBanner
-            serviceTitle="Convention Program Brochure"
-            serviceCategory="brochure"
-            headline="Comprehensive event guide, historic articles, program maps, and delegate index"
-            description="Direct website purchases for the official convention brochure are paused. Order your printed or digital copies directly via GOSA Bilkwas on WhatsApp with instant pickup verification codes."
-            unitPrice="₦2,000 / Brochure"
-            prefilledPrompt="Hello GOSA Bilkwas, I want to order the GOSA Convention Brochure"
-            suggestedCommands={[
-              "buy brochure",
-              "buy 2 brochures",
-              "buy 5 brochures",
-            ]}
-            bulletPoints={[
-              "Available in premium glossy print and downloadable high-res PDF",
-              "Pickup verification QR pass sent directly to WhatsApp",
-              "Features full convention schedule, speaker abstracts & alumni directory",
-              "Order multiple copies for classmates and branch sets",
-            ]}
-          />
+          <ConventionBrochureForm />
 
 
           {/* Business & Brand Brochure Promotion Section */}
