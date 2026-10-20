@@ -1,11 +1,20 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Navigation } from "@/components/layout/navigation";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Download,
   FileText,
@@ -25,7 +34,11 @@ import {
   Shirt,
   HeartHandshake,
   ShoppingBag,
-  PackageCheck
+  PackageCheck,
+  Users,
+  UserPlus,
+  Send,
+  AlertCircle
 } from "lucide-react";
 import Link from "next/link";
 import QRCode from "qrcode";
@@ -79,55 +92,77 @@ export default function TicketPage() {
   const [downloadingImage, setDownloadingImage] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
+  // Ticket Splitting / Detach State
+  const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
+  const [selectedSplitItem, setSelectedSplitItem] = useState<PaidServiceItem | null>(null);
+  const [splitFullName, setSplitFullName] = useState("");
+  const [splitPhone, setSplitPhone] = useState("");
+  const [splitEmail, setSplitEmail] = useState("");
+  const [splitYear, setSplitYear] = useState("");
+  const [splitSubmitting, setSplitSubmitting] = useState(false);
+  const [splitError, setSplitError] = useState<string | null>(null);
+  const [splitSuccessData, setSplitSuccessData] = useState<{
+    newTicketId: string;
+    newTicketPassUrl: string;
+    newOwner: {
+      fullName: string;
+      phoneNumber: string;
+      email?: string;
+    };
+    serviceName: string;
+    remainingQuantity: number;
+  } | null>(null);
+  const [copiedNewLink, setCopiedNewLink] = useState(false);
+
   const ticketCardRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const fetchTicket = useCallback(async (silent = false) => {
     if (!id) {
       setLoading(false);
       setError("No ticket ID provided. Please check your link or reference.");
       return;
     }
 
-    async function fetchTicket() {
-      try {
-        setLoading(true);
-        setError(null);
+    try {
+      if (!silent) setLoading(true);
+      setError(null);
 
-        // Fetch expanded ticket data with itemized breakdown
-        let res = await fetch(`/api/v1/ticket/${id}`);
-        let data = await res.json();
+      // Fetch expanded ticket data with itemized breakdown
+      let res = await fetch(`/api/v1/ticket/${id}`);
+      let data = await res.json();
 
-        if (!res.ok || !data.ticket) {
-          res = await fetch(`/api/v1/scan/ticket/${id}`);
-          data = await res.json();
-        }
-
-        if (data.ticket) {
-          setTicket(data.ticket);
-
-          const qrText = data.ticket.paymentReference || data.ticket._id || id;
-          const qrDataUrl = await QRCode.toDataURL(qrText, {
-            width: 320,
-            margin: 1,
-            color: {
-              dark: "#09172A",
-              light: "#FFFFFF",
-            },
-          });
-          setQrCodeUrl(qrDataUrl);
-        } else {
-          setError(data.error || "Unable to locate ticket record.");
-        }
-      } catch (err: any) {
-        console.error("Error fetching ticket:", err);
-        setError("Error connecting to server. Please try again.");
-      } finally {
-        setLoading(false);
+      if (!res.ok || !data.ticket) {
+        res = await fetch(`/api/v1/scan/ticket/${id}`);
+        data = await res.json();
       }
-    }
 
-    fetchTicket();
+      if (data.ticket) {
+        setTicket(data.ticket);
+
+        const qrText = data.ticket.paymentReference || data.ticket._id || id;
+        const qrDataUrl = await QRCode.toDataURL(qrText, {
+          width: 320,
+          margin: 1,
+          color: {
+            dark: "#09172A",
+            light: "#FFFFFF",
+          },
+        });
+        setQrCodeUrl(qrDataUrl);
+      } else {
+        setError(data.error || "Unable to locate ticket record.");
+      }
+    } catch (err: any) {
+      console.error("Error fetching ticket:", err);
+      setError("Error connecting to server. Please try again.");
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, [id]);
+
+  useEffect(() => {
+    fetchTicket();
+  }, [fetchTicket]);
 
   const handleDownloadImage = async () => {
     if (!ticketCardRef.current) return;
@@ -170,12 +205,14 @@ export default function TicketPage() {
         format: "a4",
       });
 
-      const imgWidth = 175;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const x = (210 - imgWidth) / 2;
-      const y = 20;
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const contentWidth = pdfWidth - 30;
+      const contentHeight = (canvas.height * contentWidth) / canvas.width;
 
-      pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const marginY = Math.max(10, (pageHeight - contentHeight) / 2);
+
+      pdf.addImage(imgData, "PNG", 15, marginY, contentWidth, contentHeight);
       pdf.save(`GOSA-2026-Ticket-${ticket?.user?.fullName?.replace(/\s+/g, "_") || "Pass"}.pdf`);
     } catch (err) {
       console.error("Failed to export PDF:", err);
@@ -188,11 +225,95 @@ export default function TicketPage() {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(window.location.href);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const renderServiceIcon = (icon: string, category: string) => {
+  const openSplitModal = (item: PaidServiceItem) => {
+    setSelectedSplitItem(item);
+    setSplitFullName("");
+    setSplitPhone("");
+    setSplitEmail("");
+    setSplitYear("");
+    setSplitError(null);
+    setSplitSuccessData(null);
+    setCopiedNewLink(false);
+    setIsSplitModalOpen(true);
+  };
+
+  const closeSplitModal = () => {
+    setIsSplitModalOpen(false);
+    setSelectedSplitItem(null);
+    setSplitFullName("");
+    setSplitPhone("");
+    setSplitEmail("");
+    setSplitYear("");
+    setSplitError(null);
+    setSplitSuccessData(null);
+    setCopiedNewLink(false);
+  };
+
+  const handleSplitSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSplitItem || !ticket) return;
+
+    if (!splitFullName.trim() || !splitPhone.trim()) {
+      setSplitError("Please provide both Full Name and Phone Number.");
+      return;
+    }
+
+    try {
+      setSplitSubmitting(true);
+      setSplitError(null);
+
+      const res = await fetch("/api/v1/ticket/split", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ticketId: selectedSplitItem.id || ticket._id,
+          serviceCategory: selectedSplitItem.category,
+          newOwner: {
+            fullName: splitFullName.trim(),
+            phoneNumber: splitPhone.trim(),
+            email: splitEmail.trim() || undefined,
+            year: splitYear.trim() || undefined,
+          },
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        setSplitError(result.message || "Failed to split ticket. Please try again.");
+        return;
+      }
+
+      setSplitSuccessData(result.data);
+      // Refresh current ticket in background so remaining quantity and delegates update on the main pass
+      await fetchTicket(true);
+    } catch (err: any) {
+      console.error("Error splitting ticket:", err);
+      setSplitError(err?.message || "An unexpected error occurred.");
+    } finally {
+      setSplitSubmitting(false);
+    }
+  };
+
+  const handleCopyNewLink = () => {
+    if (!splitSuccessData?.newTicketPassUrl) return;
+    navigator.clipboard.writeText(splitSuccessData.newTicketPassUrl);
+    setCopiedNewLink(true);
+    setTimeout(() => setCopiedNewLink(false), 2500);
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!splitSuccessData) return;
+    const cleanDigits = splitSuccessData.newOwner.phoneNumber.replace(/\D/g, "");
+    const intlDigits = cleanDigits.startsWith("0") ? `234${cleanDigits.slice(1)}` : cleanDigits;
+    const text = `Hello ${splitSuccessData.newOwner.fullName},\n\nYour official GOSA 2026 Ticket Pass has been generated! 🎟️\n\nAccess your verified pass & QR code here:\n${splitSuccessData.newTicketPassUrl}\n\nPresent this at the convention check-in desk at Crispan Luxury Hotel, Jos.`;
+    window.open(`https://wa.me/${intlDigits}?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
+  const renderServiceIcon = (iconName: string, category: string) => {
     switch (category) {
       case "dinner":
         return <Utensils className="w-4 h-4 text-amber-400 shrink-0" />;
@@ -208,6 +329,12 @@ export default function TicketPage() {
         return <Ticket className="w-4 h-4 text-amber-400 shrink-0" />;
     }
   };
+
+  const hasSplittableItems =
+    ticket?.serviceItems &&
+    ticket.serviceItems.some(
+      (item) => item.quantity > 1 && (item.category === "convention" || item.category === "dinner")
+    );
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950 overflow-x-hidden">
@@ -258,7 +385,7 @@ export default function TicketPage() {
                   Official GOSA Pass Confirmed
                 </h2>
                 <p className="text-slate-400 text-xs sm:text-sm">
-                  Download your pass with all your paid services (convention, dinner, brochure, uniform, donation) for presentation at the convention venue.
+                  Download your pass with all your paid services for presentation at the convention venue.
                 </p>
               </div>
 
@@ -292,6 +419,40 @@ export default function TicketPage() {
                 </Button>
               </div>
             </div>
+
+            {/* Multiple Tickets Detach / Reassign Banner */}
+            {hasSplittableItems && (
+              <div className="bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-slate-900 border border-amber-500/30 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                      Multiple Passes Under This Ticket
+                      <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold">
+                        Detach Available
+                      </Badge>
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
+                      You purchased multiple tickets under your name. You can detach extra passes to attach individual owners so each person receives their own ticket &amp; QR code to check in at the event.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => {
+                    const splittable = ticket.serviceItems.find(
+                      (i) => i.quantity > 1 && (i.category === "convention" || i.category === "dinner")
+                    );
+                    if (splittable) openSplitModal(splittable);
+                  }}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs gap-2 shrink-0 shadow-lg shadow-amber-500/25 h-10 px-4"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Detach &amp; Assign a Ticket
+                </Button>
+              </div>
+            )}
 
             {/* Ticket Card Component to render & snapshot */}
             <div className="flex justify-center">
@@ -362,7 +523,7 @@ export default function TicketPage() {
                   <div className="flex items-center justify-between border-b border-slate-700/60 pb-2 mb-2">
                     <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1.5">
                       <PackageCheck className="w-3.5 h-3.5" />
-                      Services & Items Included
+                      Services &amp; Items Included
                     </span>
                     <span className="text-[9px] font-mono text-slate-300 font-bold">
                       Total: ₦{ticket.amount.toLocaleString()}
@@ -400,7 +561,7 @@ export default function TicketPage() {
                           {item.beneficiaries && item.beneficiaries.length > 0 && (
                             <div className="pt-1.5 border-t border-slate-800/80 space-y-1">
                               <span className="text-[8px] font-black uppercase text-amber-400/90 block tracking-widest">
-                                Delegates & Phone Numbers:
+                                Delegates &amp; Phone Numbers:
                               </span>
                               {item.beneficiaries.map((b, bIdx) => (
                                 <div key={bIdx} className="flex items-center justify-between text-[10px] font-mono">
@@ -408,12 +569,31 @@ export default function TicketPage() {
                                     • {b.name}
                                   </span>
                                   <span className="text-amber-300 font-bold ml-2">
-                                    {b.phone || 'N/A'}
+                                    {b.phone || "N/A"}
                                   </span>
                                 </div>
                               ))}
                             </div>
                           )}
+
+                          {/* Detach Ticket Button if quantity > 1 (Excluded from html2canvas pass snapshot) */}
+                          {item.quantity > 1 &&
+                            (item.category === "convention" || item.category === "dinner") && (
+                              <div
+                                data-html2canvas-ignore="true"
+                                className="pt-2 border-t border-slate-800/80 flex items-center justify-end"
+                              >
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={() => openSplitModal(item)}
+                                  className="bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/30 text-[10px] font-bold h-7 px-2.5 rounded-lg gap-1.5 transition-all shadow-sm"
+                                >
+                                  <UserPlus className="w-3.5 h-3.5" />
+                                  Detach &amp; Assign to New Owner
+                                </Button>
+                              </div>
+                            )}
                         </div>
                       ))
                     ) : (
@@ -473,7 +653,7 @@ export default function TicketPage() {
                   </div>
 
                   <span className="font-extrabold text-amber-300 uppercase tracking-widest">
-                    "For Light & Truth"
+                    "For Light &amp; Truth"
                   </span>
                 </div>
               </div>
@@ -481,6 +661,207 @@ export default function TicketPage() {
           </div>
         )}
       </main>
+
+      {/* Ticket Detach & Assign Modal Popup */}
+      <Dialog open={isSplitModalOpen} onOpenChange={(open) => !open && closeSplitModal()}>
+        <DialogContent className="bg-slate-900 border border-slate-800 text-white max-w-lg p-6 rounded-2xl shadow-2xl">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <Users className="w-4 h-4" />
+              </div>
+              <DialogTitle className="text-lg font-bold text-white">
+                Detach &amp; Assign Ticket Pass
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-slate-400 text-xs">
+              Divide 1 ticket from this pass and assign it to a new delegate. They will receive their own verified ticket pass and unique QR code for independent event check-in.
+            </DialogDescription>
+          </DialogHeader>
+
+          {splitSuccessData ? (
+            <div className="space-y-4 pt-2">
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-center">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-2">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <h4 className="font-extrabold text-white text-base">Ticket Successfully Detached!</h4>
+                <p className="text-slate-300 text-xs mt-1">
+                  1 ticket pass is now officially registered to{" "}
+                  <strong className="text-amber-300">{splitSuccessData.newOwner.fullName}</strong> (
+                  {splitSuccessData.newOwner.phoneNumber}).
+                </p>
+                <div className="mt-2 text-[11px] text-emerald-300 font-medium">
+                  ✅ Automated WhatsApp notification dispatched
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs text-slate-300 font-semibold">New Owner's Pass Link</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={splitSuccessData.newTicketPassUrl}
+                    className="bg-slate-950 border-slate-800 text-amber-300 text-xs font-mono h-10 select-all"
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleCopyNewLink}
+                    variant="outline"
+                    className="border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs shrink-0 gap-1.5 h-10 px-3"
+                  >
+                    {copiedNewLink ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                    {copiedNewLink ? "Copied" : "Copy"}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
+                <Button
+                  type="button"
+                  onClick={handleShareWhatsApp}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-2 h-10 shadow-lg shadow-emerald-600/20"
+                >
+                  <Send className="w-4 h-4" />
+                  Share on WhatsApp
+                </Button>
+                <Button
+                  type="button"
+                  onClick={closeSplitModal}
+                  variant="outline"
+                  className="w-full border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs h-10"
+                >
+                  Done &amp; View Updated Pass
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSplitSubmit} className="space-y-4 pt-2">
+              {selectedSplitItem && (
+                <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-slate-400 text-[10px] uppercase font-bold block">
+                      Splitting From
+                    </span>
+                    <span className="font-bold text-white">{selectedSplitItem.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-400 text-[10px] uppercase font-bold block">
+                      Remaining After Transfer
+                    </span>
+                    <span className="font-mono text-amber-400 font-bold">
+                      {selectedSplitItem.quantity - 1} Pass(es)
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {splitError && (
+                <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-xl p-3 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span>{splitError}</span>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="split-name" className="text-xs text-slate-300 font-semibold">
+                    New Owner Full Name <span className="text-rose-400">*</span>
+                  </Label>
+                  <Input
+                    id="split-name"
+                    required
+                    placeholder="e.g. Nansel Danboyi"
+                    value={splitFullName}
+                    onChange={(e) => setSplitFullName(e.target.value)}
+                    className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-sm h-10 focus:border-amber-400"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="split-phone" className="text-xs text-slate-300 font-semibold">
+                    Phone Number (WhatsApp) <span className="text-rose-400">*</span>
+                  </Label>
+                  <Input
+                    id="split-phone"
+                    required
+                    type="tel"
+                    placeholder="e.g. 08083501484"
+                    value={splitPhone}
+                    onChange={(e) => setSplitPhone(e.target.value)}
+                    className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-sm h-10 focus:border-amber-400"
+                  />
+                  <p className="text-[10px] text-slate-400">
+                    The ticket pass link will be sent automatically to this phone via WhatsApp.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="split-email" className="text-xs text-slate-300 font-semibold">
+                      Email Address <span className="text-slate-500 text-[10px]">(Optional)</span>
+                    </Label>
+                    <Input
+                      id="split-email"
+                      type="email"
+                      placeholder="e.g. delegate@gmail.com"
+                      value={splitEmail}
+                      onChange={(e) => setSplitEmail(e.target.value)}
+                      className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-sm h-10 focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="split-year" className="text-xs text-slate-300 font-semibold">
+                      Graduation Set / Year <span className="text-slate-500 text-[10px]">(Optional)</span>
+                    </Label>
+                    <Input
+                      id="split-year"
+                      placeholder="e.g. Class of 1998"
+                      value={splitYear}
+                      onChange={(e) => setSplitYear(e.target.value)}
+                      className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-sm h-10 focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={closeSplitModal}
+                  disabled={splitSubmitting}
+                  className="text-slate-400 hover:text-white hover:bg-slate-800 text-xs h-10"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={splitSubmitting}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs h-10 px-4 gap-2 shadow-lg shadow-amber-500/20"
+                >
+                  {splitSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Detaching Ticket...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" />
+                      Confirm &amp; Detach Ticket
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>
