@@ -33,6 +33,7 @@ export interface PaidServiceItem {
   badgeText: string;
   icon: string;
   beneficiaries?: ServiceBeneficiary[];
+  checkedIn?: boolean;
 }
 
 export async function GET(
@@ -147,15 +148,17 @@ export async function GET(
         phone: p.phone,
         email: p.email,
       }));
+      const isItemCheckedIn = Boolean(item.checkedIn || item.checkIn);
       serviceItems.push({
         id: item._id.toString(),
         name: 'Convention Registration Ticket',
         category: 'convention',
         quantity: item.quantity || 1,
         amount: item.amount || 1000,
-        badgeText: 'Confirmed Ticket 🎟️',
+        badgeText: isItemCheckedIn ? 'Checked In ✅' : 'Confirmed Ticket 🎟️',
         icon: 'Ticket',
         beneficiaries: beneficiaries && beneficiaries.length > 0 ? beneficiaries : undefined,
+        checkedIn: isItemCheckedIn,
       });
     }
 
@@ -166,15 +169,17 @@ export async function GET(
         phone: g.phone,
         email: g.email,
       }));
+      const isItemCheckedIn = Boolean(item.checkedIn);
       serviceItems.push({
         id: item._id.toString(),
         name: 'Dinner Ticket Pass',
         category: 'dinner',
         quantity: item.numberOfGuests || 1,
         amount: item.totalAmount || 2500,
-        badgeText: 'Dinner Reserved 🍷',
+        badgeText: isItemCheckedIn ? 'Checked In ✅' : 'Dinner Reserved 🍷',
         icon: 'Utensils',
         beneficiaries: beneficiaries && beneficiaries.length > 0 ? beneficiaries : undefined,
+        checkedIn: isItemCheckedIn,
       });
     }
 
@@ -303,6 +308,36 @@ export async function GET(
       primaryTitle = 'COMBINED GOSA CONVENTION PASS';
     }
 
+    // Check if ticket or any service is transferred
+    const anyTransferredRecord = primaryRecord.transferredFrom
+      ? primaryRecord
+      : conventionRegs.find((c: any) => c.transferredFrom) || dinnerRes.find((d: any) => d.transferredFrom);
+
+    let transferredFromData: { name: string; phone?: string } | undefined = undefined;
+    if (anyTransferredRecord?.transferredFrom) {
+      try {
+        const tfUser = await User.findById(anyTransferredRecord.transferredFrom);
+        if (tfUser) {
+          transferredFromData = {
+            name: tfUser.fullName,
+            phone: tfUser.phoneNumber,
+          };
+        }
+      } catch (e) {
+        console.warn('Could not populate transferredFrom user:', e);
+      }
+    }
+
+    const transferReason = primaryRecord.transferReason || anyTransferredRecord?.transferReason;
+    const transferredAt = primaryRecord.transferredAt || anyTransferredRecord?.transferredAt;
+    const personalNote = primaryRecord.personalNote || anyTransferredRecord?.personalNote;
+    const isCheckedIn = Boolean(
+      primaryRecord.checkedIn ||
+      primaryRecord.checkIn ||
+      conventionRegs.some((c: any) => c.checkedIn || c.checkIn) ||
+      dinnerRes.some((d: any) => d.checkedIn)
+    );
+
     const attendeeName =
       user?.fullName ||
       primaryRecord.guestDetails?.[0]?.name ||
@@ -319,6 +354,11 @@ export async function GET(
         amount: finalAmount,
         status: primaryRecord.status === 'pending' ? 'Pending' : 'Confirmed',
         confirmed: true,
+        checkedIn: isCheckedIn,
+        transferredFrom: transferredFromData,
+        transferredAt,
+        transferReason,
+        personalNote,
         user: {
           fullName: attendeeName,
           email: user?.email || primaryRecord.donorEmail || '',

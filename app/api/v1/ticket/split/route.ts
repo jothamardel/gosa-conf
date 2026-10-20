@@ -17,6 +17,8 @@ Transaction;
 interface SplitRequestPayload {
   ticketId: string;
   serviceCategory?: "convention" | "dinner";
+  transferType?: "gift" | "on_behalf" | "transfer";
+  personalNote?: string;
   newOwner: {
     fullName: string;
     phoneNumber: string;
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
 
     const body: SplitRequestPayload = await req.json();
-    const { ticketId, serviceCategory, newOwner } = body;
+    const { ticketId, serviceCategory, transferType = "transfer", personalNote, newOwner } = body;
 
     if (!ticketId) {
       return NextResponse.json(
@@ -69,6 +71,7 @@ export async function POST(req: NextRequest) {
     const { displayPhone, whatsappJid } = formatNigerianPhoneNumber(newOwner.phoneNumber);
     const cleanName = newOwner.fullName.trim();
     const cleanEmail = (newOwner.email || `${displayPhone}@gosanigeria.ng`).trim().toLowerCase();
+    const cleanNote = personalNote?.trim() || "";
 
     const isValidObjectId = Types.ObjectId.isValid(ticketId);
 
@@ -190,6 +193,10 @@ export async function POST(req: NextRequest) {
         checkIn: false,
         checkedIn: false,
         checkInHistory: [],
+        transferredFrom: targetConvention.userId,
+        transferredAt: new Date(),
+        transferReason: transferType,
+        personalNote: cleanNote || undefined,
         persons: [
           {
             name: cleanName,
@@ -203,22 +210,36 @@ export async function POST(req: NextRequest) {
       const newPassUrl = `${baseUrl}/ticket?id=${newTicketRecord._id.toString()}`;
 
       // Dispatch automated WhatsApp notification to new owner
-      try {
-        const parentUser = await User.findById(targetConvention.userId);
-        const buyerName = parentUser?.fullName || "A fellow GOSA alumnus";
+      const parentUser = await User.findById(targetConvention.userId);
+      const buyerName = parentUser?.fullName || "A fellow GOSA alumnus";
+      const buyerPhone = parentUser?.phoneNumber || "";
 
-        const textMessage = `🎉 *GOSA 2026 Convention Pass Transferred to You*
+      try {
+        let headline = "🎉 *GOSA 2026 Convention Pass Assigned to You*";
+        let greeting = `Hello ${cleanName},\n\n${buyerName} has assigned a *GOSA 2026 Annual National Convention Registration Ticket* to you! 🎟️`;
+
+        if (transferType === "gift") {
+          headline = "🎁 *You've Received a GOSA 2026 Convention Pass as a Gift!*";
+          greeting = `Hello ${cleanName},\n\n${buyerName} has presented you with a *GOSA 2026 Annual National Convention Pass* as a gift! 🎁🎟️`;
+        } else if (transferType === "on_behalf") {
+          headline = "🤝 *Your GOSA 2026 Ticket Pass is Ready!*";
+          greeting = `Hello ${cleanName},\n\n${buyerName} helped purchase your *GOSA 2026 Convention Registration Ticket*, and it is now detached and registered under your name! 🎟️`;
+        }
+
+        let textMessage = `${headline}
 For Light and Truth
 
-Hello ${cleanName},
-
-${buyerName} has assigned a *GOSA 2026 Annual National Convention Registration Ticket* to you! 🎟️
+${greeting}
 
 👤 *Attendee Name:* ${cleanName}
 📱 *Phone:* ${displayPhone}
-🎟️ *Pass Link:* ${newPassUrl}
+🎟️ *Pass Link:* ${newPassUrl}`;
 
-📍 *Venue:* Crispan Luxury Hotel, Jos, Plateau State
+        if (cleanNote) {
+          textMessage += `\n\n💌 *Personal Note from ${buyerName}:*\n"${cleanNote}"`;
+        }
+
+        textMessage += `\n\n📍 *Venue:* Crispan Luxury Hotel, Jos, Plateau State
 📅 *Dates:* Oct 31 – Nov 2, 2026
 
 Please tap the link above to view and download your official E-Ticket with your QR code for verification at the event accreditation desk.
@@ -229,9 +250,42 @@ We look forward to welcoming you to the 2026 Convention!`;
           to: whatsappJid,
           text: textMessage,
         });
-        console.log(`[TICKET-SPLIT] WhatsApp notification sent to ${whatsappJid}`);
+        console.log(`[TICKET-SPLIT] WhatsApp notification sent to recipient ${whatsappJid}`);
       } catch (waErr) {
         console.warn("[TICKET-SPLIT] Failed to send automated WhatsApp message:", waErr);
+      }
+
+      // Send WhatsApp confirmation to buyer
+      if (buyerPhone) {
+        try {
+          const { whatsappJid: buyerJid } = formatNigerianPhoneNumber(buyerPhone);
+          const buyerNotice = `✅ *Ticket Pass Detached & Assigned*
+For Light and Truth
+
+Hello ${buyerName},
+
+You have successfully detached 1 *Convention Pass* (Ref: ${targetConvention.paymentReference}) and assigned it to:
+
+👤 *Recipient:* ${cleanName}
+📱 *Phone:* ${displayPhone}
+🏷️ *Reason:* ${
+            transferType === "gift"
+              ? "Gift 🎁"
+              : transferType === "on_behalf"
+              ? "Purchased on Behalf 🤝"
+              : "Transfer 🎟️"
+          }
+
+Remaining passes on your main ticket: *${newParentQty}*.
+The recipient has been notified with their pass link. Thank you!`;
+
+          await Wasender.httpSenderMessage({
+            to: buyerJid,
+            text: buyerNotice,
+          });
+        } catch (bErr) {
+          console.warn("[TICKET-SPLIT] Buyer notification failed:", bErr);
+        }
       }
 
       return NextResponse.json({
@@ -311,6 +365,10 @@ We look forward to welcoming you to the 2026 Convention!`;
         status: "confirmed",
         checkedIn: false,
         checkInHistory: [],
+        transferredFrom: targetDinner.userId,
+        transferredAt: new Date(),
+        transferReason: transferType,
+        personalNote: cleanNote || undefined,
         guestDetails: [
           {
             name: cleanName,
@@ -323,25 +381,39 @@ We look forward to welcoming you to the 2026 Convention!`;
       const baseUrl = process.env.NEXTAUTH_URL || "https://events.gosanigeria.ng";
       const newPassUrl = `${baseUrl}/ticket?id=${newDinnerRecord._id.toString()}`;
 
-      try {
-        const parentUser = await User.findById(targetDinner.userId);
-        const buyerName = parentUser?.fullName || "A fellow GOSA alumnus";
+      const parentUser = await User.findById(targetDinner.userId);
+      const buyerName = parentUser?.fullName || "A fellow GOSA alumnus";
+      const buyerPhone = parentUser?.phoneNumber || "";
 
-        const textMessage = `🍷 *GOSA 2026 Dinner Ticket Pass Transferred to You*
+      try {
+        let headline = "🍷 *GOSA 2026 Dinner Ticket Pass Assigned to You*";
+        let greeting = `Hello ${cleanName},\n\n${buyerName} has assigned a *GOSA 2026 Convention Dinner Pass* to you! 🍽️`;
+
+        if (transferType === "gift") {
+          headline = "🎁 *You've Received a GOSA 2026 Dinner Pass as a Gift!*";
+          greeting = `Hello ${cleanName},\n\n${buyerName} has presented you with a *GOSA 2026 Convention Dinner Ticket Pass* as a gift! 🎁🍽️`;
+        } else if (transferType === "on_behalf") {
+          headline = "🤝 *Your GOSA 2026 Dinner Pass is Ready!*";
+          greeting = `Hello ${cleanName},\n\n${buyerName} helped purchase your *GOSA 2026 Convention Dinner Pass*, and it has been officially registered under your name! 🍽️`;
+        }
+
+        let textMessage = `${headline}
 For Light and Truth
 
-Hello ${cleanName},
-
-${buyerName} has assigned a *GOSA 2026 Convention Dinner Pass* to you! 🍽️
+${greeting}
 
 👤 *Guest Name:* ${cleanName}
 📱 *Phone:* ${displayPhone}
-🎫 *Dinner Pass:* ${newPassUrl}
+🎫 *Dinner Pass:* ${newPassUrl}`;
 
-📍 *Venue:* Crispan Luxury Hotel, Jos, Plateau State
+        if (cleanNote) {
+          textMessage += `\n\n💌 *Personal Note from ${buyerName}:*\n"${cleanNote}"`;
+        }
+
+        textMessage += `\n\n📍 *Venue:* Crispan Luxury Hotel, Jos, Plateau State
 📅 *Dates:* Oct 31 – Nov 2, 2026
 
-Please tap your pass link to view your verified dinner reservation.`;
+Please tap your pass link to view your verified dinner reservation and QR code.`;
 
         await Wasender.httpSenderMessage({
           to: whatsappJid,
@@ -349,6 +421,38 @@ Please tap your pass link to view your verified dinner reservation.`;
         });
       } catch (waErr) {
         console.warn("[TICKET-SPLIT] Dinner WhatsApp dispatch notice:", waErr);
+      }
+
+      if (buyerPhone) {
+        try {
+          const { whatsappJid: buyerJid } = formatNigerianPhoneNumber(buyerPhone);
+          const buyerNotice = `✅ *Dinner Pass Detached & Assigned*
+For Light and Truth
+
+Hello ${buyerName},
+
+You have successfully detached 1 *Dinner Pass* (Ref: ${targetDinner.paymentReference}) and assigned it to:
+
+👤 *Recipient:* ${cleanName}
+📱 *Phone:* ${displayPhone}
+🏷️ *Reason:* ${
+            transferType === "gift"
+              ? "Gift 🎁"
+              : transferType === "on_behalf"
+              ? "Purchased on Behalf 🤝"
+              : "Transfer 🍷"
+          }
+
+Remaining passes on your dinner reservation: *${newParentGuests}*.
+The recipient has been notified with their pass link. Thank you!`;
+
+          await Wasender.httpSenderMessage({
+            to: buyerJid,
+            text: buyerNotice,
+          });
+        } catch (bErr) {
+          console.warn("[TICKET-SPLIT] Dinner buyer notification failed:", bErr);
+        }
       }
 
       return NextResponse.json({

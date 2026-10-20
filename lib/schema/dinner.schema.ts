@@ -36,6 +36,10 @@ export interface IDinnerReservation extends Document {
   primaryReservationId?: Types.ObjectId;  // Links to main reservation
   isPrimaryContact: boolean;              // Identifies the primary contact
   guestIndex?: number;                    // Index of this guest in the group
+  transferredFrom?: Types.ObjectId;
+  transferredAt?: Date;
+  transferReason?: 'gift' | 'on_behalf' | 'transfer';
+  personalNote?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -172,6 +176,20 @@ const DinnerReservationSchema = new Schema<IDinnerReservation>(
     guestIndex: {
       type: Number,
       required: false,
+    },
+    transferredFrom: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    transferredAt: {
+      type: Date,
+    },
+    transferReason: {
+      type: String,
+      enum: ['gift', 'on_behalf', 'transfer'],
+    },
+    personalNote: {
+      type: String,
     },
   },
   {

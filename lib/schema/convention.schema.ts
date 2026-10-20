@@ -18,6 +18,10 @@ export interface IConventionRegistration extends Document {
     officialName: string;
   }>;
   status: string;
+  transferredFrom?: Types.ObjectId;
+  transferredAt?: Date;
+  transferReason?: 'gift' | 'on_behalf' | 'transfer';
+  personalNote?: string;
   createdAt: Date;
   updatedAt: Date;
   persons: [];
@@ -91,6 +95,20 @@ const ConventionRegistrationSchema = new Schema<IConventionRegistration>(
       type: String,
       enum: ['pending', 'confirmed', 'cancelled'],
       default: 'pending',
+    },
+    transferredFrom: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    transferredAt: {
+      type: Date,
+    },
+    transferReason: {
+      type: String,
+      enum: ['gift', 'on_behalf', 'transfer'],
+    },
+    personalNote: {
+      type: String,
     },
     persons: {
       type: [],
