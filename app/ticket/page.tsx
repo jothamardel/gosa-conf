@@ -403,19 +403,19 @@ export default function TicketPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950 overflow-x-hidden">
       <Navigation />
 
-      <main className="grow container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
+      <main className="grow container mx-auto px-3 sm:px-4 py-6 sm:py-12 max-w-5xl">
         {/* Top Header Controls */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
-          <Link href="/">
-            <Button variant="outline" className="border-slate-700 bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 gap-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <Link href="/" className="self-start sm:self-auto">
+            <Button variant="outline" className="border-slate-700 bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 gap-2 h-9 sm:h-10 text-xs">
               <ArrowLeft className="w-4 h-4" />
               Back to Home
             </Button>
           </Link>
 
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold">
-            <Sparkles className="w-3.5 h-3.5" />
-            Official GOSA 2026 E-Ticket & Credentials Portal
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] sm:text-xs font-bold text-center">
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span>Official GOSA 2026 E-Ticket &amp; Credentials Portal</span>
           </div>
         </div>
 
@@ -439,17 +439,17 @@ export default function TicketPage() {
             </Link>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {/* Action Bar */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl flex flex-wrap items-center justify-between gap-4">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  <h2 className="text-lg font-bold text-white">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <h2 className="text-base sm:text-lg font-bold text-white">
                     Official GOSA Pass Confirmed
                   </h2>
                   {ticket.checkedIn && (
-                    <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold">
+                    <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold shrink-0">
                       Venue Checked-In
                     </Badge>
                   )}
@@ -459,55 +459,72 @@ export default function TicketPage() {
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-                {ticket.checkedIn ? (
-                  <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-400 text-xs font-semibold">
-                    <Lock className="w-3.5 h-3.5 text-amber-400" />
-                    Checked In at Venue
-                  </div>
-                ) : (
-                  <Button
-                    onClick={() => openAssignModal(hasSplittableItems ? "split" : "full")}
-                    className="bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/40 font-bold gap-2 text-xs h-10 px-3.5 transition-all shadow-md shadow-amber-500/10 flex-1 sm:flex-none"
-                  >
-                    <Gift className="w-4 h-4" />
-                    Assign / Transfer Pass
-                  </Button>
-                )}
-
+              {/* 2x2 Clean Grid on Mobile, Inline Horizontal Row on Desktop */}
+              <div className="grid grid-cols-2 gap-2 w-full md:w-auto md:flex md:flex-wrap md:items-center md:gap-2.5">
+                {/* Row 1 / Col 1: Download PNG Pass */}
                 <Button
                   onClick={handleDownloadImage}
                   disabled={downloadingImage}
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold gap-2 shadow-lg shadow-amber-500/20 text-xs h-10 flex-1 sm:flex-none"
+                  className="w-full md:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold gap-1.5 sm:gap-2 shadow-lg shadow-amber-500/20 text-xs h-11 sm:h-10 px-3 sm:px-4 justify-center"
                 >
-                  {downloadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                  Download PNG Pass
+                  {downloadingImage ? (
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                  ) : (
+                    <Download className="w-4 h-4 shrink-0" />
+                  )}
+                  <span>Download PNG</span>
                 </Button>
 
+                {/* Row 1 / Col 2: Download PDF Pass */}
                 <Button
                   onClick={handleDownloadPdf}
                   disabled={downloadingPdf}
                   variant="outline"
-                  className="border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 font-bold gap-2 text-xs h-10 flex-1 sm:flex-none"
+                  className="w-full md:w-auto border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 font-bold gap-1.5 sm:gap-2 text-xs h-11 sm:h-10 px-3 sm:px-4 justify-center"
                 >
-                  {downloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-                  Download PDF Pass
+                  {downloadingPdf ? (
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                  ) : (
+                    <FileText className="w-4 h-4 shrink-0" />
+                  )}
+                  <span>Download PDF</span>
                 </Button>
 
+                {/* Row 2 / Col 1: Assign / Transfer Pass */}
+                {ticket.checkedIn ? (
+                  <div className="w-full md:w-auto flex items-center justify-center gap-1.5 px-3 h-11 sm:h-10 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-400 text-xs font-semibold">
+                    <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Checked In</span>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => openAssignModal(hasSplittableItems ? "split" : "full")}
+                    className="w-full md:w-auto bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/40 font-bold gap-1.5 sm:gap-2 text-xs h-11 sm:h-10 px-3 transition-all shadow-md shadow-amber-500/10 justify-center"
+                  >
+                    <Gift className="w-4 h-4 shrink-0" />
+                    <span>Assign / Transfer</span>
+                  </Button>
+                )}
+
+                {/* Row 2 / Col 2: Copy Link */}
                 <Button
                   onClick={handleCopyLink}
                   variant="ghost"
-                  className="text-slate-300 hover:text-white hover:bg-slate-800 gap-1.5 text-xs h-10"
+                  className="w-full md:w-auto border border-slate-800 md:border-transparent bg-slate-950/60 md:bg-transparent text-slate-300 hover:text-white hover:bg-slate-800 gap-1.5 text-xs h-11 sm:h-10 px-3 justify-center"
                 >
-                  {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                  {copied ? "Copied!" : "Copy Link"}
+                  {copied ? (
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : (
+                    <Copy className="w-4 h-4 shrink-0" />
+                  )}
+                  <span>{copied ? "Copied!" : "Copy Link"}</span>
                 </Button>
               </div>
             </div>
 
             {/* Multiple Tickets Detach / Reassign Banner */}
             {hasSplittableItems && !ticket.checkedIn && (
-              <div className="bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-slate-900 border border-amber-500/30 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+              <div className="bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-slate-900 border border-amber-500/30 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 shadow-lg">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
                     <Users className="w-5 h-5" />
@@ -526,7 +543,7 @@ export default function TicketPage() {
                 </div>
                 <Button
                   onClick={() => openAssignModal("split")}
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs gap-2 shrink-0 shadow-lg shadow-amber-500/25 h-10 px-4"
+                  className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs gap-2 shrink-0 shadow-lg shadow-amber-500/25 h-11 sm:h-10 px-4 justify-center"
                 >
                   <UserPlus className="w-4 h-4" />
                   Detach &amp; Assign a Pass
@@ -535,11 +552,11 @@ export default function TicketPage() {
             )}
 
             {/* Ticket Card Component to render & snapshot */}
-            <div className="flex justify-center">
+            <div className="flex justify-center px-1 sm:px-0">
               <div
                 ref={ticketCardRef}
                 id="ticket-pass-card"
-                className="w-full max-w-[460px] rounded-[32px] p-6 text-white relative overflow-hidden shadow-2xl border-4 border-amber-400/40 flex flex-col justify-between"
+                className="w-full max-w-[460px] rounded-2xl sm:rounded-[32px] p-4 sm:p-6 text-white relative overflow-hidden shadow-2xl border-2 sm:border-4 border-amber-400/40 flex flex-col justify-between"
                 style={{
                   backgroundImage: "linear-gradient(135deg, #09172A 0%, #102A43 45%, #0A192F 100%)",
                   boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(217, 119, 6, 0.15)",
@@ -555,30 +572,30 @@ export default function TicketPage() {
                 />
 
                 {/* Top Metallic Banner */}
-                <div className="relative z-10 flex items-center justify-between border-b border-amber-400/20 pb-4 mb-3">
-                  <div className="flex items-center gap-3">
+                <div className="relative z-10 flex items-center justify-between border-b border-amber-400/20 pb-3 sm:pb-4 mb-2.5 sm:mb-3">
+                  <div className="flex items-center gap-2.5 sm:gap-3">
                     <img
                       src="/images/gosa.png"
                       alt="GOSA Logo"
-                      className="w-10 h-10 object-contain drop-shadow-md brightness-0 invert"
+                      className="w-8 h-8 sm:w-10 sm:h-10 object-contain drop-shadow-md brightness-0 invert shrink-0"
                     />
                     <div>
-                      <h3 className="text-xs font-black tracking-wider text-amber-400 uppercase leading-none">
+                      <h3 className="text-[11px] sm:text-xs font-black tracking-wider text-amber-400 uppercase leading-none">
                         GOSA 2026
                       </h3>
-                      <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-1">
+                      <p className="text-[8px] sm:text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-1">
                         Annual Convention Pass
                       </p>
                     </div>
                   </div>
 
                   {ticket.checkedIn ? (
-                    <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-[10px] px-2.5 py-0.5 uppercase tracking-wider flex items-center gap-1">
+                    <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 uppercase tracking-wider flex items-center gap-1 shrink-0">
                       <CheckCircle2 className="w-3 h-3 text-amber-400" />
                       CHECKED IN 🎫
                     </Badge>
                   ) : (
-                    <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px] px-2.5 py-0.5 uppercase tracking-wider">
+                    <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 uppercase tracking-wider shrink-0">
                       CONFIRMED ✅
                     </Badge>
                   )}
@@ -586,8 +603,8 @@ export default function TicketPage() {
 
                 {/* Gift / Transfer Attribution Badge */}
                 {(ticket.transferredFrom || ticket.transferReason) && (
-                  <div className="relative z-10 mb-3 bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-amber-500/20 border border-amber-400/40 rounded-2xl p-3 text-center shadow-inner">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-300 flex items-center justify-center gap-1.5">
+                  <div className="relative z-10 mb-2.5 sm:mb-3 bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-amber-500/20 border border-amber-400/40 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 text-center shadow-inner">
+                    <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-amber-300 flex items-center justify-center gap-1.5">
                       {ticket.transferReason === "gift" ? (
                         <>🎁 Official Gift Pass</>
                       ) : ticket.transferReason === "on_behalf" ? (
@@ -597,13 +614,13 @@ export default function TicketPage() {
                       )}
                     </span>
                     {ticket.transferredFrom?.name && (
-                      <p className="text-white text-xs font-bold mt-1">
+                      <p className="text-white text-[11px] sm:text-xs font-bold mt-0.5 sm:mt-1">
                         {ticket.transferReason === "gift" ? "Gift from" : "Assigned by"}:{" "}
                         <span className="text-amber-300">{ticket.transferredFrom.name}</span>
                       </p>
                     )}
                     {ticket.personalNote && (
-                      <p className="text-slate-300 text-[11px] italic mt-1.5 font-serif bg-slate-950/40 rounded-lg py-1 px-2 border border-slate-800">
+                      <p className="text-slate-300 text-[10px] sm:text-[11px] italic mt-1 sm:mt-1.5 font-serif bg-slate-950/40 rounded-lg py-1 px-2 border border-slate-800 break-words">
                         &ldquo;{ticket.personalNote}&rdquo;
                       </p>
                     )}
@@ -611,34 +628,34 @@ export default function TicketPage() {
                 )}
 
                 {/* Attendee Name & Pass Header */}
-                <div className="relative z-10 text-center mb-3 bg-slate-900/70 border border-amber-400/20 rounded-2xl p-4">
-                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-amber-400/90 block mb-1">
+                <div className="relative z-10 text-center mb-2.5 sm:mb-3 bg-slate-900/70 border border-amber-400/20 rounded-xl sm:rounded-2xl p-3 sm:p-4">
+                  <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-widest text-amber-400/90 block mb-1">
                     DELEGATE / ATTENDEE NAME
                   </span>
 
-                  <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight drop-shadow-md">
+                  <h2 className="text-lg sm:text-2xl font-black text-white uppercase tracking-tight drop-shadow-md break-words leading-tight">
                     {ticket.user.fullName}
                   </h2>
 
                   {ticket.user.phone && (
-                    <span className="text-xs font-mono font-bold text-amber-300 block mt-1">
+                    <span className="text-[11px] sm:text-xs font-mono font-bold text-amber-300 block mt-1">
                       📱 {ticket.user.phone}
                     </span>
                   )}
 
-                  <div className="mt-2.5 inline-block px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md">
+                  <div className="mt-2 sm:mt-2.5 inline-block px-2.5 sm:px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-[10px] sm:text-xs uppercase tracking-wider shadow-md max-w-full truncate">
                     {ticket.primaryTitle || "COMBINED GOSA CONVENTION PASS"}
                   </div>
                 </div>
 
                 {/* Itemized Paid Services Breakdown Section */}
-                <div className="relative z-10 my-2 bg-slate-900/80 border border-amber-400/30 rounded-2xl p-3.5 space-y-2">
+                <div className="relative z-10 my-2 bg-slate-900/80 border border-amber-400/30 rounded-xl sm:rounded-2xl p-3 sm:p-3.5 space-y-2">
                   <div className="flex items-center justify-between border-b border-slate-700/60 pb-2 mb-2">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1.5">
-                      <PackageCheck className="w-3.5 h-3.5" />
+                    <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1.5">
+                      <PackageCheck className="w-3.5 h-3.5 shrink-0" />
                       Services &amp; Items Included
                     </span>
-                    <span className="text-[9px] font-mono text-slate-300 font-bold">
+                    <span className="text-[8px] sm:text-[9px] font-mono text-slate-300 font-bold shrink-0">
                       Total: ₦{ticket.amount.toLocaleString()}
                     </span>
                   </div>
@@ -648,13 +665,13 @@ export default function TicketPage() {
                       ticket.serviceItems.map((item, idx) => (
                         <div
                           key={item.id || idx}
-                          className="bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2.5 text-xs space-y-1.5"
+                          className="bg-slate-950/60 border border-slate-800 rounded-lg sm:rounded-xl px-2.5 sm:px-3 py-2 sm:py-2.5 text-xs space-y-1.5"
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
+                          <div className="flex items-start sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               {renderServiceIcon(item.icon, item.category)}
-                              <div>
-                                <span className="font-bold text-white text-xs block leading-tight">
+                              <div className="min-w-0">
+                                <span className="font-bold text-white text-xs block leading-tight truncate sm:whitespace-normal">
                                   {item.name}
                                 </span>
                                 {item.quantity > 1 && (
@@ -665,7 +682,7 @@ export default function TicketPage() {
                               </div>
                             </div>
 
-                            <Badge className="bg-amber-500/10 text-amber-300 border border-amber-500/30 font-semibold text-[9px] px-2 py-0.5 whitespace-nowrap">
+                            <Badge className="bg-amber-500/10 text-amber-300 border border-amber-500/30 font-semibold text-[9px] px-2 py-0.5 shrink-0 whitespace-nowrap">
                               {item.badgeText}
                             </Badge>
                           </div>
@@ -677,11 +694,11 @@ export default function TicketPage() {
                                 Delegates &amp; Phone Numbers:
                               </span>
                               {item.beneficiaries.map((b, bIdx) => (
-                                <div key={bIdx} className="flex items-center justify-between text-[10px] font-mono">
-                                  <span className="font-semibold text-slate-200 truncate max-w-[200px]">
+                                <div key={bIdx} className="flex flex-col sm:flex-row sm:items-center justify-between text-[10px] font-mono gap-0.5 sm:gap-2">
+                                  <span className="font-semibold text-slate-200 truncate">
                                     • {b.name}
                                   </span>
-                                  <span className="text-amber-300 font-bold ml-2">
+                                  <span className="text-amber-300 font-bold sm:ml-2 shrink-0">
                                     {b.phone || "N/A"}
                                   </span>
                                 </div>
@@ -701,19 +718,19 @@ export default function TicketPage() {
                                   type="button"
                                   size="sm"
                                   onClick={() => openAssignModal("split", item)}
-                                  className="bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/30 text-[10px] font-bold h-7 px-2.5 rounded-lg gap-1.5 transition-all shadow-sm"
+                                  className="w-full sm:w-auto bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/30 text-[10px] font-bold h-8 px-2.5 rounded-lg gap-1.5 transition-all shadow-sm justify-center"
                                 >
                                   <UserPlus className="w-3.5 h-3.5" />
-                                  Detach &amp; Assign to New Owner
+                                  Detach &amp; Assign Pass
                                 </Button>
                               </div>
                             )}
                         </div>
                       ))
                     ) : (
-                      <div className="flex items-center justify-between bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-xs">
-                        <span className="font-bold text-white">Convention Registration Ticket</span>
-                        <Badge className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-[9px]">
+                      <div className="flex items-center justify-between bg-slate-950/60 border border-slate-800 rounded-lg sm:rounded-xl px-2.5 sm:px-3 py-2 text-xs">
+                        <span className="font-bold text-white text-xs">Convention Registration Ticket</span>
+                        <Badge className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-[9px] shrink-0">
                           Confirmed Ticket 🎟️
                         </Badge>
                       </div>
@@ -723,50 +740,50 @@ export default function TicketPage() {
 
                 {/* Event Schedule & Location Grid */}
                 <div className="relative z-10 grid grid-cols-2 gap-2 my-2 text-[10px]">
-                  <div className="bg-slate-900/50 border border-slate-700/60 rounded-xl p-2.5 flex items-start gap-2">
-                    <Calendar className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="bg-slate-900/50 border border-slate-700/60 rounded-xl p-2 sm:p-2.5 flex items-start gap-2">
+                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-bold text-slate-400 uppercase block text-[8px]">Dates</span>
-                      <span className="font-extrabold text-white">Oct 31 – Nov 2, 2026</span>
+                      <span className="font-bold text-slate-400 uppercase block text-[7px] sm:text-[8px]">Dates</span>
+                      <span className="font-extrabold text-white text-[10px] sm:text-[11px] leading-tight block">Oct 31 – Nov 2, 2026</span>
                     </div>
                   </div>
 
-                  <div className="bg-slate-900/50 border border-slate-700/60 rounded-xl p-2.5 flex items-start gap-2">
-                    <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold text-slate-400 uppercase block text-[8px]">Venue</span>
-                      <span className="font-extrabold text-white truncate block">Crispan</span>
+                  <div className="bg-slate-900/50 border border-slate-700/60 rounded-xl p-2 sm:p-2.5 flex items-start gap-2">
+                    <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <span className="font-bold text-slate-400 uppercase block text-[7px] sm:text-[8px]">Venue</span>
+                      <span className="font-extrabold text-white text-[10px] sm:text-[11px] leading-tight truncate block">Crispan Hotel, Jos</span>
                     </div>
                   </div>
                 </div>
 
                 {/* QR Code Container */}
-                <div className="relative z-10 my-2 bg-white text-slate-950 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-inner border border-amber-400/30">
-                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-2">
+                <div className="relative z-10 my-2 bg-white text-slate-950 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col items-center justify-center text-center shadow-inner border border-amber-400/30">
+                  <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest text-slate-500 mb-1.5 sm:mb-2">
                     Official Verification QR Code
                   </span>
 
                   {qrCodeUrl ? (
-                    <img src={qrCodeUrl} alt="Ticket QR Code" className="w-36 h-36 object-contain" />
+                    <img src={qrCodeUrl} alt="Ticket QR Code" className="w-32 h-32 sm:w-36 sm:h-36 object-contain" />
                   ) : (
-                    <div className="w-36 h-36 flex items-center justify-center text-slate-400">
+                    <div className="w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center text-slate-400">
                       <QrCode className="w-10 h-10" />
                     </div>
                   )}
 
-                  <p className="text-[9px] font-mono text-slate-600 mt-2 truncate w-full px-2">
+                  <p className="text-[8px] sm:text-[9px] font-mono text-slate-600 mt-1.5 sm:mt-2 truncate w-full px-1">
                     Ref: {ticket.paymentReference}
                   </p>
                 </div>
 
                 {/* Security Seal & Motto Footer */}
-                <div className="relative z-10 border-t border-amber-400/20 pt-3 flex items-center justify-between text-[9px] text-slate-400 font-medium">
+                <div className="relative z-10 border-t border-amber-400/20 pt-2.5 sm:pt-3 flex items-center justify-between text-[8px] sm:text-[9px] text-slate-400 font-medium">
                   <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                     <span>GOSA Official Security Code</span>
                   </div>
 
-                  <span className="font-extrabold text-amber-300 uppercase tracking-widest">
+                  <span className="font-extrabold text-amber-300 uppercase tracking-widest shrink-0">
                     "For Light &amp; Truth"
                   </span>
                 </div>
@@ -778,13 +795,13 @@ export default function TicketPage() {
 
       {/* Ticket Transfer & Assign Modal Popup */}
       <Dialog open={isAssignModalOpen} onOpenChange={(open) => !open && closeAssignModal()}>
-        <DialogContent className="bg-slate-900 border border-slate-800 text-white max-w-lg p-6 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-slate-900 border border-slate-800 text-white w-[94vw] sm:max-w-lg p-4 sm:p-6 rounded-2xl shadow-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
                 {assignMode === "split" ? <UserPlus className="w-4 h-4" /> : <Gift className="w-4 h-4" />}
               </div>
-              <DialogTitle className="text-lg font-bold text-white">
+              <DialogTitle className="text-base sm:text-lg font-bold text-white">
                 {assignMode === "split" ? "Detach & Assign Ticket Pass" : "Transfer Ticket Pass"}
               </DialogTitle>
             </div>
@@ -823,13 +840,13 @@ export default function TicketPage() {
                   <Input
                     readOnly
                     value={assignSuccessData.ticketPassUrl}
-                    className="bg-slate-950 border-slate-800 text-amber-300 text-xs font-mono h-10 select-all"
+                    className="bg-slate-950 border-slate-800 text-amber-300 text-xs font-mono h-11 sm:h-10 select-all"
                   />
                   <Button
                     type="button"
                     onClick={handleCopyNewLink}
                     variant="outline"
-                    className="border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs shrink-0 gap-1.5 h-10 px-3"
+                    className="border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs shrink-0 gap-1.5 h-11 sm:h-10 px-3"
                   >
                     {copiedNewLink ? (
                       <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -845,7 +862,7 @@ export default function TicketPage() {
                 <Button
                   type="button"
                   onClick={handleShareWhatsApp}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-2 h-10 shadow-lg shadow-emerald-600/20"
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-2 h-11 sm:h-10 shadow-lg shadow-emerald-600/20"
                 >
                   <Send className="w-4 h-4" />
                   Share on WhatsApp
@@ -854,7 +871,7 @@ export default function TicketPage() {
                   type="button"
                   onClick={closeAssignModal}
                   variant="outline"
-                  className="w-full border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs h-10"
+                  className="w-full border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs h-11 sm:h-10"
                 >
                   Done &amp; View Updated Pass
                 </Button>
@@ -868,26 +885,26 @@ export default function TicketPage() {
                   <button
                     type="button"
                     onClick={() => setAssignMode("split")}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    className={`py-2 px-2.5 sm:px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                       assignMode === "split"
                         ? "bg-amber-500 text-slate-950 shadow-md"
                         : "text-slate-400 hover:text-white"
                     }`}
                   >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    Detach 1 Pass
+                    <UserPlus className="w-3.5 h-3.5 shrink-0" />
+                    <span>Detach 1 Pass</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setAssignMode("full")}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    className={`py-2 px-2.5 sm:px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                       assignMode === "full"
                         ? "bg-amber-500 text-slate-950 shadow-md"
                         : "text-slate-400 hover:text-white"
                     }`}
                   >
-                    <Send className="w-3.5 h-3.5" />
-                    Transfer Entire Pass
+                    <Send className="w-3.5 h-3.5 shrink-0" />
+                    <span>Transfer Entire Pass</span>
                   </button>
                 </div>
               )}
@@ -897,45 +914,45 @@ export default function TicketPage() {
                 <Label className="text-xs text-slate-300 font-semibold">
                   Transfer Reason / Category
                 </Label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                   <button
                     type="button"
                     onClick={() => setTransferReason("gift")}
-                    className={`p-2.5 rounded-xl border text-center transition-all ${
+                    className={`p-2 sm:p-2.5 rounded-xl border text-center transition-all ${
                       transferReason === "gift"
                         ? "bg-amber-500/20 border-amber-400 text-amber-300 shadow-sm"
                         : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    <span className="text-base block">🎁</span>
-                    <span className="text-[11px] font-bold block mt-0.5">Gift / Courtesy</span>
-                    <span className="text-[9px] text-slate-400 block mt-0.5">Present as gift</span>
+                    <span className="text-sm sm:text-base block">🎁</span>
+                    <span className="text-[10px] sm:text-[11px] font-bold block mt-0.5 truncate">Gift / Courtesy</span>
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 block mt-0.5 leading-tight">Present as gift</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setTransferReason("on_behalf")}
-                    className={`p-2.5 rounded-xl border text-center transition-all ${
+                    className={`p-2 sm:p-2.5 rounded-xl border text-center transition-all ${
                       transferReason === "on_behalf"
                         ? "bg-amber-500/20 border-amber-400 text-amber-300 shadow-sm"
                         : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    <span className="text-base block">🤝</span>
-                    <span className="text-[11px] font-bold block mt-0.5">On Behalf</span>
-                    <span className="text-[9px] text-slate-400 block mt-0.5">Bought for someone</span>
+                    <span className="text-sm sm:text-base block">🤝</span>
+                    <span className="text-[10px] sm:text-[11px] font-bold block mt-0.5 truncate">On Behalf</span>
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 block mt-0.5 leading-tight">Bought for someone</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setTransferReason("transfer")}
-                    className={`p-2.5 rounded-xl border text-center transition-all ${
+                    className={`p-2 sm:p-2.5 rounded-xl border text-center transition-all ${
                       transferReason === "transfer"
                         ? "bg-amber-500/20 border-amber-400 text-amber-300 shadow-sm"
                         : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    <span className="text-base block">🔄</span>
-                    <span className="text-[11px] font-bold block mt-0.5">Transfer</span>
-                    <span className="text-[9px] text-slate-400 block mt-0.5">Change attendee</span>
+                    <span className="text-sm sm:text-base block">🔄</span>
+                    <span className="text-[10px] sm:text-[11px] font-bold block mt-0.5 truncate">Transfer</span>
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 block mt-0.5 leading-tight">Change attendee</span>
                   </button>
                 </div>
               </div>
@@ -947,7 +964,7 @@ export default function TicketPage() {
                     <span className="text-slate-400 text-[10px] uppercase font-bold block">
                       Splitting From
                     </span>
-                    <span className="font-bold text-white">{selectedItem.name}</span>
+                    <span className="font-bold text-white text-xs sm:text-sm">{selectedItem.name}</span>
                   </div>
                   <div className="text-right">
                     <span className="text-slate-400 text-[10px] uppercase font-bold block">
@@ -978,7 +995,7 @@ export default function TicketPage() {
                     placeholder="e.g. Nansel Danboyi"
                     value={assignFullName}
                     onChange={(e) => setAssignFullName(e.target.value)}
-                    className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-sm h-10 focus:border-amber-400"
+                    className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-base sm:text-sm h-11 sm:h-10 focus:border-amber-400"
                   />
                 </div>
 
@@ -993,7 +1010,7 @@ export default function TicketPage() {
                     placeholder="e.g. 08083501484"
                     value={assignPhone}
                     onChange={(e) => setAssignPhone(e.target.value)}
-                    className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-sm h-10 focus:border-amber-400"
+                    className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-base sm:text-sm h-11 sm:h-10 focus:border-amber-400"
                   />
                   <p className="text-[10px] text-slate-400">
                     The verified ticket pass link and QR code will be dispatched automatically to this WhatsApp phone.
@@ -1011,7 +1028,7 @@ export default function TicketPage() {
                       placeholder="e.g. delegate@gmail.com"
                       value={assignEmail}
                       onChange={(e) => setAssignEmail(e.target.value)}
-                      className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-sm h-10 focus:border-amber-400"
+                      className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-base sm:text-sm h-11 sm:h-10 focus:border-amber-400"
                     />
                   </div>
 
@@ -1024,7 +1041,7 @@ export default function TicketPage() {
                       placeholder="e.g. Class of 1998"
                       value={assignYear}
                       onChange={(e) => setAssignYear(e.target.value)}
-                      className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-sm h-10 focus:border-amber-400"
+                      className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-base sm:text-sm h-11 sm:h-10 focus:border-amber-400"
                     />
                   </div>
                 </div>
@@ -1039,7 +1056,7 @@ export default function TicketPage() {
                     placeholder="e.g. Can't wait to catch up in Jos! Enjoy the convention."
                     value={personalNote}
                     onChange={(e) => setPersonalNote(e.target.value)}
-                    className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-xs min-h-[64px] focus:border-amber-400 resize-none"
+                    className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-base sm:text-xs min-h-[64px] focus:border-amber-400 resize-none"
                   />
                   <p className="text-[10px] text-slate-400">
                     This message will appear on their ticket pass card and in their WhatsApp greeting.
@@ -1047,20 +1064,20 @@ export default function TicketPage() {
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-3">
+              <div className="pt-2 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={closeAssignModal}
                   disabled={assignSubmitting}
-                  className="text-slate-400 hover:text-white hover:bg-slate-800 text-xs h-10"
+                  className="text-slate-400 hover:text-white hover:bg-slate-800 text-xs h-11 sm:h-10 w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={assignSubmitting}
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs h-10 px-4 gap-2 shadow-lg shadow-amber-500/20"
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs h-11 sm:h-10 px-4 gap-2 shadow-lg shadow-amber-500/20 w-full sm:w-auto justify-center"
                 >
                   {assignSubmitting ? (
                     <>
