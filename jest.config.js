@@ -11,6 +11,7 @@ const customJestConfig = {
   moduleNameMapper: {
     // Handle module aliases (this will be automatically configured for you based on your tsconfig.json paths)
     '^@/(.*)$': '<rootDir>/$1',
+    '^bson$': require.resolve('bson'),
   },
   testEnvironment: 'jest-environment-jsdom',
   testMatch: [

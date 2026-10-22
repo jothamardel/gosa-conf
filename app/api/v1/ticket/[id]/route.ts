@@ -130,8 +130,9 @@ export async function GET(
     const baseReference = paymentRef.split('_').slice(0, 3).join('_');
     const refRegex = new RegExp(`^${baseReference.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
 
-    // Query all sub-records linked to this payment reference across all 5 service collections
-    const [conventionRegs, dinnerRes, brochureOrders, productPurchases, donationRecords] = await Promise.all([
+    // Query all sub-records linked to this payment reference across all 5 service collections and unified Transaction
+    const [matchingTx, conventionRegs, dinnerRes, brochureOrders, productPurchases, donationRecords] = await Promise.all([
+      tx ? Promise.resolve(tx) : Transaction.findOne({ paymentReference: { $regex: refRegex } }),
       ConventionRegistration.find({ paymentReference: { $regex: refRegex } }),
       DinnerReservation.find({ paymentReference: { $regex: refRegex } }),
       ConventionBrochure.find({ paymentReference: { $regex: refRegex } }),
@@ -293,7 +294,11 @@ export async function GET(
 
     // Calculate total amount
     const totalCalculatedAmount = serviceItems.reduce((sum, item) => sum + (item.amount || 0), 0);
-    const finalAmount = primaryRecord.amount || primaryRecord.totalAmount || totalCalculatedAmount;
+    const finalAmount =
+      matchingTx?.amount ||
+      (primaryRecord.amount && primaryRecord.amount >= totalCalculatedAmount ? primaryRecord.amount : totalCalculatedAmount) ||
+      primaryRecord.totalAmount ||
+      totalCalculatedAmount;
 
     // Determine primary header title
     let primaryTitle = 'GOSA 2026 DELEGATE PASS';
@@ -348,11 +353,11 @@ export async function GET(
     return NextResponse.json({
       success: true,
       ticket: {
-        _id: primaryRecord._id?.toString() || ticketId,
+        _id: matchingTx?._id?.toString() || primaryRecord._id?.toString() || ticketId,
         primaryTitle,
-        paymentReference: paymentRef,
+        paymentReference: matchingTx?.paymentReference || paymentRef,
         amount: finalAmount,
-        status: primaryRecord.status === 'pending' ? 'Pending' : 'Confirmed',
+        status: (primaryRecord.status === 'pending' && (!matchingTx || matchingTx.status === 'pending')) ? 'Pending' : 'Confirmed',
         confirmed: true,
         checkedIn: isCheckedIn,
         transferredFrom: transferredFromData,

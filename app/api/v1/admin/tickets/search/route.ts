@@ -8,6 +8,15 @@ import {
   User
 } from '@/lib/schema';
 
+function extractBaseReference(ref: string): string {
+  if (!ref) return 'unknown';
+  const parts = ref.split('_');
+  if (parts.length >= 3) {
+    return parts.slice(0, 3).join('_');
+  }
+  return parts[0];
+}
+
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
@@ -22,15 +31,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Extract the part before underscore for searching
-    const searchPattern = reference.split('_')[0];
+    // Extract base reference for searching
+    const searchPattern = reference.includes('_')
+      ? extractBaseReference(reference)
+      : reference.trim();
 
     console.log(`Searching for tickets with reference pattern: ${searchPattern}`);
 
     const ticketGroups: { [key: string]: any } = {};
 
     // Search in all collections for matching payment references
-    const searchRegex = new RegExp(`^${searchPattern}`, 'i');
+    const searchRegex = new RegExp(`^${searchPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
 
     // Search Convention Registrations
     const conventionTickets = await ConventionRegistration.find({
@@ -38,7 +49,7 @@ export async function GET(request: NextRequest) {
     }).populate('userId');
 
     for (const ticket of conventionTickets) {
-      const baseReference = ticket.paymentReference.split('_')[0];
+      const baseReference = extractBaseReference(ticket.paymentReference);
 
       if (!ticketGroups[baseReference]) {
         ticketGroups[baseReference] = {
@@ -51,13 +62,15 @@ export async function GET(request: NextRequest) {
           status: ticket.status || (ticket.confirm ? 'confirmed' : 'pending'),
           createdAt: ticket.createdAt
         };
+      } else if (ticketGroups[baseReference].type !== 'convention') {
+        ticketGroups[baseReference].type = 'cart';
       }
 
       const ticketData = {
         _id: ticket._id,
         type: 'convention',
         paymentReference: ticket.paymentReference,
-        amount: ticket.amount,
+        amount: ticket.amount || 0,
         quantity: ticket.quantity,
         status: ticket.status || (ticket.confirm ? 'confirmed' : 'pending'),
         checkedIn: ticket.checkedIn || false,
@@ -86,7 +99,7 @@ export async function GET(request: NextRequest) {
       }
 
       ticketGroups[baseReference].totalTickets += 1;
-      ticketGroups[baseReference].totalAmount += ticket.amount;
+      ticketGroups[baseReference].totalAmount += (ticket.amount || 0);
     }
 
     // Search Dinner Reservations
@@ -95,7 +108,7 @@ export async function GET(request: NextRequest) {
     }).populate('userId');
 
     for (const ticket of dinnerTickets) {
-      const baseReference = ticket.paymentReference.split('_')[0];
+      const baseReference = extractBaseReference(ticket.paymentReference);
 
       if (!ticketGroups[baseReference]) {
         ticketGroups[baseReference] = {
@@ -108,13 +121,16 @@ export async function GET(request: NextRequest) {
           status: ticket.status || (ticket.confirmed ? 'confirmed' : 'pending'),
           createdAt: ticket.createdAt
         };
+      } else if (ticketGroups[baseReference].type !== 'dinner') {
+        ticketGroups[baseReference].type = 'cart';
       }
 
+      const ticketAmount = ticket.totalAmount || ticket.amount || 0;
       const ticketData = {
         _id: ticket._id,
         type: 'dinner',
         paymentReference: ticket.paymentReference,
-        amount: ticket.totalAmount,
+        amount: ticketAmount,
         status: ticket.status || (ticket.confirmed ? 'confirmed' : 'pending'),
         checkedIn: ticket.checkedIn || false,
         checkedInAt: ticket.checkedInAt,
@@ -138,7 +154,7 @@ export async function GET(request: NextRequest) {
       }
 
       ticketGroups[baseReference].totalTickets += 1;
-      ticketGroups[baseReference].totalAmount += ticket.totalAmount;
+      ticketGroups[baseReference].totalAmount += ticketAmount;
     }
 
     // Search Brochure Orders
@@ -147,7 +163,7 @@ export async function GET(request: NextRequest) {
     }).populate('userId');
 
     for (const ticket of brochureTickets) {
-      const baseReference = ticket.paymentReference.split('_')[0];
+      const baseReference = extractBaseReference(ticket.paymentReference);
 
       if (!ticketGroups[baseReference]) {
         ticketGroups[baseReference] = {
@@ -160,13 +176,16 @@ export async function GET(request: NextRequest) {
           status: ticket.status || (ticket.confirmed ? 'confirmed' : 'pending'),
           createdAt: ticket.createdAt
         };
+      } else if (ticketGroups[baseReference].type !== 'brochure') {
+        ticketGroups[baseReference].type = 'cart';
       }
 
+      const ticketAmount = ticket.totalAmount || ticket.amount || 0;
       const ticketData = {
         _id: ticket._id,
         type: 'brochure',
         paymentReference: ticket.paymentReference,
-        amount: ticket.totalAmount,
+        amount: ticketAmount,
         status: ticket.status || (ticket.confirmed ? 'confirmed' : 'pending'),
         checkedIn: ticket.checkedIn || false,
         checkedInAt: ticket.checkedInAt,
@@ -189,7 +208,7 @@ export async function GET(request: NextRequest) {
       }
 
       ticketGroups[baseReference].totalTickets += 1;
-      ticketGroups[baseReference].totalAmount += ticket.totalAmount;
+      ticketGroups[baseReference].totalAmount += ticketAmount;
     }
 
     // Search Accommodation Bookings
@@ -198,7 +217,7 @@ export async function GET(request: NextRequest) {
     }).populate('userId');
 
     for (const ticket of accommodationTickets) {
-      const baseReference = ticket.paymentReference.split('_')[0];
+      const baseReference = extractBaseReference(ticket.paymentReference);
 
       if (!ticketGroups[baseReference]) {
         ticketGroups[baseReference] = {
@@ -211,13 +230,16 @@ export async function GET(request: NextRequest) {
           status: ticket.status || (ticket.confirmed ? 'confirmed' : 'pending'),
           createdAt: ticket.createdAt
         };
+      } else if (ticketGroups[baseReference].type !== 'accommodation') {
+        ticketGroups[baseReference].type = 'cart';
       }
 
+      const ticketAmount = ticket.totalAmount || ticket.amount || 0;
       const ticketData = {
         _id: ticket._id,
         type: 'accommodation',
         paymentReference: ticket.paymentReference,
-        amount: ticket.totalAmount,
+        amount: ticketAmount,
         status: ticket.status || (ticket.confirmed ? 'confirmed' : 'pending'),
         checkedIn: ticket.checkedIn || false,
         checkedInAt: ticket.checkedInAt,
@@ -240,7 +262,7 @@ export async function GET(request: NextRequest) {
       }
 
       ticketGroups[baseReference].totalTickets += 1;
-      ticketGroups[baseReference].totalAmount += ticket.totalAmount;
+      ticketGroups[baseReference].totalAmount += ticketAmount;
     }
 
     // Convert to array and sort by creation date (newest first)

@@ -21,6 +21,15 @@ export interface DinnerReservationData {
 
 export class DinnerUtils {
   /**
+   * Generate a standard payment reference for dinner reservations
+   */
+  static generatePaymentReference(phone: string): string {
+    const timestamp = Date.now();
+    const cleanPhone = phone.replace(/\D/g, '');
+    return `DINNER_${timestamp}_${cleanPhone}`;
+  }
+
+  /**
    * Create a new dinner reservation (enhanced with multiple guest support)
    */
   static async createReservation(data: DinnerReservationData): Promise<IDinnerReservation> {

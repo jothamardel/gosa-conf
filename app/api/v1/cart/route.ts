@@ -89,32 +89,7 @@ export async function POST(req: NextRequest) {
 
     const paymentReference = `cart_${Date.now()}_${cleanPhone.replace(/\D/g, '')}`;
 
-    // Initialize Paystack payment
-    const callbackUrl = `${process.env.NEXTAUTH_URL || 'https://events.gosanigeria.ng'}/ticket`;
-    const paystackRes = await Payment.httpInitializePayment({
-      email: user.email,
-      amount: grandTotal,
-      reference: paymentReference,
-      callback_url: callbackUrl,
-      metadata: {
-        type: 'cart',
-        userId: user._id.toString(),
-        items: validatedItems,
-        baseSubtotal,
-        grandTotal,
-        packageKey: packageKey || 'custom',
-        packageName: packageName || 'Convention Package',
-      },
-    });
-
-    if (!paystackRes?.status || !paystackRes?.data?.authorization_url) {
-      return NextResponse.json({
-        success: false,
-        message: "Failed to initialize payment with Paystack.",
-      }, { status: 500 });
-    }
-
-    // Create the cart Transaction
+    // 1. Create the cart Transaction
     await Transaction.create({
       userId: user._id,
       paymentReference,
@@ -129,7 +104,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Create pending records in respective collections with prefixed references
+    // 2. Create pending records in respective collections with prefixed references
     for (let index = 0; index < validatedItems.length; index++) {
       const item = validatedItems[index];
       const itemRef = `${paymentReference}_${item.type}_${index}`;
@@ -142,21 +117,30 @@ export async function POST(req: NextRequest) {
           quantity: item.quantity,
           confirm: false,
           collected: false,
-          persons: [],
+          persons: [
+            {
+              name: user.fullName,
+              email: user.email,
+              phone: user.phoneNumber,
+            },
+          ],
         });
       } else if (item.type === 'dinner') {
+        const guestList = Array.from({ length: item.quantity }, () => ({
+          name: user.fullName,
+          email: user.email,
+          phone: user.phoneNumber,
+        }));
+
         await DinnerReservation.create({
           userId: user._id,
           paymentReference: itemRef,
           numberOfGuests: item.quantity,
-          guestDetails: Array(item.quantity).fill({
-            name: user.fullName,
-            email: user.email,
-            phone: user.phoneNumber,
-          }),
-          amount: item.amount,
+          guestDetails: guestList,
+          totalAmount: item.amount,
           confirmed: false,
           collected: false,
+          isPrimaryContact: true,
         });
       } else if (item.type === 'brochure') {
         const qrCode = QRCodeService.generateUniqueQRData(
@@ -164,22 +148,67 @@ export async function POST(req: NextRequest) {
           itemRef,
           'physical'
         );
+        const recipientList = Array.from({ length: item.quantity }, () => ({
+          name: user.fullName,
+          email: user.email,
+          phone: user.phoneNumber,
+        }));
+
         await ConventionBrochure.create({
           userId: user._id,
           paymentReference: itemRef,
           quantity: item.quantity,
           brochureType: 'physical',
           totalAmount: item.amount,
-          recipientDetails: Array(item.quantity).fill({
-            name: user.fullName,
-            email: user.email,
-            phone: user.phoneNumber,
-          }),
+          recipientDetails: recipientList,
           qrCode,
           confirmed: false,
           collected: false,
         });
       }
+    }
+
+    // 3. Initialize Paystack payment
+    const callbackUrl = `${process.env.NEXTAUTH_URL || 'https://events.gosanigeria.ng'}/ticket`;
+    let paystackRes: any;
+    try {
+      paystackRes = await Payment.httpInitializePayment({
+        email: user.email,
+        amount: grandTotal,
+        reference: paymentReference,
+        callback_url: callbackUrl,
+        metadata: {
+          type: 'cart',
+          userId: user._id.toString(),
+          items: validatedItems,
+          baseSubtotal,
+          grandTotal,
+          packageKey: packageKey || 'custom',
+          packageName: packageName || 'Convention Package',
+        },
+      });
+    } catch (paystackErr: any) {
+      console.error("Paystack initialization failed, rolling back cart records:", paystackErr);
+      await Promise.allSettled([
+        Transaction.deleteOne({ paymentReference }),
+        ConventionRegistration.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
+        DinnerReservation.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
+        ConventionBrochure.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
+      ]);
+      throw paystackErr;
+    }
+
+    if (!paystackRes?.status || !paystackRes?.data?.authorization_url) {
+      await Promise.allSettled([
+        Transaction.deleteOne({ paymentReference }),
+        ConventionRegistration.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
+        DinnerReservation.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
+        ConventionBrochure.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
+      ]);
+      return NextResponse.json({
+        success: false,
+        message: "Failed to initialize payment with Paystack.",
+      }, { status: 500 });
     }
 
     return NextResponse.json({
