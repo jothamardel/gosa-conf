@@ -124,15 +124,17 @@ export class DinnerUtils {
     try {
       await connectDB();
 
-      // Extract base Paystack reference (before first underscore)
-      // paymentReference might be: "pb54jc4ht9_2347033680280_0"
-      // We want to find all reservations starting with: "pb54jc4ht9_"
-      const baseReference = paymentReference.split('_')[0];
+      // Extract base Paystack reference
+      // paymentReference might be: "pb54jc4ht9_2347033680280_0" or "cart_1730000000000_08012345678_dinner_1"
+      // For cart, keep full cart prefix; otherwise split on first underscore
+      const baseReference = paymentReference.startsWith('cart_')
+        ? paymentReference.replace(/_dinner.*$/, '')
+        : paymentReference.split('_')[0];
       console.log(`🔍 Searching for all reservations with base reference: ${baseReference}`);
 
       // Find all reservations with this base payment reference pattern
       const reservations = await DinnerModel.find({
-        paymentReference: { $regex: `^${baseReference}_` }
+        paymentReference: { $regex: `^${baseReference}(_|$)` }
       }).populate('userId');
 
       if (reservations.length === 0) {

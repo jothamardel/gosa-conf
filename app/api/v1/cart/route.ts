@@ -7,11 +7,13 @@ import {
   ConventionRegistration,
   DinnerReservation,
   ConventionBrochure,
+  ProductPurchase,
 } from "@/lib/schema";
 import { QRCodeService } from "@/lib/services/qr-code.service";
+import { calculatePaystackTotal } from "@/lib/utils/price-formatter";
 
 export interface CartItemInput {
-  type: 'convention' | 'dinner' | 'brochure' | 'donation';
+  type: 'convention' | 'dinner' | 'brochure' | 'uniform' | 'emblem' | 'magazine' | 'donation';
   quantity?: number;
   amount?: number;
 }
@@ -43,6 +45,9 @@ export async function POST(req: NextRequest) {
       convention: process.env.NEXT_APP_REGISTRATION_FEE ? +process.env.NEXT_APP_REGISTRATION_FEE : 1000,
       dinner: process.env.NEXT_APP_DINNER_FEE ? +process.env.NEXT_APP_DINNER_FEE : 2500,
       brochure: process.env.NEXT_APP_BROCHURE_PHYSICAL_FEE ? +process.env.NEXT_APP_BROCHURE_PHYSICAL_FEE : 2000,
+      uniform: 17000,
+      emblem: 2000,
+      magazine: 3000,
       donation: 0,
     };
 
@@ -70,13 +75,8 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Paystack fee calculation: 1.5% + 100 (if >= 2500), otherwise 1.5%
-    let grandTotal = baseSubtotal;
-    if (baseSubtotal < 2500) {
-      grandTotal = Math.ceil(baseSubtotal / 0.985);
-    } else {
-      grandTotal = Math.ceil((baseSubtotal + 100) / 0.985);
-    }
+    // Paystack fee calculation matching exact gross-up and cap
+    const grandTotal = calculatePaystackTotal(baseSubtotal);
 
     const cleanPhone = phoneNumber.trim().replace(/\s+/g, '');
 
@@ -165,6 +165,16 @@ export async function POST(req: NextRequest) {
           confirmed: false,
           collected: false,
         });
+      } else if (item.type === 'uniform' || item.type === 'emblem' || item.type === 'magazine') {
+        await ProductPurchase.create({
+          userId: user._id,
+          productType: item.type,
+          quantity: item.quantity,
+          totalAmount: item.amount,
+          paymentReference: itemRef,
+          status: 'pending',
+          confirmed: false,
+        });
       }
     }
 
@@ -194,6 +204,7 @@ export async function POST(req: NextRequest) {
         ConventionRegistration.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
         DinnerReservation.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
         ConventionBrochure.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
+        ProductPurchase.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
       ]);
       throw paystackErr;
     }
@@ -204,6 +215,7 @@ export async function POST(req: NextRequest) {
         ConventionRegistration.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
         DinnerReservation.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
         ConventionBrochure.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
+        ProductPurchase.deleteMany({ paymentReference: { $regex: `^${paymentReference}` } }),
       ]);
       return NextResponse.json({
         success: false,

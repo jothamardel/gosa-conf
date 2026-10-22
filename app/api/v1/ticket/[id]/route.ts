@@ -216,7 +216,7 @@ export async function GET(
         name: isUniform ? 'GOSA Uniform' : `GOSA Merchandise (${item.productType})`,
         category: isUniform ? 'uniform' : 'product',
         quantity: item.quantity || 1,
-        amount: item.totalAmount || (isUniform ? 15000 : 2000),
+        amount: item.totalAmount || (isUniform ? 17000 : 2000),
         badgeText: isUniform ? 'Uniform Order 👕' : 'Merchandise 🛒',
         icon: isUniform ? 'Shirt' : 'ShoppingBag',
         beneficiaries: beneficiaries && beneficiaries.length > 0 ? beneficiaries : undefined,

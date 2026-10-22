@@ -352,7 +352,7 @@ async function handlePaymentFlow(
       if (item.type === 'convention') itemUnitPrice = 1000;
       else if (item.type === 'dinner') itemUnitPrice = 2500;
       else if (item.type === 'brochure') itemUnitPrice = 2000;
-      else if (item.type === 'uniform') itemUnitPrice = 15000;
+      else if (item.type === 'uniform') itemUnitPrice = 17000;
       else if (item.type === 'emblem') itemUnitPrice = 2000;
       else if (item.type === 'magazine') itemUnitPrice = 3000;
       else if (item.type === 'donation') itemUnitPrice = item.amount || 0;
@@ -404,7 +404,7 @@ async function handlePaymentFlow(
       if (item.type === 'convention') itemUnitPrice = 1000;
       else if (item.type === 'dinner') itemUnitPrice = 2500;
       else if (item.type === 'brochure') itemUnitPrice = 2000;
-      else if (item.type === 'uniform') itemUnitPrice = 15000;
+      else if (item.type === 'uniform') itemUnitPrice = 17000;
       else if (item.type === 'emblem') itemUnitPrice = 2000;
       else if (item.type === 'magazine') itemUnitPrice = 3000;
       else if (item.type === 'donation') itemUnitPrice = item.amount || 0;
@@ -633,7 +633,7 @@ ${checkoutUrl}`;
     }
   } else if (action.type === 'buy_product') {
     if (action.productType === 'uniform') {
-      unitPrice = 15000;
+      unitPrice = 17000;
       serviceName = "GOSA Uniform";
     } else if (action.productType === 'emblem') {
       unitPrice = 2000;

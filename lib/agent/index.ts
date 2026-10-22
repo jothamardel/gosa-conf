@@ -312,7 +312,7 @@ class AgentClass {
             - **Convention Registration**: ₦1,000
             - **Dinner Ticket**: ₦2,500
             - **Convention Brochure**: ₦2,000
-            - **GOSA Uniform**: ₦15,000
+            - **GOSA Uniform**: ₦17,000
             - **Donation**: Any amount!
 
             ---
