@@ -52,16 +52,7 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased`}>
         <Providers>
           {children}
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              style: {
-                background: 'white',
-                border: '1px solid #e5e7eb',
-                fontSize: '14px',
-              },
-            }}
-          />
+          <Toaster position="top-center" richColors closeButton />
           <WhatsAppFloatingButton />
         </Providers>
       </body>

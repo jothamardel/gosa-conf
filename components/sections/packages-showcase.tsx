@@ -368,8 +368,7 @@ export function PackagesShowcase() {
                 </div>
                 <Button
                   onClick={() => openCheckout({ id: opt.id, name: opt.title, items: opt.items, basePrice: opt.price })}
-                  variant="outline"
-                  className="w-full h-10 text-xs font-semibold border-slate-700 hover:bg-slate-800 hover:text-white"
+                  className="w-full h-10 text-xs font-bold bg-slate-800 hover:bg-emerald-600 text-white border border-slate-700 hover:border-emerald-500 transition-all shadow-sm"
                 >
                   Book Online
                 </Button>
