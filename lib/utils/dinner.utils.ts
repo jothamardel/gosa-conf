@@ -703,7 +703,7 @@ GOSA 2025 Convention Team`;
    * Calculate dinner reservation total amount
    */
   static calculateTotalAmount(numberOfGuests: number, pricePerPerson?: number): number {
-    const fee = pricePerPerson ?? (process.env.NEXT_APP_DINNER_FEE ? +process.env.NEXT_APP_DINNER_FEE : 2500);
+    const fee = pricePerPerson ?? 2500;
     return numberOfGuests * fee;
   }
 

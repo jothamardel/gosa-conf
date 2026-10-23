@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     const newUser = await UserUtils.findOrCreateUser(body);
 
     // Calculate base registration subtotal and grand total with Paystack charges
-    const baseRegistrationFee = +(process.env.NEXT_APP_REGISTRATION_FEE || 1000);
+    const baseRegistrationFee = 1000;
     const quantity = Math.max(1, body.quantity || 1);
     const baseSubtotal = baseRegistrationFee * quantity;
     const { calculatePaystackTotal } = await import("@/lib/utils/price-formatter");

@@ -222,6 +222,7 @@ export async function GET(
         beneficiaries: beneficiaries && beneficiaries.length > 0 ? beneficiaries : undefined,
       });
     }
+  
 
     // Donations
     for (const item of donationRecords) {

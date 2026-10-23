@@ -11,6 +11,7 @@ import {
 } from "@/lib/schema";
 import { QRCodeService } from "@/lib/services/qr-code.service";
 import { calculatePaystackTotal } from "@/lib/utils/price-formatter";
+import { CONVENTION_PRICING } from "@/lib/constants/pricing";
 
 export interface CartItemInput {
   type: 'convention' | 'dinner' | 'brochure' | 'uniform' | 'emblem' | 'magazine' | 'donation';
@@ -40,14 +41,14 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    // Standardized prices matching official convention rates
+    // Standardized canonical prices matching official convention rates
     const PRICING: Record<string, number> = {
-      convention: process.env.NEXT_APP_REGISTRATION_FEE ? +process.env.NEXT_APP_REGISTRATION_FEE : 1000,
-      dinner: process.env.NEXT_APP_DINNER_FEE ? +process.env.NEXT_APP_DINNER_FEE : 2500,
-      brochure: process.env.NEXT_APP_BROCHURE_PHYSICAL_FEE ? +process.env.NEXT_APP_BROCHURE_PHYSICAL_FEE : 2000,
-      uniform: 17000,
-      emblem: 2000,
-      magazine: 3000,
+      convention: CONVENTION_PRICING.convention,
+      dinner: CONVENTION_PRICING.dinner,
+      brochure: CONVENTION_PRICING.brochure,
+      uniform: CONVENTION_PRICING.uniform,
+      emblem: CONVENTION_PRICING.emblem,
+      magazine: CONVENTION_PRICING.magazine,
       donation: 0,
     };
 

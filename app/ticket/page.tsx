@@ -94,7 +94,7 @@ interface TicketData {
 
 export default function TicketPage() {
   const searchParams = useSearchParams();
-  const id = searchParams.get("id");
+  const id = searchParams.get("id") || searchParams.get("reference") || searchParams.get("trxref");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
