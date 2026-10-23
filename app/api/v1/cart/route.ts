@@ -46,9 +46,6 @@ export async function POST(req: NextRequest) {
       convention: CONVENTION_PRICING.convention,
       dinner: CONVENTION_PRICING.dinner,
       brochure: CONVENTION_PRICING.brochure,
-      uniform: CONVENTION_PRICING.uniform,
-      emblem: CONVENTION_PRICING.emblem,
-      magazine: CONVENTION_PRICING.magazine,
       donation: 0,
     };
 

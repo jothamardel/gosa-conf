@@ -12,9 +12,6 @@ export const CONVENTION_PRICING = {
   brochure: 2000,
   brochure_physical: 2000,
   brochure_digital: 2000,
-  uniform: 17000,
-  emblem: 2000,
-  magazine: 3000,
   donation: 0,
 } as const;
 
