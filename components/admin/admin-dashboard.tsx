@@ -43,11 +43,18 @@ interface DashboardData {
   };
 }
 
+// Set to false to restore the multi-tab dashboard (Overview, Attendees, Payments, QR Codes)
+const SHOW_ONLY_CHECKIN_DESK = true;
+
 export function AdminDashboard() {
+  if (SHOW_ONLY_CHECKIN_DESK) {
+    return <HighSpeedTicketHub />;
+  }
+
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('tickets');
 
   useEffect(() => {
     fetchDashboardData();
