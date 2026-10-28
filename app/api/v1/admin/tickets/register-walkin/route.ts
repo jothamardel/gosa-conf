@@ -10,6 +10,7 @@ import {
 import { CONVENTION_PRICING } from '@/lib/constants/pricing';
 import { getOrCreateUserCheckInCode } from '@/lib/utils/checkin-code';
 import { sendAsyncCheckInNotification } from '@/lib/services/checkin-notification.service';
+import { getCheckInActiveStatus } from '@/lib/utils/checkin-settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,11 +99,14 @@ export async function POST(request: NextRequest) {
     const baseRef = `WALKIN_${Date.now()}_${cleanDigits.slice(-4) || 'GOSA'}`;
     let checkInCode: string | null = null;
 
-    if (checkInImmediately) {
+    const isCheckInActive = await getCheckInActiveStatus();
+    const shouldCheckIn = Boolean(checkInImmediately && isCheckInActive);
+
+    if (shouldCheckIn) {
       checkInCode = await getOrCreateUserCheckInCode(user._id);
     }
 
-    const historyEntry = checkInImmediately && checkInCode ? [{
+    const historyEntry = shouldCheckIn && checkInCode ? [{
       action: 'check-in' as const,
       timestamp: now,
       officialId: 'walk-in-desk',
@@ -123,8 +127,8 @@ export async function POST(request: NextRequest) {
         quantity: convCount,
         confirm: true,
         status: 'confirmed',
-        checkedIn: Boolean(checkInImmediately),
-        checkedInAt: checkInImmediately ? now : undefined,
+        checkedIn: shouldCheckIn,
+        checkedInAt: shouldCheckIn ? now : undefined,
         checkInCode: checkInCode || undefined,
         checkInHistory: historyEntry,
       });
@@ -150,8 +154,8 @@ export async function POST(request: NextRequest) {
         totalAmount: dinAmount,
         confirmed: true,
         status: 'confirmed',
-        checkedIn: Boolean(checkInImmediately),
-        checkedInAt: checkInImmediately ? now : undefined,
+        checkedIn: shouldCheckIn,
+        checkedInAt: shouldCheckIn ? now : undefined,
         checkInCode: checkInCode || undefined,
         checkInHistory: historyEntry,
       });
@@ -176,10 +180,10 @@ export async function POST(request: NextRequest) {
         totalAmount: brochAmount,
         confirmed: true,
         status: 'confirmed',
-        collected: Boolean(checkInImmediately),
-        checkedIn: Boolean(checkInImmediately),
-        checkedInAt: checkInImmediately ? now : undefined,
-        collectedAt: checkInImmediately ? now : undefined,
+        collected: shouldCheckIn,
+        checkedIn: shouldCheckIn,
+        checkedInAt: shouldCheckIn ? now : undefined,
+        collectedAt: shouldCheckIn ? now : undefined,
         checkInCode: checkInCode || undefined,
         qrCode: `QR_${brochRef}`,
         checkInHistory: historyEntry,
@@ -202,14 +206,15 @@ export async function POST(request: NextRequest) {
         paymentMethod,
         officialName,
         itemsSummary,
-        checkInImmediately,
+        checkInImmediately: shouldCheckIn,
         checkInCode,
+        checkinActive: isCheckInActive,
       }
     });
     await transaction.save();
 
     // Async WhatsApp Notification
-    if (checkInImmediately && checkInCode) {
+    if (shouldCheckIn && checkInCode) {
       sendAsyncCheckInNotification({
         fullName: trimmedName,
         phoneNumber: trimmedPhone,
@@ -218,9 +223,14 @@ export async function POST(request: NextRequest) {
       }).catch(err => console.error('Async WhatsApp Error on walk-in:', err));
     }
 
+    let messageText = `Successfully registered ${trimmedName} and marked paid (₦${totalAmount.toLocaleString()}) via ${paymentMethod.toUpperCase()}`;
+    if (checkInImmediately && !isCheckInActive) {
+      messageText += ` (Note: Check-in was deferred because check-ins are currently paused by administrator)`;
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Successfully registered ${trimmedName} and marked paid (₦${totalAmount.toLocaleString()}) via ${paymentMethod.toUpperCase()}`,
+      message: messageText,
       data: {
         user: {
           _id: user._id,
@@ -233,7 +243,8 @@ export async function POST(request: NextRequest) {
         totalAmount,
         paymentMethod,
         checkInCode,
-        checkedIn: Boolean(checkInImmediately),
+        checkedIn: shouldCheckIn,
+        checkinActive: isCheckInActive,
         itemsSummary,
       }
     });

@@ -37,6 +37,7 @@ interface WalkinRegistrationModalProps {
   onClose: () => void;
   onSuccess: (result: any) => void;
   initialQuery?: string;
+  checkinActive?: boolean;
 }
 
 export function WalkinRegistrationModal({
@@ -44,6 +45,7 @@ export function WalkinRegistrationModal({
   onClose,
   onSuccess,
   initialQuery = '',
+  checkinActive = true,
 }: WalkinRegistrationModalProps) {
   // Prepopulate query if looks like phone or name
   const isLikelyPhone = /^\+?[0-9\s-]{6,}$/.test(initialQuery);
@@ -526,21 +528,35 @@ export function WalkinRegistrationModal({
               </div>
 
               {/* Instant Check-in Toggle */}
-              <div className="flex items-center justify-between p-3.5 bg-gray-50 dark:bg-gray-800 rounded-xl border">
-                <div className="space-y-0.5">
+              <div
+                className={`flex items-center justify-between p-3.5 rounded-xl border ${
+                  !checkinActive
+                    ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800'
+                    : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-800'
+                }`}
+              >
+                <div className="space-y-0.5 pr-2">
                   <div className="flex items-center space-x-2">
-                    <Sparkles className="w-4 h-4 text-emerald-600" />
+                    <Sparkles className={`w-4 h-4 ${!checkinActive ? 'text-amber-600' : 'text-emerald-600'}`} />
                     <Label htmlFor="checkin-toggle" className="text-sm font-bold text-gray-900 dark:text-gray-100 cursor-pointer">
                       Check-In Immediately & Generate Pass Code
                     </Label>
+                    {!checkinActive && (
+                      <Badge variant="outline" className="text-[10px] bg-amber-100 text-amber-800 border-amber-300 font-bold px-1.5 py-0">
+                        Check-Ins Paused
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-xs text-gray-500">
-                    Creates the 8-character check-in code and marks admission verified right away
+                    {!checkinActive
+                      ? 'Check-ins are currently paused by administrator. Attendee will be registered with paid status, and can be checked in once check-ins are resumed.'
+                      : 'Creates the 8-character check-in code and marks admission verified right away'}
                   </p>
                 </div>
                 <Switch
                   id="checkin-toggle"
-                  checked={checkInImmediately}
+                  checked={checkInImmediately && checkinActive}
+                  disabled={!checkinActive}
                   onCheckedChange={setCheckInImmediately}
                 />
               </div>

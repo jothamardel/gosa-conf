@@ -12,3 +12,5 @@ export * from "./whatsapp-session.schema";
 export * from "./product-purchase.schema";
 export * from "./transaction.schema";
 export * from "./conversation-history.schema";
+export * from "./app-setting.schema";
+

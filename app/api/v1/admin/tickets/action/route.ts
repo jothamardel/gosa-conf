@@ -9,6 +9,7 @@ import {
 import { getOrCreateUserCheckInCode } from '@/lib/utils/checkin-code';
 import { sendAsyncCheckInNotification } from '@/lib/services/checkin-notification.service';
 import { CONVENTION_2026_START_DATE } from '@/lib/constants/pricing';
+import { getCheckInActiveStatus } from '@/lib/utils/checkin-settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,21 @@ export async function POST(request: NextRequest) {
 
     if (!action) {
       return NextResponse.json({ success: false, error: 'Action is required' }, { status: 400 });
+    }
+
+    // Gate: Check-in activation verification
+    if (action === 'check-in-all' || action === 'check-in-single') {
+      const isCheckInActive = await getCheckInActiveStatus();
+      if (!isCheckInActive) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Check-ins are currently deactivated. Please activate check-ins from the top bar before checking in attendees.',
+            checkinActive: false,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // --- Action: Check In All Tickets for a Member (Scoped to 2026) ---

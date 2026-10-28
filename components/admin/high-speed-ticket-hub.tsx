@@ -31,10 +31,26 @@ import {
   ArrowRight,
   Loader2,
   Calendar,
+  Cloud,
+  PauseCircle,
+  PlayCircle,
+  Database,
+  Power,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { WalkinRegistrationModal } from './walkin-registration-modal';
 import { playSuccessChime, playAlreadyCheckedAlert } from '@/lib/utils/audio-cue';
+import { useLocalTicketSync } from '@/lib/hooks/use-local-ticket-sync';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface AnalyticsData {
   convention: {
@@ -139,6 +155,20 @@ export function HighSpeedTicketHub() {
   // Walkin Modal
   const [isWalkinOpen, setIsWalkinOpen] = useState(false);
 
+  // Local Database Sync & Master Check-In Activation State
+  const {
+    checkinActive,
+    isSyncing,
+    cachedCount,
+    syncNow,
+    toggleCheckInStatus,
+    searchLocal,
+    updateMemberLocally,
+  } = useLocalTicketSync();
+
+  const [showToggleModal, setShowToggleModal] = useState(false);
+  const [toggleLoading, setToggleLoading] = useState(false);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Global Keyboard Shortcuts
@@ -217,7 +247,7 @@ export function HighSpeedTicketHub() {
     }
   }, [activeTab, page, tabStatus]);
 
-  // Execute Sub-Second Search
+  // Execute Zero-Latency Search (Local IndexedDB first <2ms + Cloud background verification)
   useEffect(() => {
     if (!debouncedQuery || debouncedQuery.length < 2) {
       setSearchResults([]);
@@ -227,16 +257,40 @@ export function HighSpeedTicketHub() {
 
     let isCancelled = false;
     const runSearch = async () => {
+      const startT = performance.now();
       setSearchLoading(true);
+
+      // Step 1: In-browser IndexedDB instant search (0–2ms)
+      try {
+        const localMatches = await searchLocal(debouncedQuery);
+        if (!isCancelled && localMatches.length > 0) {
+          setSearchResults(localMatches as any);
+          setSearchExecutionMs(Math.max(1, Math.round(performance.now() - startT)));
+          setSearchLoading(false);
+
+          // If exact code match in local DB, avoid unnecessary network spinner
+          const queryUpper = debouncedQuery.toUpperCase().trim();
+          if (localMatches[0].checkInCode?.toUpperCase() === queryUpper) {
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Local search fallback to network:', err);
+      }
+
+      // Step 2: Query cloud server for newest records / fallback
       try {
         const res = await fetch(`/api/v1/admin/tickets/fast-search?q=${encodeURIComponent(debouncedQuery)}`);
         const json = await res.json();
-        if (!isCancelled && json.success) {
-          setSearchResults(json.members || []);
-          setSearchExecutionMs(json.executionMs || null);
+        if (!isCancelled && json.success && json.members) {
+          setSearchResults((prev) => {
+            if (prev.length > 0 && json.members.length === 0) return prev;
+            return json.members;
+          });
+          setSearchExecutionMs(json.executionMs || Math.round(performance.now() - startT));
         }
       } catch (err) {
-        console.error('Fast search error:', err);
+        console.error('Fast search network error:', err);
       } finally {
         if (!isCancelled) setSearchLoading(false);
       }
@@ -244,7 +298,7 @@ export function HighSpeedTicketHub() {
 
     runSearch();
     return () => { isCancelled = true; };
-  }, [debouncedQuery]);
+  }, [debouncedQuery, searchLocal]);
 
   // Initial Data Fetch
   useEffect(() => {
@@ -264,9 +318,37 @@ export function HighSpeedTicketHub() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  // 1-Click Check-In All for a Member
+  // 1-Click Check-In All for a Member (Optimistic local IndexedDB + Cloud sync)
   const handleCheckInAll = async (member: MatchedMember) => {
+    if (!checkinActive) {
+      toast.error('Check-ins are currently paused. Please activate check-ins from the top bar.', {
+        icon: <AlertCircle className="w-5 h-5 text-amber-500" />,
+      });
+      setShowToggleModal(true);
+      return;
+    }
+
     setActionLoading((prev) => ({ ...prev, [`all-${member._id}`]: true }));
+
+    // 1. Optimistic Update (React state + IndexedDB immediately <1ms)
+    const previousMemberState = { ...member };
+    const optimisticCode = member.checkInCode || 'SYNCING...';
+
+    const applyOptimistic = (m: MatchedMember) => ({
+      ...m,
+      allCheckedIn: true,
+      hasUncheckedItems: false,
+      tickets: {
+        conventions: m.tickets.conventions.map((c) => ({ ...c, checkedIn: true, checkInCode: c.checkInCode || optimisticCode })),
+        dinners: m.tickets.dinners.map((d) => ({ ...d, checkedIn: true, checkInCode: d.checkInCode || optimisticCode })),
+        brochures: m.tickets.brochures.map((b) => ({ ...b, collected: true, checkedIn: true, checkInCode: b.checkInCode || optimisticCode })),
+      },
+    });
+
+    setSearchResults((prev) => prev.map((m) => m._id === member._id ? applyOptimistic(m) : m));
+    playSuccessChime();
+    updateMemberLocally(member._id, applyOptimistic as any);
+
     try {
       const res = await fetch('/api/v1/admin/tickets/action', {
         method: 'POST',
@@ -280,34 +362,35 @@ export function HighSpeedTicketHub() {
 
       const json = await res.json();
       if (json.success) {
-        playSuccessChime();
         toast.success(`All tickets verified! Pass Code: ${json.checkInCode}`);
 
-        // Update local search results optimistically
-        setSearchResults((prev) =>
-          prev.map((m) => {
-            if (m._id !== member._id) return m;
-            return {
-              ...m,
-              checkInCode: json.checkInCode,
-              allCheckedIn: true,
-              hasUncheckedItems: false,
-              tickets: {
-                conventions: m.tickets.conventions.map((c) => ({ ...c, checkedIn: true, checkInCode: json.checkInCode })),
-                dinners: m.tickets.dinners.map((d) => ({ ...d, checkedIn: true, checkInCode: json.checkInCode })),
-                brochures: m.tickets.brochures.map((b) => ({ ...b, collected: true, checkedIn: true, checkInCode: json.checkInCode })),
-              },
-            };
-          })
-        );
+        // Confirm server checkInCode locally
+        const confirmedApply = (m: MatchedMember) => ({
+          ...m,
+          checkInCode: json.checkInCode,
+          allCheckedIn: true,
+          hasUncheckedItems: false,
+          tickets: {
+            conventions: m.tickets.conventions.map((c) => ({ ...c, checkedIn: true, checkInCode: json.checkInCode })),
+            dinners: m.tickets.dinners.map((d) => ({ ...d, checkedIn: true, checkInCode: json.checkInCode })),
+            brochures: m.tickets.brochures.map((b) => ({ ...b, collected: true, checkedIn: true, checkInCode: json.checkInCode })),
+          },
+        });
+        setSearchResults((prev) => prev.map((m) => m._id === member._id ? confirmedApply(m) : m));
+        updateMemberLocally(member._id, confirmedApply as any);
 
         // Refresh analytics & tab in background
         fetchAnalytics();
         fetchTabTickets();
       } else {
+        // Rollback on server failure
+        setSearchResults((prev) => prev.map((m) => m._id === member._id ? previousMemberState : m));
+        updateMemberLocally(member._id, () => previousMemberState as any);
         toast.error(json.error || 'Check-in failed');
       }
     } catch (err: any) {
+      setSearchResults((prev) => prev.map((m) => m._id === member._id ? previousMemberState : m));
+      updateMemberLocally(member._id, () => previousMemberState as any);
       toast.error('Check-in failed: ' + err.message);
     } finally {
       setActionLoading((prev) => ({ ...prev, [`all-${member._id}`]: false }));
@@ -321,6 +404,14 @@ export function HighSpeedTicketHub() {
     action: 'check-in-single' | 'check-out-single' | 'collect-brochure',
     userId?: string
   ) => {
+    if (action === 'check-in-single' && !checkinActive) {
+      toast.error('Check-ins are currently paused. Please activate check-ins from the top bar.', {
+        icon: <AlertCircle className="w-5 h-5 text-amber-500" />,
+      });
+      setShowToggleModal(true);
+      return;
+    }
+
     const loadingKey = `${action}-${ticketId}`;
     setActionLoading((prev) => ({ ...prev, [loadingKey]: true }));
 
@@ -418,23 +509,67 @@ export function HighSpeedTicketHub() {
             <Badge className="bg-primary-600 text-white font-bold text-xs px-2.5 py-0.5 rounded-full">
               2026 Session
             </Badge>
-            <span className="flex items-center text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-800">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
-              Live
-            </span>
+            {/* Master Check-In Activation Switch */}
+            <button
+              type="button"
+              onClick={() => setShowToggleModal(true)}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-full border transition-all shadow-sm ${
+                checkinActive
+                  ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 cursor-pointer'
+                  : 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-100 animate-pulse cursor-pointer'
+              }`}
+              title="Click to activate or pause check-ins"
+            >
+              {checkinActive ? (
+                <>
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-xs font-bold tracking-tight">Check-Ins: ACTIVE</span>
+                </>
+              ) : (
+                <>
+                  <PauseCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-bold tracking-tight">Check-Ins: PAUSED</span>
+                </>
+              )}
+              <span className="text-[10px] uppercase font-bold opacity-75 underline ml-0.5">
+                Toggle
+              </span>
+            </button>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Scoped to GOSA 2026: Sub-second member verification, 1-click check-ins, and walk-in cash/POS registrations
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* Local IndexedDB Cloud Sync Status Pill */}
+          <button
+            type="button"
+            onClick={() => {
+              syncNow(true);
+              toast.info('Synchronizing cloud database to local IndexedDB...');
+            }}
+            disabled={isSyncing}
+            title="Local IndexedDB database cache status. Click to force full sync with cloud."
+            className="flex items-center space-x-1.5 text-xs px-3 py-2 rounded-xl border bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+          >
+            <Cloud className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+            <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin text-primary-600' : 'text-gray-400'}`} />
+            <span className="font-semibold">
+              {isSyncing ? 'Syncing...' : `${cachedCount.toLocaleString()} local`}
+            </span>
+          </button>
+
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
               fetchAnalytics();
               fetchTabTickets();
+              syncNow(false);
               toast.info('Refreshed desk data');
             }}
             disabled={analyticsLoading || tabLoading}
@@ -589,6 +724,30 @@ export function HighSpeedTicketHub() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Check-ins Paused Warning Banner */}
+      {!checkinActive && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-800 rounded-2xl text-amber-900 dark:text-amber-200 shadow-sm gap-3 animate-pulse">
+          <div className="flex items-center space-x-3">
+            <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0" />
+            <div>
+              <div className="font-extrabold text-sm sm:text-base">
+                Check-Ins are Currently DEACTIVATED (PAUSED)
+              </div>
+              <div className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                Admin check-in confirmations and 1-click badge verification buttons are temporarily blocked on this desk. Member searches and pass retrievals remain functional.
+              </div>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setShowToggleModal(true)}
+            className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs h-9 px-4 rounded-xl shadow self-start sm:self-auto flex-shrink-0"
+          >
+            Activate Check-Ins
+          </Button>
+        </div>
+      )}
 
       {/* Sub-Second Lightning Search Bar */}
       <div className="relative">
@@ -1220,7 +1379,75 @@ export function HighSpeedTicketHub() {
         onClose={() => setIsWalkinOpen(false)}
         onSuccess={handleWalkinSuccess}
         initialQuery={debouncedQuery}
+        checkinActive={checkinActive}
       />
+
+      {/* Check-In Activation / Deactivation Confirmation Dialog */}
+      <AlertDialog open={showToggleModal} onOpenChange={setShowToggleModal}>
+        <AlertDialogContent className="rounded-2xl max-w-md bg-white dark:bg-gray-900 border">
+          <AlertDialogHeader>
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2 mx-auto sm:mx-0 border"
+              style={{
+                backgroundColor: checkinActive ? '#FEF3C7' : '#D1FAE5',
+                borderColor: checkinActive ? '#FCD34D' : '#6EE7B7',
+              }}
+            >
+              {checkinActive ? (
+                <PauseCircle className="w-6 h-6 text-amber-600" />
+              ) : (
+                <PlayCircle className="w-6 h-6 text-emerald-600" />
+              )}
+            </div>
+            <AlertDialogTitle className="text-xl font-black">
+              {checkinActive ? 'Pause Attendee Check-Ins?' : 'Activate Attendee Check-Ins?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-gray-600 dark:text-gray-400">
+              {checkinActive
+                ? 'Deactivating check-ins will temporarily block all check-in confirmations and 1-click badge verifications across all admin desks. Members can still receive their codes via WhatsApp and admins can still search records.'
+                : 'Activating check-ins will enable all desk officials to immediately verify codes, confirm 1-click attendee check-ins, and issue admission badges.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel
+              disabled={toggleLoading}
+              className="rounded-xl h-11 px-4"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={toggleLoading}
+              onClick={async (e) => {
+                e.preventDefault();
+                setToggleLoading(true);
+                try {
+                  const newStatus = await toggleCheckInStatus(!checkinActive);
+                  toast.success(
+                    newStatus
+                      ? 'Check-Ins are now ACTIVE across all desks!'
+                      : 'Check-Ins have been PAUSED across all desks.'
+                  );
+                  setShowToggleModal(false);
+                } catch (err: any) {
+                  toast.error('Failed to change status: ' + err.message);
+                } finally {
+                  setToggleLoading(false);
+                }
+              }}
+              className={`rounded-xl h-11 px-5 font-bold text-white shadow-md transition ${
+                checkinActive
+                  ? 'bg-amber-600 hover:bg-amber-700'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+              }`}
+            >
+              {toggleLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
+              {checkinActive ? 'Confirm Pause Check-Ins' : 'Confirm Activate Check-Ins'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
