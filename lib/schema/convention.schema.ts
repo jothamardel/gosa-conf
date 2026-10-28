@@ -134,6 +134,8 @@ ConventionRegistrationSchema.index({ userId: 1 });
 ConventionRegistrationSchema.index({ checkedIn: 1 });
 ConventionRegistrationSchema.index({ status: 1 });
 ConventionRegistrationSchema.index({ checkInCode: 1 });
+ConventionRegistrationSchema.index({ createdAt: -1 });
+ConventionRegistrationSchema.index({ createdAt: -1, checkedIn: 1 });
 // paymentReference index is already created by unique: true in field definition
 
 export const ConventionRegistration =

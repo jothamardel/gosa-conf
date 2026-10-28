@@ -8,6 +8,7 @@ import {
 } from '@/lib/schema';
 import { getOrCreateUserCheckInCode } from '@/lib/utils/checkin-code';
 import { sendAsyncCheckInNotification } from '@/lib/services/checkin-notification.service';
+import { CONVENTION_2026_START_DATE } from '@/lib/constants/pricing';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Action is required' }, { status: 400 });
     }
 
-    // --- Action: Check In All Tickets for a Member ---
+    // --- Action: Check In All Tickets for a Member (Scoped to 2026) ---
     if (action === 'check-in-all') {
       if (!userId) {
         return NextResponse.json({ success: false, error: 'userId is required for check-in-all' }, { status: 400 });
@@ -44,9 +45,11 @@ export async function POST(request: NextRequest) {
         checkInCode,
       };
 
+      const dateFilter2026 = { createdAt: { $gte: CONVENTION_2026_START_DATE } };
+
       const [convRes, dinRes, brochRes] = await Promise.all([
         ConventionRegistration.updateMany(
-          { userId, checkedIn: { $ne: true } },
+          { userId, checkedIn: { $ne: true }, ...dateFilter2026 },
           {
             $set: {
               checkedIn: true,
@@ -59,7 +62,7 @@ export async function POST(request: NextRequest) {
           }
         ),
         DinnerReservation.updateMany(
-          { userId, checkedIn: { $ne: true } },
+          { userId, checkedIn: { $ne: true }, ...dateFilter2026 },
           {
             $set: {
               checkedIn: true,
@@ -72,7 +75,7 @@ export async function POST(request: NextRequest) {
           }
         ),
         ConventionBrochure.updateMany(
-          { userId, collected: { $ne: true } },
+          { userId, collected: { $ne: true }, ...dateFilter2026 },
           {
             $set: {
               collected: true,

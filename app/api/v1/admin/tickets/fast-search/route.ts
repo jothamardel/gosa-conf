@@ -6,6 +6,7 @@ import {
   ConventionBrochure,
   User,
 } from '@/lib/schema';
+import { CONVENTION_2026_START_DATE } from '@/lib/constants/pricing';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,8 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now();
   try {
     await connectToDatabase();
+
+    const dateFilter2026 = { createdAt: { $gte: CONVENTION_2026_START_DATE } };
 
     const { searchParams } = new URL(request.url);
     const rawQuery = (searchParams.get('q') || searchParams.get('query') || '').trim();
@@ -29,7 +32,7 @@ export async function GET(request: NextRequest) {
     const searchRegex = new RegExp(escaped, 'i');
     const cleanDigits = rawQuery.replace(/\D/g, '');
 
-    // Step 1: Parallel search on User collection + direct paymentReference/checkInCode search
+    // Step 1: Parallel search on User collection + direct 2026 paymentReference/checkInCode search
     const userSearchConditions: any[] = [
       { fullName: searchRegex },
       { email: searchRegex },
@@ -48,16 +51,19 @@ export async function GET(request: NextRequest) {
         .limit(8)
         .lean(),
 
-      // Direct ticket matches by paymentReference or checkInCode
+      // Direct 2026 ticket matches by paymentReference or checkInCode
       ConventionRegistration.find({
+        ...dateFilter2026,
         $or: [{ paymentReference: searchRegex }, { checkInCode: searchRegex }]
       }).limit(5).select('userId').lean(),
 
       DinnerReservation.find({
+        ...dateFilter2026,
         $or: [{ paymentReference: searchRegex }, { checkInCode: searchRegex }]
       }).limit(5).select('userId').lean(),
 
       ConventionBrochure.find({
+        ...dateFilter2026,
         $or: [{ paymentReference: searchRegex }, { checkInCode: searchRegex }]
       }).limit(5).select('userId').lean(),
     ]);
@@ -95,11 +101,11 @@ export async function GET(request: NextRequest) {
 
     const targetUserIds = allUsers.map(u => u._id);
 
-    // Step 2: Fetch all tickets for matched users in parallel
+    // Step 2: Fetch all 2026 tickets for matched users in parallel
     const [allConventions, allDinners, allBrochures] = await Promise.all([
-      ConventionRegistration.find({ userId: { $in: targetUserIds } }).sort({ createdAt: -1 }).lean(),
-      DinnerReservation.find({ userId: { $in: targetUserIds } }).sort({ createdAt: -1 }).lean(),
-      ConventionBrochure.find({ userId: { $in: targetUserIds } }).sort({ createdAt: -1 }).lean(),
+      ConventionRegistration.find({ userId: { $in: targetUserIds }, ...dateFilter2026 }).sort({ createdAt: -1 }).lean(),
+      DinnerReservation.find({ userId: { $in: targetUserIds }, ...dateFilter2026 }).sort({ createdAt: -1 }).lean(),
+      ConventionBrochure.find({ userId: { $in: targetUserIds }, ...dateFilter2026 }).sort({ createdAt: -1 }).lean(),
     ]);
 
     // Group tickets by userId

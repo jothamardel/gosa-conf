@@ -156,6 +156,8 @@ ConventionBrochureSchema.index({ userId: 1 });
 ConventionBrochureSchema.index({ checkedIn: 1 });
 ConventionBrochureSchema.index({ status: 1 });
 ConventionBrochureSchema.index({ checkInCode: 1 });
+ConventionBrochureSchema.index({ createdAt: -1 });
+ConventionBrochureSchema.index({ createdAt: -1, collected: 1 });
 // paymentReference and qrCode indexes are already created by unique: true in field definitions
 ConventionBrochureSchema.index({ confirmed: 1 });
 ConventionBrochureSchema.index({ brochureType: 1 });

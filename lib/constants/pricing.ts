@@ -23,3 +23,11 @@ export function getServiceUnitPrice(type: string): number {
   }
   return (CONVENTION_PRICING as Record<string, number>)[type] ?? 0;
 }
+
+export const CONVENTION_YEAR = 2026;
+export const CONVENTION_2026_START_DATE = new Date('2026-01-01T00:00:00.000Z');
+
+export function get2026DateFilter(): { createdAt: { $gte: Date } } {
+  return { createdAt: { $gte: CONVENTION_2026_START_DATE } };
+}
+

@@ -413,15 +413,18 @@ export function HighSpeedTicketHub() {
         <div>
           <div className="flex items-center space-x-2.5">
             <h1 className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
-              High-Speed Ticket & Check-In Desk
+              GOSA 2026 Ticket & Check-In Desk
             </h1>
+            <Badge className="bg-primary-600 text-white font-bold text-xs px-2.5 py-0.5 rounded-full">
+              2026 Session
+            </Badge>
             <span className="flex items-center text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-800">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
-              Live Online
+              Live
             </span>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Sub-second member verification, 1-click check-ins, and walk-in cash/POS registrations
+            Scoped to GOSA 2026: Sub-second member verification, 1-click check-ins, and walk-in cash/POS registrations
           </p>
         </div>
 
@@ -594,7 +597,7 @@ export function HighSpeedTicketHub() {
           <Input
             ref={searchInputRef}
             type="text"
-            placeholder="Lightning Search in < 1s: Member Name, Phone (e.g. 0803...), Email, Ref, or Check-In Code (e.g. RT34-UU6T)..."
+            placeholder="Lightning Search (2026): Member Name, Phone (0803...), Email, Ref, or Pass Code (RT34-UU6T)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-14 pl-12 pr-28 text-base bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 focus:border-primary-600 shadow-sm transition-all"

@@ -6,6 +6,7 @@ import {
   ConventionBrochure,
   User,
 } from '@/lib/schema';
+import { CONVENTION_2026_START_DATE } from '@/lib/constants/pricing';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,21 +21,22 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'all';
     const search = (searchParams.get('search') || '').trim();
 
-    // Base status filter
-    const queryFilter: Record<string, any> = {};
+    // Base 2026 convention date filter
+    const andConditions: any[] = [
+      { createdAt: { $gte: CONVENTION_2026_START_DATE } }
+    ];
 
     if (status === 'checkedIn') {
       if (tab === 'brochure') {
-        queryFilter.$or = [{ collected: true }, { checkedIn: true }];
+        andConditions.push({ $or: [{ collected: true }, { checkedIn: true }] });
       } else {
-        queryFilter.checkedIn = true;
+        andConditions.push({ checkedIn: true });
       }
     } else if (status === 'notCheckedIn') {
       if (tab === 'brochure') {
-        queryFilter.collected = { $ne: true };
-        queryFilter.checkedIn = { $ne: true };
+        andConditions.push({ collected: { $ne: true }, checkedIn: { $ne: true } });
       } else {
-        queryFilter.checkedIn = { $ne: true };
+        andConditions.push({ checkedIn: { $ne: true } });
       }
     }
 
@@ -64,13 +66,10 @@ export async function GET(request: NextRequest) {
         searchConditions.push({ userId: { $in: matchedUserIds } });
       }
 
-      if (queryFilter.$or) {
-        queryFilter.$and = [{ $or: queryFilter.$or }, { $or: searchConditions }];
-        delete queryFilter.$or;
-      } else {
-        queryFilter.$or = searchConditions;
-      }
+      andConditions.push({ $or: searchConditions });
     }
+
+    const queryFilter = andConditions.length > 1 ? { $and: andConditions } : andConditions[0];
 
     let Model: any;
     if (tab === 'dinner') {

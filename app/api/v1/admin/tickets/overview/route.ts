@@ -5,12 +5,15 @@ import {
   DinnerReservation,
   ConventionBrochure,
 } from '@/lib/schema';
+import { CONVENTION_2026_START_DATE } from '@/lib/constants/pricing';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
+
+    const dateFilter2026 = { createdAt: { $gte: CONVENTION_2026_START_DATE } };
 
     const [
       conventionTotal,
@@ -26,51 +29,72 @@ export async function GET(request: NextRequest) {
       walkinDinner,
       walkinBrochure,
     ] = await Promise.all([
-      // Convention
+      // Convention 2026
       ConventionRegistration.countDocuments({
+        ...dateFilter2026,
         $or: [{ status: 'confirmed' }, { confirm: true }]
       }),
       ConventionRegistration.countDocuments({
+        ...dateFilter2026,
         $or: [{ status: 'confirmed' }, { confirm: true }],
         checkedIn: true,
       }),
       ConventionRegistration.aggregate([
-        { $match: { $or: [{ status: 'confirmed' }, { confirm: true }] } },
+        {
+          $match: {
+            ...dateFilter2026,
+            $or: [{ status: 'confirmed' }, { confirm: true }],
+          }
+        },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]),
 
-      // Dinner
+      // Dinner 2026
       DinnerReservation.countDocuments({
+        ...dateFilter2026,
         $or: [{ status: 'confirmed' }, { confirmed: true }]
       }),
       DinnerReservation.countDocuments({
+        ...dateFilter2026,
         $or: [{ status: 'confirmed' }, { confirmed: true }],
         checkedIn: true,
       }),
       DinnerReservation.aggregate([
-        { $match: { $or: [{ status: 'confirmed' }, { confirmed: true }] } },
+        {
+          $match: {
+            ...dateFilter2026,
+            $or: [{ status: 'confirmed' }, { confirmed: true }],
+          }
+        },
         { $group: { _id: null, total: { $sum: '$totalAmount' } } }
       ]),
 
-      // Brochure
+      // Brochure 2026
       ConventionBrochure.countDocuments({
+        ...dateFilter2026,
         $or: [{ status: 'confirmed' }, { confirmed: true }]
       }),
       ConventionBrochure.countDocuments({
+        ...dateFilter2026,
         $and: [
           { $or: [{ status: 'confirmed' }, { confirmed: true }] },
           { $or: [{ collected: true }, { checkedIn: true }] },
         ]
       }),
       ConventionBrochure.aggregate([
-        { $match: { $or: [{ status: 'confirmed' }, { confirmed: true }] } },
+        {
+          $match: {
+            ...dateFilter2026,
+            $or: [{ status: 'confirmed' }, { confirmed: true }],
+          }
+        },
         { $group: { _id: null, total: { $sum: '$totalAmount' } } }
       ]),
 
-      // Walkin counts (reference starts with WALKIN_)
-      ConventionRegistration.countDocuments({ paymentReference: /^WALKIN_/i }),
-      DinnerReservation.countDocuments({ paymentReference: /^WALKIN_/i }),
-      ConventionBrochure.countDocuments({ paymentReference: /^WALKIN_/i }),
+      // Walkin counts for 2026 (reference starts with WALKIN_)
+      ConventionRegistration.countDocuments({ ...dateFilter2026, paymentReference: /^WALKIN_/i }),
+      DinnerReservation.countDocuments({ ...dateFilter2026, paymentReference: /^WALKIN_/i }),
+      ConventionBrochure.countDocuments({ ...dateFilter2026, paymentReference: /^WALKIN_/i }),
     ]);
 
     const conventionRev = conventionRevenueAgg[0]?.total || 0;

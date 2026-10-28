@@ -215,6 +215,8 @@ DinnerReservationSchema.index({ userId: 1 });
 DinnerReservationSchema.index({ checkedIn: 1 });
 DinnerReservationSchema.index({ status: 1 });
 DinnerReservationSchema.index({ checkInCode: 1 });
+DinnerReservationSchema.index({ createdAt: -1 });
+DinnerReservationSchema.index({ createdAt: -1, checkedIn: 1 });
 // paymentReference index is already created by unique: true in field definition
 DinnerReservationSchema.index({ confirmed: 1 });
 // Create sparse unique index for qrCodes.qrCode to allow multiple null/undefined values
