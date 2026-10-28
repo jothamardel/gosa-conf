@@ -11,11 +11,13 @@ export interface IConventionRegistration extends Document {
   checkedIn: boolean;
   checkedInAt?: Date;
   checkedOutAt?: Date;
+  checkInCode?: string;
   checkInHistory: Array<{
     action: 'check-in' | 'check-out';
     timestamp: Date;
     officialId: string;
     officialName: string;
+    checkInCode?: string;
   }>;
   status: string;
   transferredFrom?: Types.ObjectId;
@@ -72,6 +74,12 @@ const ConventionRegistrationSchema = new Schema<IConventionRegistration>(
     checkedOutAt: {
       type: Date,
     },
+    checkInCode: {
+      type: String,
+      uppercase: true,
+      trim: true,
+      index: true,
+    },
     checkInHistory: [{
       action: {
         type: String,
@@ -89,6 +97,9 @@ const ConventionRegistrationSchema = new Schema<IConventionRegistration>(
       officialName: {
         type: String,
         required: true,
+      },
+      checkInCode: {
+        type: String,
       },
     }],
     status: {
@@ -120,6 +131,9 @@ const ConventionRegistrationSchema = new Schema<IConventionRegistration>(
 );
 
 ConventionRegistrationSchema.index({ userId: 1 });
+ConventionRegistrationSchema.index({ checkedIn: 1 });
+ConventionRegistrationSchema.index({ status: 1 });
+ConventionRegistrationSchema.index({ checkInCode: 1 });
 // paymentReference index is already created by unique: true in field definition
 
 export const ConventionRegistration =

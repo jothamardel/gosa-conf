@@ -25,11 +25,13 @@ export interface IDinnerReservation extends Document {
   checkedIn: boolean;
   checkedInAt?: Date;
   checkedOutAt?: Date;
+  checkInCode?: string;
   checkInHistory: Array<{
     action: 'check-in' | 'check-out';
     timestamp: Date;
     officialId: string;
     officialName: string;
+    checkInCode?: string;
   }>;
   status: string;
   // Enhanced fields for multiple guest support
@@ -139,6 +141,12 @@ const DinnerReservationSchema = new Schema<IDinnerReservation>(
     checkedOutAt: {
       type: Date,
     },
+    checkInCode: {
+      type: String,
+      uppercase: true,
+      trim: true,
+      index: true,
+    },
     checkInHistory: [{
       action: {
         type: String,
@@ -156,6 +164,9 @@ const DinnerReservationSchema = new Schema<IDinnerReservation>(
       officialName: {
         type: String,
         required: true,
+      },
+      checkInCode: {
+        type: String,
       },
     }],
     status: {
@@ -201,6 +212,9 @@ const DinnerReservationSchema = new Schema<IDinnerReservation>(
 
 // Indexes
 DinnerReservationSchema.index({ userId: 1 });
+DinnerReservationSchema.index({ checkedIn: 1 });
+DinnerReservationSchema.index({ status: 1 });
+DinnerReservationSchema.index({ checkInCode: 1 });
 // paymentReference index is already created by unique: true in field definition
 DinnerReservationSchema.index({ confirmed: 1 });
 // Create sparse unique index for qrCodes.qrCode to allow multiple null/undefined values

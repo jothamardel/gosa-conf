@@ -19,11 +19,13 @@ export interface IConventionBrochure extends Document {
   checkedIn: boolean;
   checkedInAt?: Date;
   checkedOutAt?: Date;
+  checkInCode?: string;
   checkInHistory: Array<{
     action: 'check-in' | 'check-out';
     timestamp: Date;
     officialId: string;
     officialName: string;
+    checkInCode?: string;
   }>;
   status: string;
   createdAt: Date;
@@ -108,6 +110,12 @@ const ConventionBrochureSchema = new Schema<IConventionBrochure>(
     checkedOutAt: {
       type: Date,
     },
+    checkInCode: {
+      type: String,
+      uppercase: true,
+      trim: true,
+      index: true,
+    },
     checkInHistory: [{
       action: {
         type: String,
@@ -126,6 +134,9 @@ const ConventionBrochureSchema = new Schema<IConventionBrochure>(
         type: String,
         required: true,
       },
+      checkInCode: {
+        type: String,
+      },
     }],
     status: {
       type: String,
@@ -142,6 +153,9 @@ const ConventionBrochureSchema = new Schema<IConventionBrochure>(
 
 // Indexes
 ConventionBrochureSchema.index({ userId: 1 });
+ConventionBrochureSchema.index({ checkedIn: 1 });
+ConventionBrochureSchema.index({ status: 1 });
+ConventionBrochureSchema.index({ checkInCode: 1 });
 // paymentReference and qrCode indexes are already created by unique: true in field definitions
 ConventionBrochureSchema.index({ confirmed: 1 });
 ConventionBrochureSchema.index({ brochureType: 1 });

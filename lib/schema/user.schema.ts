@@ -6,8 +6,9 @@ export interface IUser extends Document {
   phoneNumber: string;
   createdAt: Date;
   updatedAt: Date;
-  house: string;
-  year: string;
+  house?: string;
+  year?: string;
+  checkInCode?: string;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -36,6 +37,14 @@ const UserSchema = new Schema<IUser>(
     year: {
       type: String,
     },
+    checkInCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      uppercase: true,
+      trim: true,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -43,6 +52,9 @@ const UserSchema = new Schema<IUser>(
     toObject: { virtuals: true },
   },
 );
+
+UserSchema.index({ fullName: 1 });
+UserSchema.index({ checkInCode: 1 });
 
 // phoneNumber index is already created by unique: true in field definition
 
