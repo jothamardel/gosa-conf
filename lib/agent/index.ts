@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { ConversationHistory } from "../schema";
 
 export interface AgentResponse {
-  intent: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'general_query' | 'checkout_cart' | 'list_groups' | 'send_group_message' | 'send_broadcast_message';
+  intent: 'buy_tickets' | 'buy_product' | 'donation' | 'view_history' | 'get_checkin_code' | 'general_query' | 'checkout_cart' | 'list_groups' | 'send_group_message' | 'send_broadcast_message';
   data: {
     ticketType?: 'convention' | 'dinner';
     productType?: 'uniform' | 'emblem' | 'magazine' | 'brochure';
@@ -103,6 +103,17 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: "view_history",
       description: "Display transaction history and payment summaries for the user.",
+      parameters: {
+        type: "object",
+        properties: {}
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_checkin_code",
+      description: "Retrieve the attendee's 8-character check-in code (e.g. RT34-UU6T) and official 2026 venue check-in pass. Call this whenever the user asks about checking in, how to check in, getting their check-in code, pass code, or showing proof of registration to desk admins at the venue.",
       parameters: {
         type: "object",
         properties: {}
@@ -333,6 +344,7 @@ class AgentClass {
               4. **Donations:** e.g., \`GOSA donate 5000 support BSS hostel renovation\`
               5. **Combined Checkout (Cart):** e.g., \`GOSA checkout: 1 ticket, 1 Dinner ticket, 1 brochure\`
               7. **Adding the Bot to Groups:** Politely instruct that to add you to a new group, a group admin simply needs to add the bot's phone number as a participant directly to the group. Once added, you will automatically sync and register the group.
+              8. **Check-In & Venue Pass:** Whenever a user asks how to check in, asks for their check-in code, pass code, 8-digit code, or badge code for the venue desk, call \`get_checkin_code\` immediately.
             - If a user's request is ambiguous or fails to match a valid command (e.g. they ask to buy something but omit critical parameters, or you cannot resolve their intent), do NOT just say you didn't understand. Instead, politely point out what is missing and show them the exact correct template/example they can use.
 
             ---
@@ -415,6 +427,8 @@ class AgentClass {
             politeResponse = `I have initialized a GOSA donation checkout for ₦${args.amount.toLocaleString()}.`;
           } else if (functionName === 'view_history') {
             politeResponse = `Right away! Retrieving your transaction history.`;
+          } else if (functionName === 'get_checkin_code') {
+            politeResponse = `Right away! Retrieving your official 2026 Check-In Pass and 8-digit code.`;
           }
         }
       } else {

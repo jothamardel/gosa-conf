@@ -16,6 +16,7 @@ import {
 } from "@/lib/schema";
 import { Payment } from "@/lib/paystack-api";
 import { Types } from "mongoose";
+import { CheckInPassService } from "@/lib/services/checkin-pass.service";
 
 export const dynamic = "force-dynamic";
 
@@ -1287,6 +1288,32 @@ async function handleMessageAsync(body: any): Promise<void> {
       }
     }
 
+    const cleanMsg = messageText.trim().toLowerCase();
+
+    // Fast-path for instant check-in pass queries (zero-latency without LLM call)
+    const isCheckInFastPath =
+      /^(check\s*in|checkin|my\s*code|get\s*code|pass\s*code|passcode|check-in|pass|badge\s*code|my\s*pass|checkin\s*code|check\s*in\s*code|verification\s*code)$/i.test(
+        cleanMsg,
+      ) ||
+      /^(get|show|send|give\s*me|view)\s+(my\s+)?(check\s*in|checkin|code|pass|badge)(\s+code)?$/i.test(
+        cleanMsg,
+      );
+
+    if (!isGroup && isCheckInFastPath) {
+      console.log(`[FAST-PATH CHECKIN] Received fast-path check-in keyword from ${senderJid}: "${cleanMsg}"`);
+      await connectDB();
+      const passText = await CheckInPassService.getCheckInPass(
+        rawSenderJid,
+        normalizeJidToPhone(senderJid),
+        body?.data?.messages?.pushName
+      );
+      await Wasender.httpSenderMessage({
+        to: remoteJid,
+        text: sanitizeMessage(passText)
+      });
+      return;
+    }
+
     // Group mention check - allow text keywords OR native mention JID/LID matching the bot
     if (isGroup) {
       const hasKeyword =
@@ -1386,6 +1413,27 @@ async function handleMessageAsync(body: any): Promise<void> {
 
     if (agentResponse.intent === 'view_history') {
       await handleHistoryQuery(senderJid, remoteJid);
+      return;
+    }
+
+    if (agentResponse.intent === 'get_checkin_code') {
+      await connectDB();
+      const passText = await CheckInPassService.getCheckInPass(
+        rawSenderJid,
+        normalizeJidToPhone(senderJid),
+        body?.data?.messages?.pushName
+      );
+      if (isGroup) {
+        // Send pass to private DM for privacy
+        await Wasender.httpSenderMessage({ to: senderJid, text: sanitizeMessage(passText) });
+        const firstName = (body?.data?.messages?.pushName || 'Member').split(' ')[0];
+        await Wasender.httpSenderMessage({
+          to: remoteJid,
+          text: formatGroupResponse(`${firstName}, I have sent your official 2026 Check-In Pass & 8-digit code directly to your *direct message* for privacy! 🎟️🔒`)
+        });
+      } else {
+        await Wasender.httpSenderMessage({ to: remoteJid, text: sanitizeMessage(passText) });
+      }
       return;
     }
 
