@@ -509,14 +509,14 @@ export function HighSpeedTicketHub() {
             <h1 className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
               GOSA 2026 Ticket & Check-In Desk
             </h1>
-            <Badge className="bg-primary-600 text-white font-bold text-xs px-2.5 py-0.5 rounded-full">
+            <Badge className="bg-primary-600 text-white font-bold text-xs px-2 sm:px-2.5 py-0.5 rounded-full">
               2026 Session
             </Badge>
             {/* Master Check-In Activation Switch */}
             <button
               type="button"
               onClick={() => setShowToggleModal(true)}
-              className={`flex items-center space-x-2 px-3 py-1.5 rounded-full border transition-all shadow-sm ${
+              className={`flex items-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border transition-all shadow-sm ${
                 checkinActive
                   ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 cursor-pointer'
                   : 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-100 animate-pulse cursor-pointer'
@@ -525,16 +525,16 @@ export function HighSpeedTicketHub() {
             >
               {checkinActive ? (
                 <>
-                  <span className="relative flex h-2.5 w-2.5">
+                  <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-emerald-500"></span>
                   </span>
-                  <span className="text-xs font-bold tracking-tight">Check-Ins: ACTIVE</span>
+                  <span className="text-[11px] sm:text-xs font-bold tracking-tight">Check-Ins: ACTIVE</span>
                 </>
               ) : (
                 <>
                   <PauseCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                  <span className="text-xs font-bold tracking-tight">Check-Ins: PAUSED</span>
+                  <span className="text-[11px] sm:text-xs font-bold tracking-tight">Check-Ins: PAUSED</span>
                 </>
               )}
               <span className="text-[10px] uppercase font-bold opacity-75 underline ml-0.5">
@@ -542,12 +542,12 @@ export function HighSpeedTicketHub() {
               </span>
             </button>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
             Scoped to GOSA 2026: Sub-second member verification, 1-click check-ins, and walk-in cash/POS registrations
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
           {/* Local IndexedDB Cloud Sync Status Pill */}
           <button
             type="button"
@@ -557,11 +557,11 @@ export function HighSpeedTicketHub() {
             }}
             disabled={isSyncing}
             title="Local IndexedDB database cache status. Click to force full sync with cloud."
-            className="flex items-center space-x-1.5 text-xs px-3 py-2 rounded-xl border bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            className="flex items-center justify-center space-x-1.5 text-xs px-2.5 sm:px-3 py-2 rounded-xl border bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition h-10 sm:h-11"
           >
             <Cloud className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
             <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin text-primary-600' : 'text-gray-400'}`} />
-            <span className="font-semibold">
+            <span className="font-semibold text-[11px] sm:text-xs">
               {isSyncing ? 'Syncing...' : `${cachedCount.toLocaleString()} local`}
             </span>
           </button>
@@ -576,26 +576,28 @@ export function HighSpeedTicketHub() {
               toast.info('Refreshed desk data');
             }}
             disabled={analyticsLoading || tabLoading}
-            className="rounded-xl h-11 px-4 text-gray-600 hover:text-gray-900"
+            className="rounded-xl h-10 sm:h-11 px-3 sm:px-4 text-xs text-gray-600 hover:text-gray-900 justify-center"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${analyticsLoading || tabLoading ? 'animate-spin' : ''}`} />
-            Refresh
+            <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 ${analyticsLoading || tabLoading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
           </Button>
 
           <Button
             onClick={() => setIsBroadcastOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 px-4 font-bold shadow-md hover:shadow-lg transition-all flex items-center space-x-2"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 sm:h-11 px-3 sm:px-4 text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-1.5"
           >
-            <Megaphone className="w-4 h-4 mr-1.5" />
-            <span>Broadcast Campaign</span>
+            <Megaphone className="w-3.5 h-3.5 mr-1" />
+            <span className="hidden sm:inline">Broadcast Campaign</span>
+            <span className="sm:hidden">Broadcast</span>
           </Button>
 
           <Button
             onClick={() => setIsWalkinOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-11 px-5 font-bold shadow-md hover:shadow-lg transition-all flex items-center space-x-2"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-10 sm:h-11 px-3 sm:px-5 text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-1.5"
           >
-            <UserPlus className="w-5 h-5 mr-1.5" />
-            <span>Register Walk-In Member (+ Mark Paid)</span>
+            <UserPlus className="w-3.5 h-3.5 sm:w-5 sm:h-5 mr-1" />
+            <span className="hidden sm:inline">Register Walk-In (+ Paid)</span>
+            <span className="sm:hidden">Walk-In</span>
             <kbd className="hidden md:inline-block ml-2 px-1.5 py-0.5 text-[10px] bg-emerald-700/60 text-white rounded font-mono">
               Alt+N
             </kbd>
@@ -604,133 +606,133 @@ export function HighSpeedTicketHub() {
       </div>
 
       {/* Analytics Summary Row: 3 Ticket Types + Walk-Ins */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Convention Tickets Card */}
-        <Card className="rounded-2xl border shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-gray-500">
-              Convention Tickets
+        <Card className="rounded-xl sm:rounded-2xl border shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between p-3 sm:p-5 pb-1 sm:pb-2 space-y-0">
+            <CardTitle className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">
+              Convention
             </CardTitle>
-            <div className="p-2 bg-primary-50 text-primary-600 dark:bg-primary-950 dark:text-primary-400 rounded-lg">
-              <Ticket className="w-4 h-4" />
+            <div className="p-1.5 sm:p-2 bg-primary-50 text-primary-600 dark:bg-primary-950 dark:text-primary-400 rounded-lg">
+              <Ticket className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline justify-between">
-              <div className="text-2xl font-black text-gray-900 dark:text-gray-100">
+          <CardContent className="p-3 sm:p-5 pt-0">
+            <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+              <div className="text-lg sm:text-2xl font-black text-gray-900 dark:text-gray-100">
                 {analytics?.convention.total.toLocaleString() ?? '—'}
               </div>
-              <Badge variant="outline" className="font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-950 border-emerald-200">
-                {analytics?.convention.checkedIn.toLocaleString() ?? 0} Checked In
+              <Badge variant="outline" className="font-semibold text-[10px] sm:text-xs text-emerald-700 bg-emerald-50 dark:bg-emerald-950 border-emerald-200 self-start sm:self-auto px-1.5 py-0.5">
+                {analytics?.convention.checkedIn.toLocaleString() ?? 0} In
               </Badge>
             </div>
             {/* Progress Bar */}
-            <div className="mt-3">
-              <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+            <div className="mt-2 sm:mt-3">
+              <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 sm:h-2 overflow-hidden">
                 <div
-                  className="bg-primary-600 h-2 rounded-full transition-all duration-500"
+                  className="bg-primary-600 h-1.5 sm:h-2 rounded-full transition-all duration-500"
                   style={{ width: `${analytics?.convention.checkInRate ?? 0}%` }}
                 />
               </div>
-              <div className="flex justify-between text-[11px] text-gray-500 mt-1.5 font-medium">
-                <span>{analytics?.convention.pending.toLocaleString() ?? 0} Pending</span>
-                <span className="font-bold text-gray-700 dark:text-gray-300">{analytics?.convention.checkInRate ?? 0}% Checked In</span>
+              <div className="flex justify-between text-[10px] sm:text-[11px] text-gray-500 mt-1 sm:mt-1.5 font-medium">
+                <span>{analytics?.convention.pending.toLocaleString() ?? 0} Pend</span>
+                <span className="font-bold text-gray-700 dark:text-gray-300">{analytics?.convention.checkInRate ?? 0}%</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Dinner Tickets Card */}
-        <Card className="rounded-2xl border shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-gray-500">
-              Dinner Tickets
+        <Card className="rounded-xl sm:rounded-2xl border shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between p-3 sm:p-5 pb-1 sm:pb-2 space-y-0">
+            <CardTitle className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">
+              Gala Dinner
             </CardTitle>
-            <div className="p-2 bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400 rounded-lg">
-              <Utensils className="w-4 h-4" />
+            <div className="p-1.5 sm:p-2 bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400 rounded-lg">
+              <Utensils className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline justify-between">
-              <div className="text-2xl font-black text-gray-900 dark:text-gray-100">
+          <CardContent className="p-3 sm:p-5 pt-0">
+            <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+              <div className="text-lg sm:text-2xl font-black text-gray-900 dark:text-gray-100">
                 {analytics?.dinner.total.toLocaleString() ?? '—'}
               </div>
-              <Badge variant="outline" className="font-semibold text-indigo-700 bg-indigo-50 dark:bg-indigo-950 border-indigo-200">
-                {analytics?.dinner.checkedIn.toLocaleString() ?? 0} Checked In
+              <Badge variant="outline" className="font-semibold text-[10px] sm:text-xs text-indigo-700 bg-indigo-50 dark:bg-indigo-950 border-indigo-200 self-start sm:self-auto px-1.5 py-0.5">
+                {analytics?.dinner.checkedIn.toLocaleString() ?? 0} In
               </Badge>
             </div>
             {/* Progress Bar */}
-            <div className="mt-3">
-              <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+            <div className="mt-2 sm:mt-3">
+              <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 sm:h-2 overflow-hidden">
                 <div
-                  className="bg-indigo-600 h-2 rounded-full transition-all duration-500"
+                  className="bg-indigo-600 h-1.5 sm:h-2 rounded-full transition-all duration-500"
                   style={{ width: `${analytics?.dinner.checkInRate ?? 0}%` }}
                 />
               </div>
-              <div className="flex justify-between text-[11px] text-gray-500 mt-1.5 font-medium">
-                <span>{analytics?.dinner.pending.toLocaleString() ?? 0} Pending</span>
-                <span className="font-bold text-gray-700 dark:text-gray-300">{analytics?.dinner.checkInRate ?? 0}% Checked In</span>
+              <div className="flex justify-between text-[10px] sm:text-[11px] text-gray-500 mt-1 sm:mt-1.5 font-medium">
+                <span>{analytics?.dinner.pending.toLocaleString() ?? 0} Pend</span>
+                <span className="font-bold text-gray-700 dark:text-gray-300">{analytics?.dinner.checkInRate ?? 0}%</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Brochures Card */}
-        <Card className="rounded-2xl border shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-gray-500">
-              Convention Brochures
+        <Card className="rounded-xl sm:rounded-2xl border shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between p-3 sm:p-5 pb-1 sm:pb-2 space-y-0">
+            <CardTitle className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">
+              Brochures
             </CardTitle>
-            <div className="p-2 bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400 rounded-lg">
-              <BookOpen className="w-4 h-4" />
+            <div className="p-1.5 sm:p-2 bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400 rounded-lg">
+              <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline justify-between">
-              <div className="text-2xl font-black text-gray-900 dark:text-gray-100">
+          <CardContent className="p-3 sm:p-5 pt-0">
+            <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+              <div className="text-lg sm:text-2xl font-black text-gray-900 dark:text-gray-100">
                 {analytics?.brochure.total.toLocaleString() ?? '—'}
               </div>
-              <Badge variant="outline" className="font-semibold text-purple-700 bg-purple-50 dark:bg-purple-950 border-purple-200">
-                {analytics?.brochure.collected.toLocaleString() ?? 0} Collected
+              <Badge variant="outline" className="font-semibold text-[10px] sm:text-xs text-purple-700 bg-purple-50 dark:bg-purple-950 border-purple-200 self-start sm:self-auto px-1.5 py-0.5">
+                {analytics?.brochure.collected.toLocaleString() ?? 0} Picked
               </Badge>
             </div>
             {/* Progress Bar */}
-            <div className="mt-3">
-              <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+            <div className="mt-2 sm:mt-3">
+              <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 sm:h-2 overflow-hidden">
                 <div
-                  className="bg-purple-600 h-2 rounded-full transition-all duration-500"
+                  className="bg-purple-600 h-1.5 sm:h-2 rounded-full transition-all duration-500"
                   style={{ width: `${analytics?.brochure.collectionRate ?? 0}%` }}
                 />
               </div>
-              <div className="flex justify-between text-[11px] text-gray-500 mt-1.5 font-medium">
-                <span>{analytics?.brochure.pending.toLocaleString() ?? 0} Pending</span>
-                <span className="font-bold text-gray-700 dark:text-gray-300">{analytics?.brochure.collectionRate ?? 0}% Collected</span>
+              <div className="flex justify-between text-[10px] sm:text-[11px] text-gray-500 mt-1 sm:mt-1.5 font-medium">
+                <span>{analytics?.brochure.pending.toLocaleString() ?? 0} Pend</span>
+                <span className="font-bold text-gray-700 dark:text-gray-300">{analytics?.brochure.collectionRate ?? 0}%</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Walk-in Registrations Card */}
-        <Card className="rounded-2xl border shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-emerald-50/50 to-white dark:from-emerald-950/20 dark:to-gray-900">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-              Desk Walk-Ins (On-Site)
+        <Card className="rounded-xl sm:rounded-2xl border shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-emerald-50/50 to-white dark:from-emerald-950/20 dark:to-gray-900">
+          <CardHeader className="flex flex-row items-center justify-between p-3 sm:p-5 pb-1 sm:pb-2 space-y-0">
+            <CardTitle className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+              Walk-Ins
             </CardTitle>
-            <div className="p-2 bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 rounded-lg">
-              <Users className="w-4 h-4" />
+            <div className="p-1.5 sm:p-2 bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 rounded-lg">
+              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline justify-between">
-              <div className="text-2xl font-black text-emerald-900 dark:text-emerald-100">
+          <CardContent className="p-3 sm:p-5 pt-0">
+            <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+              <div className="text-lg sm:text-2xl font-black text-emerald-900 dark:text-emerald-100">
                 {analytics?.walkins.total.toLocaleString() ?? '0'}
               </div>
-              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                Marked Paid
+              <span className="text-[10px] sm:text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                Paid
               </span>
             </div>
-            <p className="text-xs text-gray-500 mt-3 font-medium">
-              Conv: <strong>{analytics?.walkins.convention ?? 0}</strong> • Dinner: <strong>{analytics?.walkins.dinner ?? 0}</strong> • Broch: <strong>{analytics?.walkins.brochure ?? 0}</strong>
+            <p className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3 font-medium line-clamp-1">
+              Conv: <strong>{analytics?.walkins.convention ?? 0}</strong> • Din: <strong>{analytics?.walkins.dinner ?? 0}</strong> • Bro: <strong>{analytics?.walkins.brochure ?? 0}</strong>
             </p>
           </CardContent>
         </Card>
@@ -798,7 +800,7 @@ export function HighSpeedTicketHub() {
 
         {/* Search Speed Meter */}
         {searchExecutionMs !== null && debouncedQuery && (
-          <div className="flex items-center justify-between mt-2 px-1 text-xs text-gray-500">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-2 px-1 text-xs text-gray-500 gap-1">
             <span>
               Found <strong>{searchResults.length}</strong> matching member(s) for &ldquo;{debouncedQuery}&rdquo;
             </span>
@@ -839,7 +841,7 @@ export function HighSpeedTicketHub() {
                 className="rounded-2xl border-2 border-primary-500/30 bg-white dark:bg-gray-900 shadow-md overflow-hidden transition-all"
               >
                 {/* Member Header Card */}
-                <div className="p-6 bg-gradient-to-r from-primary-50/40 via-white to-secondary-50/30 dark:from-primary-950/20 dark:via-gray-900 dark:to-secondary-950/20 border-b flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="p-4 sm:p-6 bg-gradient-to-r from-primary-50/40 via-white to-secondary-50/30 dark:from-primary-950/20 dark:via-gray-900 dark:to-secondary-950/20 border-b flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2.5">
                       <h3 className="text-xl font-black text-gray-900 dark:text-gray-100">
@@ -939,7 +941,7 @@ export function HighSpeedTicketHub() {
                 </div>
 
                 {/* Member Ticket Breakdown Items */}
-                <div className="p-6 divide-y divide-gray-100 dark:divide-gray-800">
+                <div className="p-4 sm:p-6 divide-y divide-gray-100 dark:divide-gray-800">
                   {/* Conventions */}
                   {member.tickets.conventions.map((c) => (
                     <div key={c._id} className="py-3.5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -962,7 +964,7 @@ export function HighSpeedTicketHub() {
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-between sm:justify-end space-x-2 w-full sm:w-auto">
                         {c.checkedIn ? (
                           <>
                             <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200">
@@ -982,8 +984,8 @@ export function HighSpeedTicketHub() {
                           <Button
                             size="sm"
                             onClick={() => handleSingleTicketAction(c._id, 'convention', 'check-in-single', member._id)}
-                            disabled={actionLoading[`check-in-single-${c._id}`]}
-                            className="bg-primary-600 hover:bg-primary-700 text-white rounded-lg h-9 px-4 font-bold"
+                            disabled={actionLoading[`check-in-single-${c._id}`] || !checkinActive}
+                            className="w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white rounded-lg h-10 sm:h-9 px-4 font-bold flex items-center justify-center"
                           >
                             {actionLoading[`check-in-single-${c._id}`] ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -1018,7 +1020,7 @@ export function HighSpeedTicketHub() {
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-between sm:justify-end space-x-2 w-full sm:w-auto">
                         {d.checkedIn ? (
                           <>
                             <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-200">
@@ -1038,8 +1040,8 @@ export function HighSpeedTicketHub() {
                           <Button
                             size="sm"
                             onClick={() => handleSingleTicketAction(d._id, 'dinner', 'check-in-single', member._id)}
-                            disabled={actionLoading[`check-in-single-${d._id}`]}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-9 px-4 font-bold"
+                            disabled={actionLoading[`check-in-single-${d._id}`] || !checkinActive}
+                            className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-10 sm:h-9 px-4 font-bold flex items-center justify-center"
                           >
                             {actionLoading[`check-in-single-${d._id}`] ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -1074,7 +1076,7 @@ export function HighSpeedTicketHub() {
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-between sm:justify-end space-x-2 w-full sm:w-auto">
                         {b.collected ? (
                           <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-200">
                             Collected
@@ -1084,7 +1086,7 @@ export function HighSpeedTicketHub() {
                             size="sm"
                             onClick={() => handleSingleTicketAction(b._id, 'brochure', 'collect-brochure', member._id)}
                             disabled={actionLoading[`collect-brochure-${b._id}`]}
-                            className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg h-9 px-4 font-bold"
+                            className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white rounded-lg h-10 sm:h-9 px-4 font-bold flex items-center justify-center"
                           >
                             {actionLoading[`collect-brochure-${b._id}`] ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -1115,50 +1117,50 @@ export function HighSpeedTicketHub() {
             className="w-full"
           >
             {/* Tab Navigation & Status Filter Bar */}
-            <div className="p-4 sm:p-6 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <TabsList className="bg-gray-100 dark:bg-gray-800 p-1 rounded-xl h-auto flex flex-wrap">
+            <div className="p-3 sm:p-6 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
+              <TabsList className="bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-full grid grid-cols-3 sm:inline-flex sm:w-auto h-auto">
                 <TabsTrigger
                   value="convention"
-                  className="rounded-lg py-2.5 px-4 font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center space-x-2"
+                  className="rounded-lg py-2 sm:py-2.5 px-1.5 sm:px-4 font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center justify-center space-x-1 sm:space-x-2"
                 >
-                  <Ticket className="w-4 h-4 text-primary-600" />
-                  <span>Convention Tickets</span>
-                  <Badge variant="secondary" className="ml-1 text-xs">
+                  <Ticket className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-600 shrink-0" />
+                  <span className="text-xs truncate">Convention</span>
+                  <Badge variant="secondary" className="ml-1 text-[10px] sm:text-xs px-1 sm:px-1.5 py-0 shrink-0">
                     {analytics?.convention.total.toLocaleString() ?? 0}
                   </Badge>
                 </TabsTrigger>
 
                 <TabsTrigger
                   value="dinner"
-                  className="rounded-lg py-2.5 px-4 font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center space-x-2"
+                  className="rounded-lg py-2 sm:py-2.5 px-1.5 sm:px-4 font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center justify-center space-x-1 sm:space-x-2"
                 >
-                  <Utensils className="w-4 h-4 text-indigo-600" />
-                  <span>Dinner Tickets</span>
-                  <Badge variant="secondary" className="ml-1 text-xs">
+                  <Utensils className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600 shrink-0" />
+                  <span className="text-xs truncate">Dinner</span>
+                  <Badge variant="secondary" className="ml-1 text-[10px] sm:text-xs px-1 sm:px-1.5 py-0 shrink-0">
                     {analytics?.dinner.total.toLocaleString() ?? 0}
                   </Badge>
                 </TabsTrigger>
 
                 <TabsTrigger
                   value="brochure"
-                  className="rounded-lg py-2.5 px-4 font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center space-x-2"
+                  className="rounded-lg py-2 sm:py-2.5 px-1.5 sm:px-4 font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center justify-center space-x-1 sm:space-x-2"
                 >
-                  <BookOpen className="w-4 h-4 text-purple-600" />
-                  <span>Brochures</span>
-                  <Badge variant="secondary" className="ml-1 text-xs">
+                  <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 shrink-0" />
+                  <span className="text-xs truncate">Brochures</span>
+                  <Badge variant="secondary" className="ml-1 text-[10px] sm:text-xs px-1 sm:px-1.5 py-0 shrink-0">
                     {analytics?.brochure.total.toLocaleString() ?? 0}
                   </Badge>
                 </TabsTrigger>
               </TabsList>
 
               {/* Status Filter Toggle */}
-              <div className="flex items-center space-x-2">
-                <span className="text-xs text-gray-500 font-medium">Filter:</span>
-                <div className="inline-flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
+              <div className="flex items-center space-x-2 w-full md:w-auto justify-between sm:justify-start">
+                <span className="text-xs text-gray-500 font-medium shrink-0">Filter:</span>
+                <div className="inline-flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1 w-full sm:w-auto justify-between sm:justify-start">
                   <button
                     type="button"
                     onClick={() => { setTabStatus('all'); setPage(1); }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`flex-1 sm:flex-initial text-center px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                       tabStatus === 'all'
                         ? 'bg-white dark:bg-gray-900 shadow-sm text-gray-900 dark:text-gray-100'
                         : 'text-gray-500 hover:text-gray-900'
@@ -1169,18 +1171,19 @@ export function HighSpeedTicketHub() {
                   <button
                     type="button"
                     onClick={() => { setTabStatus('checkedIn'); setPage(1); }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`flex-1 sm:flex-initial text-center px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                       tabStatus === 'checkedIn'
                         ? 'bg-white dark:bg-gray-900 shadow-sm text-emerald-700'
                         : 'text-gray-500 hover:text-gray-900'
                     }`}
                   >
-                    Checked In / Collected
+                    <span className="hidden sm:inline">Checked In / Collected</span>
+                    <span className="sm:hidden">Checked In</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => { setTabStatus('notCheckedIn'); setPage(1); }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`flex-1 sm:flex-initial text-center px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                       tabStatus === 'notCheckedIn'
                         ? 'bg-white dark:bg-gray-900 shadow-sm text-amber-700'
                         : 'text-gray-500 hover:text-gray-900'
@@ -1193,7 +1196,7 @@ export function HighSpeedTicketHub() {
             </div>
 
             {/* Common Tab Table Content */}
-            <div className="p-4 sm:p-6">
+            <div className="p-3 sm:p-6">
               {tabLoading ? (
                 <div className="py-16 text-center">
                   <Loader2 className="w-8 h-8 animate-spin text-primary-600 mx-auto mb-2" />
@@ -1206,110 +1209,239 @@ export function HighSpeedTicketHub() {
                   <p className="text-xs text-gray-400 mt-1">Try switching status filter to &ldquo;All&rdquo; or register a walk-in member.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b text-xs font-bold text-gray-500 uppercase tracking-wider">
-                        <th className="pb-3 pl-2">Pass Code</th>
-                        <th className="pb-3">Attendee</th>
-                        <th className="pb-3">Reference</th>
-                        <th className="pb-3">Qty / Amount</th>
-                        <th className="pb-3">Status</th>
-                        <th className="pb-3 text-right pr-2">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                      {tabTickets.map((t) => {
-                        const isVerified = activeTab === 'brochure' ? Boolean(t.collected || t.checkedIn) : Boolean(t.checkedIn);
-                        const code = t.checkInCode || t.user.checkInCode;
+                <>
+                  {/* Desktop / Tablet High-Density Table */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr className="border-b text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          <th className="pb-3 pl-2">Pass Code</th>
+                          <th className="pb-3">Attendee</th>
+                          <th className="pb-3">Reference</th>
+                          <th className="pb-3">Qty / Amount</th>
+                          <th className="pb-3">Status</th>
+                          <th className="pb-3 text-right pr-2">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {tabTickets.map((t) => {
+                          const isVerified = activeTab === 'brochure' ? Boolean(t.collected || t.checkedIn) : Boolean(t.checkedIn);
+                          const code = t.checkInCode || t.user.checkInCode;
 
-                        return (
-                          <tr key={t._id} className="hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors">
-                            {/* Check-In Code Badge */}
-                            <td className="py-4 pl-2 font-mono">
-                              {code ? (
-                                <button
-                                  type="button"
-                                  onClick={() => copyCode(code)}
-                                  className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 font-extrabold text-xs tracking-wider hover:bg-emerald-100 transition-colors"
-                                  title="Click to copy code"
-                                >
-                                  <span>{code}</span>
-                                  {copiedCode === code ? (
-                                    <Check className="w-3 h-3 text-emerald-700" />
-                                  ) : (
-                                    <Copy className="w-3 h-3 text-emerald-500 opacity-60" />
+                          return (
+                            <tr key={t._id} className="hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors">
+                              {/* Check-In Code Badge */}
+                              <td className="py-4 pl-2 font-mono">
+                                {code ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => copyCode(code)}
+                                    className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 font-extrabold text-xs tracking-wider hover:bg-emerald-100 transition-colors"
+                                    title="Click to copy code"
+                                  >
+                                    <span>{code}</span>
+                                    {copiedCode === code ? (
+                                      <Check className="w-3 h-3 text-emerald-700" />
+                                    ) : (
+                                      <Copy className="w-3 h-3 text-emerald-500 opacity-60" />
+                                    )}
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-gray-400 font-mono">—</span>
+                                )}
+                              </td>
+
+                              {/* Attendee Info */}
+                              <td className="py-4">
+                                <div className="font-bold text-gray-900 dark:text-gray-100">
+                                  {t.user.fullName}
+                                </div>
+                                <div className="text-xs text-gray-500 flex items-center space-x-2 mt-0.5">
+                                  <span>{t.user.phoneNumber}</span>
+                                  {t.user.year && t.user.year !== '—' && (
+                                    <span>• Set {t.user.year}</span>
                                   )}
-                                </button>
-                              ) : (
-                                <span className="text-xs text-gray-400 font-mono">—</span>
-                              )}
-                            </td>
+                                </div>
+                              </td>
 
-                            {/* Attendee Info */}
-                            <td className="py-4">
-                              <div className="font-bold text-gray-900 dark:text-gray-100">
+                              {/* Reference */}
+                              <td className="py-4 font-mono text-xs text-gray-600 dark:text-gray-300">
+                                <div>{t.paymentReference}</div>
+                                <div className="text-[11px] text-gray-400 mt-0.5">
+                                  {new Date(t.createdAt).toLocaleDateString()}
+                                </div>
+                              </td>
+
+                              {/* Quantity & Amount */}
+                              <td className="py-4">
+                                <div className="font-bold text-gray-900 dark:text-gray-100">
+                                  ₦{t.amount.toLocaleString()}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  Qty: {t.quantity} {activeTab === 'dinner' ? 'Guest(s)' : activeTab === 'brochure' ? `(${t.brochureType})` : 'Pass'}
+                                </div>
+                              </td>
+
+                              {/* Status */}
+                              <td className="py-4">
+                                {isVerified ? (
+                                  <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 font-semibold">
+                                    <Check className="w-3 h-3 mr-1" />
+                                    {activeTab === 'brochure' ? 'Collected' : 'Checked In'}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/40">
+                                    Pending
+                                  </Badge>
+                                )}
+                                {t.checkedInAt && (
+                                  <div className="text-[11px] text-gray-400 mt-0.5">
+                                    {new Date(t.checkedInAt).toLocaleTimeString()}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Action Button */}
+                              <td className="py-4 text-right pr-2">
+                                {isVerified ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleSingleTicketAction(t._id, activeTab, 'check-out-single', t.user._id || undefined)}
+                                    disabled={actionLoading[`check-out-single-${t._id}`]}
+                                    className="h-9 px-3 text-xs text-gray-500 hover:text-red-600 hover:border-red-200 rounded-xl"
+                                  >
+                                    {actionLoading[`check-out-single-${t._id}`] ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      'Undo Check-In'
+                                    )}
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    onClick={() =>
+                                      handleSingleTicketAction(
+                                        t._id,
+                                        activeTab,
+                                        activeTab === 'brochure' ? 'collect-brochure' : 'check-in-single',
+                                        t.user._id || undefined
+                                      )
+                                    }
+                                    disabled={
+                                      actionLoading[`check-in-single-${t._id}`] ||
+                                      actionLoading[`collect-brochure-${t._id}`]
+                                    }
+                                    className="h-9 px-4 text-xs font-bold bg-primary-600 hover:bg-primary-700 text-white rounded-xl shadow-sm"
+                                  >
+                                    {actionLoading[`check-in-single-${t._id}`] ||
+                                    actionLoading[`collect-brochure-${t._id}`] ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : activeTab === 'brochure' ? (
+                                      'Collect'
+                                    ) : (
+                                      'Check In'
+                                    )}
+                                  </Button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Touch-First Attendee Cards */}
+                  <div className="block md:hidden space-y-3">
+                    {tabTickets.map((t) => {
+                      const isVerified = activeTab === 'brochure' ? Boolean(t.collected || t.checkedIn) : Boolean(t.checkedIn);
+                      const code = t.checkInCode || t.user.checkInCode;
+
+                      return (
+                        <div
+                          key={t._id}
+                          className="p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 space-y-2.5 shadow-xs"
+                        >
+                          {/* Row 1: Attendee Name + Pass Code */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate">
                                 {t.user.fullName}
                               </div>
-                              <div className="text-xs text-gray-500 flex items-center space-x-2 mt-0.5">
+                              <div className="text-xs text-gray-500 flex items-center space-x-1.5 mt-0.5">
                                 <span>{t.user.phoneNumber}</span>
                                 {t.user.year && t.user.year !== '—' && (
                                   <span>• Set {t.user.year}</span>
                                 )}
                               </div>
-                            </td>
+                            </div>
 
-                            {/* Reference */}
-                            <td className="py-4 font-mono text-xs text-gray-600 dark:text-gray-300">
-                              <div>{t.paymentReference}</div>
-                              <div className="text-[11px] text-gray-400 mt-0.5">
-                                {new Date(t.createdAt).toLocaleDateString()}
-                              </div>
-                            </td>
+                            {code ? (
+                              <button
+                                type="button"
+                                onClick={() => copyCode(code)}
+                                className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 font-extrabold text-[11px] font-mono tracking-wider shrink-0"
+                                title="Tap to copy"
+                              >
+                                <span>{code}</span>
+                                {copiedCode === code ? (
+                                  <Check className="w-3 h-3 text-emerald-700" />
+                                ) : (
+                                  <Copy className="w-3 h-3 text-emerald-500 opacity-60" />
+                                )}
+                              </button>
+                            ) : (
+                              <span className="text-[11px] text-gray-400 font-mono shrink-0">No Pass Code</span>
+                            )}
+                          </div>
 
-                            {/* Quantity & Amount */}
-                            <td className="py-4">
-                              <div className="font-bold text-gray-900 dark:text-gray-100">
-                                ₦{t.amount.toLocaleString()}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                Qty: {t.quantity} {activeTab === 'dinner' ? 'Guest(s)' : activeTab === 'brochure' ? `(${t.brochureType})` : 'Pass'}
-                              </div>
-                            </td>
+                          {/* Row 2: Details Pill (Reference & Quantity / Amount) */}
+                          <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 py-1.5 px-2.5 rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+                            <div className="font-mono text-[11px] text-gray-500 truncate max-w-[140px]">
+                              Ref: {t.paymentReference}
+                            </div>
+                            <div className="font-bold text-right shrink-0">
+                              <span>₦{t.amount.toLocaleString()}</span>
+                              <span className="text-gray-400 font-normal ml-1">
+                                ({t.quantity} {activeTab === 'dinner' ? 'Guest' : activeTab === 'brochure' ? `(${t.brochureType})` : 'Pass'})
+                              </span>
+                            </div>
+                          </div>
 
-                            {/* Status */}
-                            <td className="py-4">
+                          {/* Row 3: Status & Full-Width 1-Thumb Action */}
+                          <div className="flex items-center justify-between gap-2 pt-0.5">
+                            <div>
                               {isVerified ? (
-                                <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 font-semibold">
+                                <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 font-semibold text-[11px] px-2 py-0.5">
                                   <Check className="w-3 h-3 mr-1" />
                                   {activeTab === 'brochure' ? 'Collected' : 'Checked In'}
                                 </Badge>
                               ) : (
-                                <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/40">
+                                <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/40 text-[11px] px-2 py-0.5">
                                   Pending
                                 </Badge>
                               )}
                               {t.checkedInAt && (
-                                <div className="text-[11px] text-gray-400 mt-0.5">
+                                <div className="text-[10px] text-gray-400 mt-0.5">
                                   {new Date(t.checkedInAt).toLocaleTimeString()}
                                 </div>
                               )}
-                            </td>
+                            </div>
 
-                            {/* Action Button */}
-                            <td className="py-4 text-right pr-2">
+                            <div>
                               {isVerified ? (
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handleSingleTicketAction(t._id, activeTab, 'check-out-single', t.user._id || undefined)}
                                   disabled={actionLoading[`check-out-single-${t._id}`]}
-                                  className="h-9 px-3 text-xs text-gray-500 hover:text-red-600 hover:border-red-200 rounded-xl"
+                                  className="h-8 px-3 text-xs text-gray-500 hover:text-red-600 rounded-xl"
                                 >
                                   {actionLoading[`check-out-single-${t._id}`] ? (
                                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                   ) : (
-                                    'Undo Check-In'
+                                    'Undo'
                                   )}
                                 </Button>
                               ) : (
@@ -1339,40 +1471,40 @@ export function HighSpeedTicketHub() {
                                   )}
                                 </Button>
                               )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
 
               {/* Pagination Row */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-6 border-t mt-4 text-sm text-gray-500">
-                  <div>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 sm:pt-6 border-t mt-4 text-xs sm:text-sm text-gray-500">
+                  <div className="text-center sm:text-left">
                     Showing <strong>{(page - 1) * 25 + 1}</strong> to <strong>{Math.min(page * 25, totalItems)}</strong> of <strong>{totalItems}</strong> tickets
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 w-full sm:w-auto justify-center">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
                       disabled={page <= 1 || tabLoading}
-                      className="rounded-xl px-3"
+                      className="rounded-xl px-3 h-8 sm:h-9"
                     >
                       Previous
                     </Button>
                     <span className="text-xs font-bold px-2">
-                      Page {page} of {totalPages}
+                      {page} / {totalPages}
                     </span>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                       disabled={page >= totalPages || tabLoading}
-                      className="rounded-xl px-3"
+                      className="rounded-xl px-3 h-8 sm:h-9"
                     >
                       Next
                     </Button>
@@ -1401,7 +1533,7 @@ export function HighSpeedTicketHub() {
 
       {/* Check-In Activation / Deactivation Confirmation Dialog */}
       <AlertDialog open={showToggleModal} onOpenChange={setShowToggleModal}>
-        <AlertDialogContent className="rounded-2xl max-w-md bg-white dark:bg-gray-900 border">
+        <AlertDialogContent className="rounded-2xl w-[92vw] max-w-md p-5 sm:p-6 bg-white dark:bg-gray-900 border">
           <AlertDialogHeader>
             <div
               className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2 mx-auto sm:mx-0 border"
@@ -1425,10 +1557,10 @@ export function HighSpeedTicketHub() {
                 : 'Activating check-ins will enable all desk officials to immediately verify codes, confirm 1-click attendee check-ins, and issue admission badges.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-4">
+          <AlertDialogFooter className="mt-4 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
             <AlertDialogCancel
               disabled={toggleLoading}
-              className="rounded-xl h-11 px-4"
+              className="w-full sm:w-auto rounded-xl h-11 px-4"
             >
               Cancel
             </AlertDialogCancel>
@@ -1451,7 +1583,7 @@ export function HighSpeedTicketHub() {
                   setToggleLoading(false);
                 }
               }}
-              className={`rounded-xl h-11 px-5 font-bold text-white shadow-md transition ${
+              className={`w-full sm:w-auto rounded-xl h-11 px-5 font-bold text-white shadow-md transition flex items-center justify-center ${
                 checkinActive
                   ? 'bg-amber-600 hover:bg-amber-700'
                   : 'bg-emerald-600 hover:bg-emerald-700'

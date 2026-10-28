@@ -167,7 +167,7 @@ export function WalkinRegistrationModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
-      <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto p-6 bg-white dark:bg-gray-900 border shadow-2xl rounded-2xl">
+      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[92vh] overflow-y-auto p-4 sm:p-6 bg-white dark:bg-gray-900 border shadow-2xl rounded-2xl">
         <DialogHeader>
           <div className="flex items-center space-x-2">
             <div className="p-2.5 bg-primary-100 text-primary-700 dark:bg-primary-950 dark:text-primary-300 rounded-xl">
@@ -240,17 +240,17 @@ export function WalkinRegistrationModal({
               </div>
             </div>
 
-            <div className="flex justify-center space-x-3 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row justify-center gap-2 sm:gap-3 pt-2">
               <Button
                 variant="outline"
                 onClick={handleReset}
-                className="rounded-xl px-6"
+                className="w-full sm:w-auto rounded-xl px-6 h-11"
               >
                 Register Another Walk-In
               </Button>
               <Button
                 onClick={handleModalClose}
-                className="bg-primary-600 hover:bg-primary-700 text-white rounded-xl px-8"
+                className="w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white rounded-xl px-8 h-11"
               >
                 Done
               </Button>
@@ -486,44 +486,44 @@ export function WalkinRegistrationModal({
                 3. Payment Details & Instant Check-In
               </h4>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('cash')}
-                  className={`p-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
+                  className={`p-2.5 sm:p-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
                     paymentMethod === 'cash'
                       ? 'border-emerald-600 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 font-bold'
                       : 'border-gray-200 hover:bg-gray-50 text-gray-700 dark:border-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <Banknote className="w-5 h-5 text-emerald-600" />
-                  <span className="text-xs">Cash Received</span>
+                  <span className="text-[11px] sm:text-xs">Cash Received</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('pos')}
-                  className={`p-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
+                  className={`p-2.5 sm:p-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
                     paymentMethod === 'pos'
                       ? 'border-blue-600 bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 font-bold'
                       : 'border-gray-200 hover:bg-gray-50 text-gray-700 dark:border-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <CreditCard className="w-5 h-5 text-blue-600" />
-                  <span className="text-xs">POS Terminal</span>
+                  <span className="text-[11px] sm:text-xs">POS Terminal</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('transfer')}
-                  className={`p-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
+                  className={`p-2.5 sm:p-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
                     paymentMethod === 'transfer'
                       ? 'border-purple-600 bg-purple-50 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300 font-bold'
                       : 'border-gray-200 hover:bg-gray-50 text-gray-700 dark:border-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <Building2 className="w-5 h-5 text-purple-600" />
-                  <span className="text-xs">Direct Transfer</span>
+                  <span className="text-[11px] sm:text-xs">Direct Transfer</span>
                 </button>
               </div>
 
@@ -579,20 +579,20 @@ export function WalkinRegistrationModal({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end space-x-3 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleModalClose}
                 disabled={loading}
-                className="h-11 rounded-xl px-5"
+                className="w-full sm:w-auto h-11 rounded-xl px-5"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={loading || totalAmount <= 0}
-                className="h-11 rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center space-x-2"
+                className="w-full sm:w-auto h-11 rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center space-x-2"
               >
                 {loading ? (
                   <>

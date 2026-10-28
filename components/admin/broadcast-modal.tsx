@@ -297,9 +297,9 @@ export function BroadcastModal({ isOpen, onClose }: BroadcastModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto p-0 rounded-2xl bg-white dark:bg-gray-900 border shadow-2xl">
+      <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[92vh] overflow-y-auto p-0 rounded-2xl bg-white dark:bg-gray-900 border shadow-2xl">
         {/* Header */}
-        <div className="p-6 border-b bg-gradient-to-r from-indigo-900 via-indigo-800 to-primary-900 text-white rounded-t-2xl">
+        <div className="p-4 sm:p-6 border-b bg-gradient-to-r from-indigo-900 via-indigo-800 to-primary-900 text-white rounded-t-2xl">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center border border-white/20">
@@ -351,7 +351,7 @@ export function BroadcastModal({ isOpen, onClose }: BroadcastModalProps) {
 
         {/* Modal Body */}
         {activeTab === 'compose' ? (
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Meta Anti-Spam Safeguard Banner */}
             <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 text-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div className="flex items-start space-x-3">
@@ -608,19 +608,19 @@ export function BroadcastModal({ isOpen, onClose }: BroadcastModalProps) {
                     <span>Send Live Test to Your WhatsApp</span>
                     <span className="text-[10px] text-gray-500">Verifies before blast</span>
                   </Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       value={testPhoneNumber}
                       onChange={(e) => setTestPhoneNumber(e.target.value)}
                       placeholder="e.g. 08031234567 or +234..."
-                      className="h-9 text-xs rounded-xl bg-white dark:bg-gray-900"
+                      className="h-10 sm:h-9 text-xs rounded-xl bg-white dark:bg-gray-900 flex-1"
                     />
                     <Button
                       type="button"
                       size="sm"
                       onClick={handleSendTest}
                       disabled={isSendingTest || !testPhoneNumber.trim()}
-                      className="rounded-xl h-9 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shrink-0"
+                      className="rounded-xl h-10 sm:h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold w-full sm:w-auto shrink-0 flex items-center justify-center"
                     >
                       {isSendingTest ? (
                         <>
@@ -640,17 +640,17 @@ export function BroadcastModal({ isOpen, onClose }: BroadcastModalProps) {
             </div>
 
             {/* Launch Footer */}
-            <div className="pt-4 border-t flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="text-xs text-gray-500">
+            <div className="pt-4 border-t flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="text-xs text-gray-500 text-center sm:text-left">
                 <span>Targets <strong>{audienceData?.total || 0} members</strong> • Safe delivery interval: <strong>8s – 18s</strong> per member</span>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 sm:space-x-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={onClose}
-                  className="rounded-xl h-11 px-5"
+                  className="w-full sm:w-auto rounded-xl h-11 px-5"
                 >
                   Cancel
                 </Button>
@@ -658,7 +658,7 @@ export function BroadcastModal({ isOpen, onClose }: BroadcastModalProps) {
                   type="button"
                   onClick={handleLaunchCampaign}
                   disabled={campaignActionLoading || !audienceData || audienceData.total === 0}
-                  className="rounded-xl h-11 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+                  className="w-full sm:w-auto rounded-xl h-11 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
                 >
                   {campaignActionLoading ? (
                     <>
@@ -677,7 +677,7 @@ export function BroadcastModal({ isOpen, onClose }: BroadcastModalProps) {
           </div>
         ) : (
           /* Live Campaign Dashboard View */
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {activeCampaign ? (
               <div className="space-y-6">
                 {/* Active Campaign Header Card */}
