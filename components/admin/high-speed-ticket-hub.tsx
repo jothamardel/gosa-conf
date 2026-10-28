@@ -36,9 +36,11 @@ import {
   PlayCircle,
   Database,
   Power,
+  Megaphone,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { WalkinRegistrationModal } from './walkin-registration-modal';
+import { BroadcastModal } from './broadcast-modal';
 import { playSuccessChime, playAlreadyCheckedAlert } from '@/lib/utils/audio-cue';
 import { useLocalTicketSync } from '@/lib/hooks/use-local-ticket-sync';
 import {
@@ -152,8 +154,9 @@ export function HighSpeedTicketHub() {
   const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({});
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
-  // Walkin Modal
+  // Walkin & Broadcast Modals
   const [isWalkinOpen, setIsWalkinOpen] = useState(false);
+  const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
 
   // Local Database Sync & Master Check-In Activation State
   const {
@@ -577,6 +580,14 @@ export function HighSpeedTicketHub() {
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${analyticsLoading || tabLoading ? 'animate-spin' : ''}`} />
             Refresh
+          </Button>
+
+          <Button
+            onClick={() => setIsBroadcastOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 px-4 font-bold shadow-md hover:shadow-lg transition-all flex items-center space-x-2"
+          >
+            <Megaphone className="w-4 h-4 mr-1.5" />
+            <span>Broadcast Campaign</span>
           </Button>
 
           <Button
@@ -1380,6 +1391,12 @@ export function HighSpeedTicketHub() {
         onSuccess={handleWalkinSuccess}
         initialQuery={debouncedQuery}
         checkinActive={checkinActive}
+      />
+
+      {/* Broadcast Campaign & Ticket Sales Drive Modal */}
+      <BroadcastModal
+        isOpen={isBroadcastOpen}
+        onClose={() => setIsBroadcastOpen(false)}
       />
 
       {/* Check-In Activation / Deactivation Confirmation Dialog */}
