@@ -31,6 +31,7 @@ import {
   ChevronUp,
   Info,
   Loader2,
+  ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -39,6 +40,7 @@ import {
   resolveSpintax,
 } from '@/lib/utils/broadcast-spintax';
 import { BroadcastAudienceFilter } from '@/lib/schema';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface BroadcastModalProps {
   isOpen: boolean;
@@ -46,6 +48,8 @@ interface BroadcastModalProps {
 }
 
 export function BroadcastModal({ isOpen, onClose }: BroadcastModalProps) {
+  const { canBroadcast, session } = useAdminAuth();
+
   // Navigation tabs: 'compose' | 'active-campaign'
   const [activeTab, setActiveTab] = useState<'compose' | 'active-campaign'>('compose');
 
@@ -294,6 +298,27 @@ export function BroadcastModal({ isOpen, onClose }: BroadcastModalProps) {
     phoneNumber: currentSample?.phoneNumber || '+2348031234567',
     year: currentSample?.year || '1998',
   });
+
+  if (!canBroadcast) {
+    return (
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="w-[90vw] max-w-md p-6 rounded-3xl bg-white dark:bg-gray-900 border shadow-2xl text-center space-y-4">
+          <div className="w-14 h-14 bg-rose-100 dark:bg-rose-950/60 text-rose-600 rounded-2xl flex items-center justify-center mx-auto border border-rose-200 dark:border-rose-900">
+            <ShieldAlert className="w-7 h-7" />
+          </div>
+          <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+            Broadcast Permission Restricted
+          </DialogTitle>
+          <DialogDescription className="text-xs text-gray-500 leading-relaxed">
+            Bulk WhatsApp broadcast messaging is restricted to Super Administrators to protect the official WhatsApp line. As a Desk Admin, you have full access to ticket check-ins, attendee verification, and walk-in sales.
+          </DialogDescription>
+          <Button onClick={onClose} className="rounded-xl w-full bg-gray-900 hover:bg-black text-white font-bold text-xs h-10">
+            Return to Check-in Desk
+          </Button>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

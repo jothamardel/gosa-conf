@@ -11,7 +11,7 @@ interface AdminWrapperProps {
 }
 
 export default function AdminWrapper({ children }: AdminWrapperProps) {
-  const { isAuthenticated, isLoading, error, login, logout } = useAdminAuth();
+  const { isAuthenticated, isLoading, error, login, logout, adminName, canBroadcast } = useAdminAuth();
 
   // Show loading state
   if (isLoading) {
@@ -29,7 +29,7 @@ export default function AdminWrapper({ children }: AdminWrapperProps) {
   if (!isAuthenticated) {
     return (
       <AdminLogin
-        onLogin={login}
+        onLogin={(identifier, pin) => login(identifier, pin)}
         error={error || undefined}
         loading={isLoading}
       />
@@ -51,10 +51,19 @@ export default function AdminWrapper({ children }: AdminWrapperProps) {
               </h1>
             </div>
 
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <div className="hidden md:flex items-center text-xs text-gray-500">
-                <Clock className="w-3.5 h-3.5 mr-1" />
-                Session: 4h
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="flex items-center gap-1.5 text-xs bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-full border border-gray-200 dark:border-gray-700">
+                <div className={`w-2 h-2 rounded-full ${canBroadcast ? 'bg-indigo-500 animate-pulse' : 'bg-emerald-500'}`} />
+                <span className="font-semibold text-gray-800 dark:text-gray-200 truncate max-w-[140px] sm:max-w-none">
+                  {adminName}
+                </span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider ${
+                  canBroadcast
+                    ? 'bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300'
+                    : 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300'
+                }`}>
+                  {canBroadcast ? 'Super Admin' : 'Desk Admin'}
+                </span>
               </div>
 
               <Button

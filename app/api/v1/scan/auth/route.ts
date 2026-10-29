@@ -23,22 +23,38 @@ const OFFICIAL_PINS = {
   // Add more PINs as needed
 };
 
+import { findAuthorizedAdminByPhone } from '@/lib/constants/admin-access';
+
 export async function POST(request: NextRequest) {
   try {
     const { pin } = await request.json();
 
     if (!pin) {
       return NextResponse.json(
-        { error: 'PIN is required' },
+        { error: 'PIN or Phone Number is required' },
         { status: 400 }
       );
     }
 
-    const official = OFFICIAL_PINS[pin as keyof typeof OFFICIAL_PINS];
+    // 1. Check existing legacy PIN map
+    let official = OFFICIAL_PINS[pin as keyof typeof OFFICIAL_PINS];
+
+    // 2. Check authorized desk admins by phone or PIN
+    if (!official) {
+      const adminByPhone = findAuthorizedAdminByPhone(pin);
+      if (adminByPhone) {
+        official = {
+          id: adminByPhone.id,
+          name: adminByPhone.name,
+          role: 'Desk Admin',
+          pin: adminByPhone.pin || pin,
+        };
+      }
+    }
 
     if (!official) {
       return NextResponse.json(
-        { error: 'Invalid PIN' },
+        { error: 'Invalid PIN or unauthorized phone number' },
         { status: 401 }
       );
     }

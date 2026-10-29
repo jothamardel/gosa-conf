@@ -43,6 +43,7 @@ import { WalkinRegistrationModal } from './walkin-registration-modal';
 import { BroadcastModal } from './broadcast-modal';
 import { playSuccessChime, playAlreadyCheckedAlert } from '@/lib/utils/audio-cue';
 import { useLocalTicketSync } from '@/lib/hooks/use-local-ticket-sync';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -157,6 +158,7 @@ export function HighSpeedTicketHub() {
   // Walkin & Broadcast Modals
   const [isWalkinOpen, setIsWalkinOpen] = useState(false);
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+  const { canBroadcast } = useAdminAuth();
 
   // Local Database Sync & Master Check-In Activation State
   const {
@@ -582,14 +584,16 @@ export function HighSpeedTicketHub() {
             <span>Refresh</span>
           </Button>
 
-          <Button
-            onClick={() => setIsBroadcastOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 sm:h-11 px-3 sm:px-4 text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-1.5"
-          >
-            <Megaphone className="w-3.5 h-3.5 mr-1" />
-            <span className="hidden sm:inline">Broadcast Campaign</span>
-            <span className="sm:hidden">Broadcast</span>
-          </Button>
+          {canBroadcast && (
+            <Button
+              onClick={() => setIsBroadcastOpen(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 sm:h-11 px-3 sm:px-4 text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-1.5"
+            >
+              <Megaphone className="w-3.5 h-3.5 mr-1" />
+              <span className="hidden sm:inline">Broadcast Campaign</span>
+              <span className="sm:hidden">Broadcast</span>
+            </Button>
+          )}
 
           <Button
             onClick={() => setIsWalkinOpen(true)}

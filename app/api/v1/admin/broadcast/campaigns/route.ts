@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { BroadcastCampaign, BroadcastAudienceFilter } from '@/lib/schema';
 import { resolveBroadcastAudience } from '@/lib/utils/broadcast-audience';
 import { runCampaignBackground } from '@/lib/utils/broadcast-runner';
+import { isDeskAdmin } from '@/lib/constants/admin-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +54,19 @@ export async function POST(request: NextRequest) {
       minDelaySeconds = 8,
       maxDelaySeconds = 18,
     } = body;
+
+    // Enforce broadcast restriction: Desk Admins cannot dispatch broadcasts
+    const adminRole = request.headers.get('x-admin-role') || body.adminRole;
+    const adminPhone = request.headers.get('x-admin-phone') || body.adminPhone;
+    if (adminRole === 'desk_admin' || (adminPhone && isDeskAdmin(adminPhone))) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Access Denied: Sending broadcast campaigns is restricted exclusively to Super Administrators.',
+        },
+        { status: 403 },
+      );
+    }
 
     if (!title || !template) {
       return NextResponse.json(

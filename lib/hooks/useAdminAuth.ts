@@ -3,15 +3,20 @@
 import { useState, useEffect } from 'react';
 
 const ADMIN_SESSION_KEY = 'gosa_admin_session';
-const SESSION_DURATION = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+const SESSION_DURATION = 8 * 60 * 60 * 1000; // 8 hours in milliseconds for convention desk shift
 
-interface AdminSession {
+export interface AdminSession {
   authenticated: boolean;
   timestamp: number;
+  adminId?: string;
+  adminName?: string;
+  phone?: string;
+  role?: 'super_admin' | 'desk_admin';
+  canBroadcast: boolean;
 }
 
 export function useAdminAuth() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [session, setSession] = useState<AdminSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,59 +29,67 @@ export function useAdminAuth() {
     try {
       const sessionData = localStorage.getItem(ADMIN_SESSION_KEY);
       if (sessionData) {
-        const session: AdminSession = JSON.parse(sessionData);
+        const parsedSession: AdminSession = JSON.parse(sessionData);
         const now = Date.now();
 
-        // Check if session is still valid (within 4 hours)
-        if (session.authenticated && (now - session.timestamp) < SESSION_DURATION) {
-          setIsAuthenticated(true);
+        // Check if session is still valid
+        if (parsedSession.authenticated && now - parsedSession.timestamp < SESSION_DURATION) {
+          setSession(parsedSession);
         } else {
-          // Session expired, clear it
           localStorage.removeItem(ADMIN_SESSION_KEY);
-          setIsAuthenticated(false);
+          setSession(null);
         }
       }
-    } catch (error) {
-      console.error('Error checking admin session:', error);
+    } catch (err) {
+      console.error('Error checking admin session:', err);
       localStorage.removeItem(ADMIN_SESSION_KEY);
-      setIsAuthenticated(false);
+      setSession(null);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = async (password: string): Promise<boolean> => {
+  const login = async (identifier: string, pin?: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Verify password with API
+      const trimmed = identifier.trim();
       const response = await fetch('/api/v1/admin/auth', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({
+          password: trimmed,
+          phone: trimmed,
+          pin: pin?.trim(),
+        }),
       });
 
       const data = await response.json();
 
-      if (data.success) {
-        // Store session
-        const session: AdminSession = {
+      if (data.success && data.admin) {
+        const newSession: AdminSession = {
           authenticated: true,
           timestamp: Date.now(),
+          adminId: data.admin.id,
+          adminName: data.admin.name,
+          phone: data.admin.phone,
+          role: data.admin.role,
+          canBroadcast: !!data.admin.canBroadcast,
         };
-        localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
-        setIsAuthenticated(true);
+
+        localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(newSession));
+        setSession(newSession);
         return true;
       } else {
-        setError(data.error || 'Invalid password');
+        setError(data.error || 'Authentication failed');
         return false;
       }
-    } catch (error) {
-      console.error('Admin login error:', error);
-      setError('Login failed. Please try again.');
+    } catch (err: any) {
+      console.error('Admin login error:', err);
+      setError('Login failed. Please check your network and try again.');
       return false;
     } finally {
       setIsLoading(false);
@@ -85,22 +98,27 @@ export function useAdminAuth() {
 
   const logout = () => {
     localStorage.removeItem(ADMIN_SESSION_KEY);
-    setIsAuthenticated(false);
+    setSession(null);
     setError(null);
   };
 
   const extendSession = () => {
-    if (isAuthenticated) {
-      const session: AdminSession = {
-        authenticated: true,
+    if (session?.authenticated) {
+      const updated: AdminSession = {
+        ...session,
         timestamp: Date.now(),
       };
-      localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
+      localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(updated));
+      setSession(updated);
     }
   };
 
   return {
-    isAuthenticated,
+    isAuthenticated: !!session?.authenticated,
+    session,
+    adminName: session?.adminName || 'Admin',
+    role: session?.role || 'desk_admin',
+    canBroadcast: session?.canBroadcast ?? false,
     isLoading,
     error,
     login,
