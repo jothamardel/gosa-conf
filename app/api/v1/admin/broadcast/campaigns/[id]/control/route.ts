@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { BroadcastCampaign } from '@/lib/schema';
-import { runCampaignBackground } from '@/lib/utils/broadcast-runner';
+import {
+  runCampaignBackground,
+  pauseCampaignRemote,
+  cancelCampaignRemote,
+} from '@/lib/utils/broadcast-runner';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,16 +31,15 @@ export async function POST(
       if (campaign.status === 'running') {
         campaign.status = 'paused';
         await campaign.save();
+        await pauseCampaignRemote(id);
       }
       return NextResponse.json({ success: true, status: campaign.status });
     }
 
     if (action === 'resume') {
-      if (campaign.status === 'paused' || campaign.status === 'running') {
-        campaign.status = 'running';
-        await campaign.save();
-        runCampaignBackground(id);
-      }
+      campaign.status = 'running';
+      await campaign.save();
+      await runCampaignBackground(id);
       return NextResponse.json({ success: true, status: campaign.status });
     }
 
@@ -44,6 +47,7 @@ export async function POST(
       campaign.status = 'cancelled';
       campaign.completedAt = new Date();
       await campaign.save();
+      await cancelCampaignRemote(id);
       return NextResponse.json({ success: true, status: campaign.status });
     }
 

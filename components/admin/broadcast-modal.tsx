@@ -710,16 +710,29 @@ export function BroadcastModal({ isOpen, onClose }: BroadcastModalProps) {
                     {/* Control Buttons */}
                     <div className="flex items-center space-x-2">
                       {activeCampaign.status === 'running' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleCampaignControl('pause')}
-                          disabled={campaignActionLoading}
-                          className="rounded-xl border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                        >
-                          <Pause className="w-3.5 h-3.5 mr-1" />
-                          Pause
-                        </Button>
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCampaignControl('resume')}
+                            disabled={campaignActionLoading}
+                            title="Kickstart or reconnect 24/7 background worker on Railway"
+                            className="rounded-xl border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                          >
+                            <Play className="w-3.5 h-3.5 mr-1" />
+                            Kickstart Worker
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCampaignControl('pause')}
+                            disabled={campaignActionLoading}
+                            className="rounded-xl border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                          >
+                            <Pause className="w-3.5 h-3.5 mr-1" />
+                            Pause
+                          </Button>
+                        </>
                       )}
 
                       {activeCampaign.status === 'paused' && (

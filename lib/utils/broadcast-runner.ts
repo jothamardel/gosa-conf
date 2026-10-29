@@ -7,6 +7,42 @@ import { normalizeBroadcastPhone } from './broadcast-audience';
 // In-memory set of currently running campaign IDs to prevent duplicate concurrent loops
 const activeRunningCampaigns = new Set<string>();
 
+const AGENT_GATEWAY_URL = (
+  process.env.AGENT_SERVICE_URL ||
+  process.env.AGENT_API_URL ||
+  process.env.WA_GATEWAY_URL ||
+  process.env.WHATSAPP_GATEWAY_URL ||
+  'https://gosa-agent-production.up.railway.app'
+).replace(/\/+$/, '');
+
+/**
+ * Notifies agent-service to pause an active campaign if running remotely.
+ */
+export async function pauseCampaignRemote(campaignId: string): Promise<void> {
+  try {
+    await fetch(`${AGENT_GATEWAY_URL}/api/v1/whatsapp/campaigns/${campaignId}/pause`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (err: any) {
+    console.warn(`[Broadcast Runner] Remote pause error: ${err?.message}`);
+  }
+}
+
+/**
+ * Notifies agent-service to cancel an active campaign if running remotely.
+ */
+export async function cancelCampaignRemote(campaignId: string): Promise<void> {
+  try {
+    await fetch(`${AGENT_GATEWAY_URL}/api/v1/whatsapp/campaigns/${campaignId}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (err: any) {
+    console.warn(`[Broadcast Runner] Remote cancel error: ${err?.message}`);
+  }
+}
+
 /**
  * Sends a single test message to an admin phone number to verify template & delivery.
  */
@@ -53,12 +89,33 @@ export async function sendBroadcastTest(
   }
 }
 
+
 /**
  * Starts or resumes a background campaign loop with humanized jitter & anti-spam protections.
+ * Automatically delegates to 24/7 persistent agent-service on Railway to avoid serverless timeouts,
+ * with resilient fallback to local runner.
  */
 export async function runCampaignBackground(campaignId: string): Promise<void> {
+  // 1. Primary: Delegate execution to persistent agent-service on Railway
+  try {
+    console.log(`[Broadcast Runner] Delegating campaign ${campaignId} to agent-service on Railway (${AGENT_GATEWAY_URL})...`);
+    const agentRes = await fetch(`${AGENT_GATEWAY_URL}/api/v1/whatsapp/campaigns/${campaignId}/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const agentJson = await agentRes.json();
+    if (agentJson.success) {
+      console.log(`✅ [Broadcast Runner] Campaign ${campaignId} successfully handed off to 24/7 agent-service on Railway.`);
+      return;
+    }
+    console.warn(`[Broadcast Runner] agent-service returned unsuccessful response:`, agentJson);
+  } catch (agentErr: any) {
+    console.warn(`[Broadcast Runner] Remote handoff to agent-service failed (${agentErr?.message}). Falling back to local runner.`);
+  }
+
+  // 2. Fallback: Local background loop (for local development or if agent-service is offline)
   if (activeRunningCampaigns.has(campaignId)) {
-    console.log(`[Broadcast Runner] Campaign ${campaignId} is already executing.`);
+    console.log(`[Broadcast Runner] Campaign ${campaignId} is already executing locally.`);
     return;
   }
 
