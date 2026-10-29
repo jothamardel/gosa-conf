@@ -449,7 +449,7 @@ export class ImageGeneratorService {
 
       ctx.fillStyle = "#374151";
       ctx.font = getFontString("12", "normal");
-      ctx.fillText("www.gosa.events", 400, 1000);
+      ctx.fillText("events.gosanigeria.ng", 400, 1000);
       ctx.fillText(
         `Generated on ${new Date().toLocaleDateString()}`,
         400,
@@ -1854,7 +1854,7 @@ Jos, Nigeria`;
 
       ctx.fillStyle = "#6B7280";
       ctx.font = "12px Arial";
-      ctx.fillText("www.gosa.events • gosasecretariat@gmail.com", 400, 1160);
+      ctx.fillText("events.gosanigeria.ng • gosasecretariat@gmail.com", 400, 1160);
 
       // Convert canvas to PNG buffer
       return canvas.toBuffer("image/png");

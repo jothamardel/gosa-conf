@@ -48,9 +48,10 @@ export function personalizeMessage(
 
   const rawName = data.fullName || 'Esteemed GOSA Member';
   const firstName = rawName.trim().split(/\s+/)[0] || 'Alumnus';
-  const portalUrl = data.portalUrl || 'https://gosa.events';
+  const portalUrl = data.portalUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://events.gosanigeria.ng/';
 
   let message = template
+    .replace(/https?:\/\/(www\.)?gosa\.events\/?/gi, 'https://events.gosanigeria.ng/')
     .replace(/\{name\}/gi, rawName)
     .replace(/\{first_name\}/gi, firstName)
     .replace(/\{firstName\}/gi, firstName)

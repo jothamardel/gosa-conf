@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     // Generate QR code data
     let qrCodeData = record.qrCodes?.[0]?.qrCode;
     if (!qrCodeData) {
-      const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://gosa.events';
+      const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://events.gosanigeria.ng';
       qrCodeData = `${baseUrl}/scan?id=${record._id}`;
     }
 

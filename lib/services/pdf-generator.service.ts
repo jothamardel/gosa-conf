@@ -371,7 +371,7 @@ export class PDFGeneratorService {
           <div class="container">
             <div class="header">
               <div class="logo-section">
-                <img src="${process.env.NEXTAUTH_URL || 'https://www.gosa.events'}${template.logoUrl}" alt="GOSA Logo" class="logo-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'; console.warn('GOSA logo failed to load, using text fallback');" />
+                <img src="${process.env.NEXTAUTH_URL || 'https://events.gosanigeria.ng'}${template.logoUrl}" alt="GOSA Logo" class="logo-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'; console.warn('GOSA logo failed to load, using text fallback');" />
                 <div class="logo-placeholder" style="display: none;">GOSA</div>
                 <div class="brand-text">${template.title}</div>
               </div>
@@ -473,7 +473,7 @@ export class PDFGeneratorService {
                 GOSA 2026 Convention - For Light and Truth
               </div>
               <div class="footer-contact">
-                For support, contact us at gosasecretariat@gmail.com | www.gosa.events<br>
+                For support, contact us at gosasecretariat@gmail.com | events.gosanigeria.ng<br>
                 Phone: +234 816 2329 082<br>
                 Address: GOSA Secretariat Dogo Karfe<br>
               

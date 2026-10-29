@@ -459,7 +459,7 @@ const DinnerPayment = () => {
 
         {/* Footer */}
         <div className="text-center text-gray-500 text-sm mt-8">
-          <p>Questions? Contact us at info@gosa.events</p>
+          <p>Questions? Contact us at gosasecretariat@gmail.com</p>
         </div>
       </div>
     </div>

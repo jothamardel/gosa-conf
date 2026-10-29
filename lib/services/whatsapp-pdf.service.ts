@@ -243,10 +243,10 @@ export class WhatsAppPDFService {
   }
 
   /**
-   * Generate PDF download URL using www.gosa.events domain
+   * Generate PDF download URL using events.gosanigeria.ng domain
    */
   private static generatePDFDownloadUrl(paymentReference: string): string {
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://www.gosa.events';
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://events.gosanigeria.ng';
     return `${baseUrl}/api/v1/pdf/download?ref=${encodeURIComponent(paymentReference)}&format=pdf`;
   }
 
@@ -281,7 +281,7 @@ ${documentUrl}
 🔗 Need help? Contact gosasecretariat@gmail.com
 
 GOSA 2026 Convention Team
-www.gosa.events`;
+events.gosanigeria.ng`;
   }
 
   /**

@@ -104,7 +104,7 @@ export class PDFBlobService {
     });
 
     // Return fallback URL using the existing PDF download API
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://www.gosa.events';
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://events.gosanigeria.ng';
     return `${baseUrl}/api/v1/pdf/download?ref=${fallbackData.operationDetails.paymentReference}&format=pdf`;
   }
 

@@ -573,7 +573,7 @@ export class PDFWhatsAppUtils {
   ): Promise<string> {
     try {
       // Generate the URL format for QR code scanning
-      const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://gosa.events';
+      const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://events.gosanigeria.ng';
       return `${baseUrl}/scan?id=${serviceId}`;
     } catch (error) {
       console.error('Error generating service QR code data:', error);

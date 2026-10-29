@@ -737,7 +737,7 @@ Thank you for supporting the GOSA community!`;
 
     // If no QR code exists, generate a basic one
     if (!qrCodeData) {
-      const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://gosa.events';
+      const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://events.gosanigeria.ng';
       qrCodeData = `${baseUrl}/scan?id=${record._id}`;
     }
 
@@ -901,7 +901,7 @@ async function sendIndividualDinnerReceipt(reservation: any, mainPaymentReferenc
     // Generate QR code data for this specific reservation
     let qrCodeData = reservation.qrCodes?.[0]?.qrCode;
     if (!qrCodeData) {
-      const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://gosa.events';
+      const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://events.gosanigeria.ng';
       qrCodeData = `${baseUrl}/scan?id=${reservation._id}`;
     }
 

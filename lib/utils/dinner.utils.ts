@@ -390,7 +390,7 @@ export class DinnerUtils {
               description: 'Dinner Reservation',
               additionalInfo: `Guest: ${guest.name}${guest.dietaryRequirements ? ` | Dietary: ${guest.dietaryRequirements}` : ''} | Regenerated Ticket`,
             },
-            qrCodeData: individualReservation.qrCodes[0]?.qrCode || `${process.env.GOSA_PUBLIC_URL || 'https://gosa.events'}/scan?id=${individualReservation._id}`,
+            qrCodeData: individualReservation.qrCodes[0]?.qrCode || `${process.env.GOSA_PUBLIC_URL || 'https://events.gosanigeria.ng'}/scan?id=${individualReservation._id}`,
           };
 
           // Send ticket via WhatsApp

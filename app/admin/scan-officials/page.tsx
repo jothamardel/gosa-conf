@@ -314,7 +314,7 @@ function ScanOfficialsContent() {
           <Shield className="h-4 w-4" />
           <AlertDescription>
             <strong>Security Note:</strong> PINs should be kept confidential and shared only with authorized personnel.
-            Officials can use their PINs to access the check-in system at https://gosa.events/scan
+            Officials can use their PINs to access the check-in system at https://events.gosanigeria.ng/scan
           </AlertDescription>
         </Alert>
 

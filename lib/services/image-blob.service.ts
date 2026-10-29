@@ -110,7 +110,7 @@ export class ImageBlobService {
     });
 
     // Return fallback URL using the existing image download API
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://www.gosa.events';
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://events.gosanigeria.ng';
     return `${baseUrl}/api/v1/image/download?ref=${fallbackData.operationDetails.paymentReference}&format=image`;
   }
 

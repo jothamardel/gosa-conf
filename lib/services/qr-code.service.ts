@@ -278,7 +278,7 @@ export class QRCodeService {
   // Private helper methods
   private static generateQRCodeData(data: QRCodeData): string {
     // Generate the URL format for QR code scanning
-    const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://gosa.events';
+    const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://events.gosanigeria.ng';
     return `${baseUrl}/scan?id=${data.id}`;
   }
 
@@ -325,7 +325,7 @@ export class QRCodeService {
    */
   static generateUniqueQRData(type: string, id: string, additionalData?: any): string {
     // Generate the URL format for QR code scanning
-    const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://gosa.events';
+    const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://events.gosanigeria.ng';
     return `${baseUrl}/scan?id=${id}`;
   }
 
@@ -334,9 +334,13 @@ export class QRCodeService {
    */
   static parseQRCodeData(qrDataString: string): any {
     try {
-      // Handle URL format: https://gosa.events/scan?id=xxxxxxxxxx or custom domain
-      const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://gosa.events';
-      if (qrDataString.startsWith(`${baseUrl}/scan?id=`) || qrDataString.startsWith('https://gosa.events/scan?id=')) {
+      // Handle URL format: https://events.gosanigeria.ng/scan?id=xxxxxxxxxx or legacy domain
+      const baseUrl = process.env.GOSA_PUBLIC_URL || 'https://events.gosanigeria.ng';
+      if (
+        qrDataString.startsWith(`${baseUrl}/scan?id=`) ||
+        qrDataString.startsWith('https://events.gosanigeria.ng/scan?id=') ||
+        qrDataString.startsWith('https://gosa.events/scan?id=')
+      ) {
         const url = new URL(qrDataString);
         const id = url.searchParams.get('id');
         return {

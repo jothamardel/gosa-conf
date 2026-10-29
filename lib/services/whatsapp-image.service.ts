@@ -218,7 +218,7 @@ export class WhatsAppImageService {
     const serviceTitle = this.getServiceTitle(operationDetails.type);
     const isGroup = userDetails.phone.endsWith('@g.us');
 
-    const baseText = `🎉 GOSA 2025 Convention
+    const baseText = `🎉 GOSA 2026 Convention
 For Light and Truth
 
 Dear ${userDetails.name},
@@ -236,8 +236,8 @@ ${isGroup ? "" : `• Reference: ${operationDetails.paymentReference}\n`}• Sta
 
 🔗 Need help? Contact gosasecretariat@gmail.com
 
-GOSA 2025 Convention Team
-www.gosa.events`;
+GOSA 2026 Convention Team
+events.gosanigeria.ng`;
 
     return isGroup ? this.formatGroupResponse(baseText) : this.sanitizeMessage(baseText);
   }

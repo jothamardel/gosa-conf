@@ -109,7 +109,7 @@ export default function EnhancedScanPage() {
     try {
       // Extract ticket ID from QR code URL
       const url = new URL(data);
-      if (url.hostname === 'gosa.events' && url.pathname === '/scan') {
+      if ((url.hostname === 'events.gosanigeria.ng' || url.hostname === 'gosa.events') && url.pathname === '/scan') {
         const id = url.searchParams.get('id');
         if (id) {
           fetchTicketData(id);
