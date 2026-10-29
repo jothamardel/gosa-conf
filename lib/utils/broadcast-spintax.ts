@@ -181,12 +181,14 @@ Reply *DINNER* to reserve your dinner ticket in 30 seconds!
 
 {The countdown is on!|The grand convention is almost here!|Only a few days left until} *GOSA 2026*.
 
-To ensure {smooth crowd flow|zero waiting time at check-in}, manual registrations at the venue desk will be limited. Please secure your ticket in advance:
+{While tickets can be purchased at the venue desk on arrival|Although registration will be open at the venue}, we {strongly advise|warmly encourage you} to secure your pass ahead of time to avoid queues and congestion on event day:
 
-🔗 *Direct Checkout:* {portal_link}
+🔗 *Fast-Track Online Portal:* {portal_link}
 
-Or reply *PASS* to buy directly with our WhatsApp assistant!
+💡 *Or buy right here on WhatsApp:*
+Reply *1* for *Convention Pass (₦1,000)*
+Reply *2* for *Full Experience (Convention + Dinner)*
 
-See you at the convention! 🎊`,
+See you at Crispan Hotel & Suites! 🎊`,
   },
 };
