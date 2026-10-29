@@ -43,9 +43,10 @@ export interface WASenderApiResponse {
 // Primary WhatsApp Gateway: Agent-Service running Evolution API backend
 const AGENT_GATEWAY_URL = (
   process.env.AGENT_SERVICE_URL ||
+  process.env.AGENT_API_URL ||
   process.env.WA_GATEWAY_URL ||
   process.env.WHATSAPP_GATEWAY_URL ||
-  "http://localhost:3001"
+  "https://gosa-agent-production.up.railway.app"
 ).replace(/\/+$/, "");
 
 const AgentGatewayAxios = axios.create({
