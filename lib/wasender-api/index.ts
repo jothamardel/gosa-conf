@@ -40,44 +40,83 @@ export interface WASenderApiResponse {
   error?: string;
 }
 
+// Primary WhatsApp Gateway: Agent-Service running Evolution API backend
+const AGENT_GATEWAY_URL = (
+  process.env.AGENT_SERVICE_URL ||
+  process.env.WA_GATEWAY_URL ||
+  process.env.WHATSAPP_GATEWAY_URL ||
+  "http://localhost:3001"
+).replace(/\/+$/, "");
+
+const AgentGatewayAxios = axios.create({
+  baseURL: AGENT_GATEWAY_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  timeout: 45000,
+});
+
 const WasenderAxiosInstance = axios.create({
-  baseURL: process.env.WASENDER_BASE_URL,
+  baseURL: process.env.WASENDER_BASE_URL || "https://wasenderapi.com/api",
   headers: {
     Authorization: `Bearer ${process.env.WASENDER_API_KEY}`,
     "Content-Type": "application/json",
   },
+  timeout: 30000,
 });
 
 class Sender {
   httpSenderMessage = async (data: WASenderMessage): Promise<WASenderResult> => {
-    console.log("Whatsapp send: ", { data });
+    console.log("WhatsApp send (Evolution API via Agent-Service):", { data });
+
+    // 1. Primary Route: Evolution API via Agent-Service
     try {
-      const response = await WasenderAxiosInstance.post(`/send-message`, data);
-      return {
-        success: true,
-        data: response.data
-      };
-      // return {
-      //   success: true,
-      //   data: { msgId: 1174060, jid: data, status: 'in_progress' }
-      // }
-    } catch (err: any) {
-      console.error("WhatsApp message send error:", err?.response?.data || err);
+      const response = await AgentGatewayAxios.post(`/api/v1/whatsapp/send-message`, data);
+      if (response.data && response.data.success !== false) {
+        return {
+          success: true,
+          data: response.data?.data || response.data,
+        };
+      }
+      throw new Error(response.data?.error || "Agent-service returned unsuccessful response");
+    } catch (gatewayErr: any) {
+      console.warn(
+        "Evolution API Gateway send warning:",
+        gatewayErr?.response?.data || gatewayErr?.message
+      );
+
+      // 2. Fallback to WASender only if WASENDER_API_KEY is configured
+      if (process.env.WASENDER_API_KEY) {
+        try {
+          const fallbackResponse = await WasenderAxiosInstance.post(`/send-message`, data);
+          return {
+            success: true,
+            data: fallbackResponse.data,
+          };
+        } catch (wasenderErr: any) {
+          console.error("WASender fallback also failed:", wasenderErr?.response?.data || wasenderErr?.message);
+        }
+      }
+
       return {
         success: false,
-        error: err?.response?.data?.message || err?.message || "Failed to send message"
+        error:
+          gatewayErr?.response?.data?.error ||
+          gatewayErr?.response?.data?.message ||
+          gatewayErr?.message ||
+          "Failed to send message via Evolution API",
       };
     }
   };
 
   sendDocument = async (data: WASenderDocument): Promise<WASenderResult> => {
-    console.log("Whatsapp send document: ", { data });
+    console.log("WhatsApp send document (Evolution API via Agent-Service):", { data });
 
     // Validate required fields
     if (!data.to || !data.documentUrl || !data.fileName) {
       return {
         success: false,
-        error: "Missing required fields: to, documentUrl, and fileName are required"
+        error: "Missing required fields: to, documentUrl, and fileName are required",
       };
     }
 
@@ -87,7 +126,7 @@ class Sender {
     if (!isJid && !phoneRegex.test(data.to.replace(/\s+/g, ''))) {
       return {
         success: false,
-        error: "Invalid phone number format"
+        error: "Invalid phone number format",
       };
     }
 
@@ -97,81 +136,63 @@ class Sender {
     } catch {
       return {
         success: false,
-        error: "Invalid document URL format"
+        error: "Invalid document URL format",
       };
     }
 
+    const payload = {
+      to: data.to,
+      text: data.text || "Please find your document attached.",
+      documentUrl: data.documentUrl,
+      fileName: data.fileName,
+      type: "document",
+    };
+
+    // 1. Primary Route: Evolution API via Agent-Service
     try {
-      const payload = {
-        to: data.to,
-        text: data.text || "Please find your document attached.",
-        documentUrl: data.documentUrl,
-        fileName: data.fileName,
-        type: "document" // Specify message type for document sending
-      };
-
-      const response = await WasenderAxiosInstance.post(`/send-message`, payload);
-
-      // Parse and validate response
-      const responseData: WASenderApiResponse = response.data;
-
-      if (response.status === 200 || response.status === 201) {
+      const response = await AgentGatewayAxios.post(`/api/v1/whatsapp/send-message`, payload);
+      if (response.data && response.data.success !== false) {
         return {
           success: true,
-          data: {
-            msgId: responseData.msgId,
-            jid: responseData.jid,
-            status: responseData.status || 'sent',
-            message: responseData.message || 'Document sent successfully'
-          }
-        };
-      } else {
-        return {
-          success: false,
-          error: responseData.error || responseData.message || "Unexpected response from WASender API"
+          data: response.data?.data || response.data,
         };
       }
-    } catch (err: any) {
-      console.error("WhatsApp document send error:", err?.response?.data || err);
+      throw new Error(response.data?.error || "Agent-service returned unsuccessful response");
+    } catch (gatewayErr: any) {
+      console.warn("Evolution API Gateway document send warning:", gatewayErr?.response?.data || gatewayErr?.message);
 
-      // Enhanced error handling with specific error types
-      if (err?.response?.status === 401) {
-        return {
-          success: false,
-          error: "Authentication failed - Invalid API key"
-        };
-      } else if (err?.response?.status === 429) {
-        return {
-          success: false,
-          error: "Rate limit exceeded - Please try again later"
-        };
-      } else if (err?.response?.status === 400) {
-        return {
-          success: false,
-          error: err?.response?.data?.message || "Bad request - Invalid document data"
-        };
-      } else if (err?.code === 'ECONNREFUSED' || err?.code === 'ENOTFOUND') {
-        return {
-          success: false,
-          error: "Network error - Unable to connect to WASender API"
-        };
-      } else {
-        return {
-          success: false,
-          error: err?.response?.data?.message || err?.message || "Failed to send document"
-        };
+      // 2. Fallback to WASender if configured
+      if (process.env.WASENDER_API_KEY) {
+        try {
+          const fallbackResponse = await WasenderAxiosInstance.post(`/send-message`, payload);
+          return {
+            success: true,
+            data: fallbackResponse.data,
+          };
+        } catch (wasenderErr: any) {
+          console.error("WASender fallback also failed:", wasenderErr?.response?.data || wasenderErr?.message);
+        }
       }
+
+      return {
+        success: false,
+        error:
+          gatewayErr?.response?.data?.error ||
+          gatewayErr?.response?.data?.message ||
+          gatewayErr?.message ||
+          "Failed to send document via Evolution API",
+      };
     }
   };
 
   sendImage = async (data: WASenderImage): Promise<WASenderResult> => {
-    console.log("Whatsapp send image: ", { data });
+    console.log("WhatsApp send image (Evolution API via Agent-Service):", { data });
 
     // Validate required fields
     if (!data.to || !data.imageUrl) {
       return {
         success: false,
-        error: "Missing required fields: to and imageUrl are required"
+        error: "Missing required fields: to and imageUrl are required",
       };
     }
 
@@ -181,7 +202,7 @@ class Sender {
     if (!isJid && !phoneRegex.test(data.to.replace(/\s+/g, ''))) {
       return {
         success: false,
-        error: "Invalid phone number format"
+        error: "Invalid phone number format",
       };
     }
 
@@ -191,68 +212,51 @@ class Sender {
     } catch {
       return {
         success: false,
-        error: "Invalid image URL format"
+        error: "Invalid image URL format",
       };
     }
 
+    const payload = {
+      to: data.to,
+      text: data.text || "Check out this image!",
+      imageUrl: data.imageUrl,
+      type: "image",
+    };
+
+    // 1. Primary Route: Evolution API via Agent-Service
     try {
-      const payload = {
-        to: data.to,
-        text: data.text || "Check out this image!",
-        imageUrl: data.imageUrl
-      };
-
-      const response = await WasenderAxiosInstance.post(`/send-message`, payload);
-
-      // Parse and validate response
-      const responseData: WASenderApiResponse = response.data;
-
-      if (response.status === 200 || response.status === 201) {
+      const response = await AgentGatewayAxios.post(`/api/v1/whatsapp/send-message`, payload);
+      if (response.data && response.data.success !== false) {
         return {
           success: true,
-          data: {
-            msgId: responseData.msgId,
-            jid: responseData.jid,
-            status: responseData.status || 'sent',
-            message: responseData.message || 'Image sent successfully'
-          }
-        };
-      } else {
-        return {
-          success: false,
-          error: responseData.error || responseData.message || "Unexpected response from WASender API"
+          data: response.data?.data || response.data,
         };
       }
-    } catch (err: any) {
-      console.error("WhatsApp image send error:", err?.response?.data || err);
+      throw new Error(response.data?.error || "Agent-service returned unsuccessful response");
+    } catch (gatewayErr: any) {
+      console.warn("Evolution API Gateway image send warning:", gatewayErr?.response?.data || gatewayErr?.message);
 
-      // Enhanced error handling with specific error types
-      if (err?.response?.status === 401) {
-        return {
-          success: false,
-          error: "Authentication failed - Invalid API key"
-        };
-      } else if (err?.response?.status === 429) {
-        return {
-          success: false,
-          error: "Rate limit exceeded - Please try again later"
-        };
-      } else if (err?.response?.status === 400) {
-        return {
-          success: false,
-          error: err?.response?.data?.message || "Bad request - Invalid image data"
-        };
-      } else if (err?.code === 'ECONNREFUSED' || err?.code === 'ENOTFOUND') {
-        return {
-          success: false,
-          error: "Network error - Unable to connect to WASender API"
-        };
-      } else {
-        return {
-          success: false,
-          error: err?.response?.data?.message || err?.message || "Failed to send image"
-        };
+      // 2. Fallback to WASender if configured
+      if (process.env.WASENDER_API_KEY) {
+        try {
+          const fallbackResponse = await WasenderAxiosInstance.post(`/send-message`, payload);
+          return {
+            success: true,
+            data: fallbackResponse.data,
+          };
+        } catch (wasenderErr: any) {
+          console.error("WASender fallback also failed:", wasenderErr?.response?.data || wasenderErr?.message);
+        }
       }
+
+      return {
+        success: false,
+        error:
+          gatewayErr?.response?.data?.error ||
+          gatewayErr?.response?.data?.message ||
+          gatewayErr?.message ||
+          "Failed to send image via Evolution API",
+      };
     }
   };
 
@@ -263,21 +267,29 @@ class Sender {
   };
 
   getGroupParticipants = async (groupId: string): Promise<string[]> => {
-    console.log("Fetching group metadata for JID:", groupId);
+    console.log("Fetching group metadata for JID via Evolution Gateway:", groupId);
+    try {
+      const response = await AgentGatewayAxios.get(`/api/v1/whatsapp/groups/${groupId}/metadata`);
+      const data = response.data?.data || response.data;
+      if (data?.participants && Array.isArray(data.participants)) {
+        return data.participants.map((p: any) => {
+          const rawJid = typeof p === 'string' ? p : p.id || p.jid;
+          return rawJid.includes('@') ? rawJid : `${rawJid}@s.whatsapp.net`;
+        });
+      }
+    } catch (err: any) {
+      console.warn("Gateway group metadata warning, checking fallback:", err?.response?.data || err?.message);
+    }
+
     try {
       const response = await WasenderAxiosInstance.get(`/groups/${groupId}/metadata`);
-      
       if (response.data?.success && response.data?.data?.participants) {
         const rawParticipants = response.data.data.participants;
         return rawParticipants.map((p: any) => {
           const rawJid = p.jid;
-          if (rawJid.includes('@')) {
-            return rawJid;
-          }
-          return `${rawJid}@s.whatsapp.net`;
+          return rawJid.includes('@') ? rawJid : `${rawJid}@s.whatsapp.net`;
         });
       }
-      
       throw new Error("Invalid response format from WASender API");
     } catch (err: any) {
       console.warn("Failed to fetch group metadata from WASender API:", err?.response?.data || err?.message);
@@ -286,7 +298,16 @@ class Sender {
   };
 
   getGroups = async (): Promise<any[]> => {
-    console.log("Fetching all WhatsApp groups for account");
+    console.log("Fetching all WhatsApp groups via Evolution Gateway");
+    try {
+      const response = await AgentGatewayAxios.get('/api/v1/whatsapp/groups');
+      if (response.data?.success && Array.isArray(response.data?.data)) {
+        return response.data.data;
+      }
+    } catch (err: any) {
+      console.warn("Agent-service groups fetch warning:", err?.response?.data || err?.message);
+    }
+
     try {
       const response = await WasenderAxiosInstance.get('/groups');
       if (response.data?.success && Array.isArray(response.data?.data)) {
@@ -294,7 +315,7 @@ class Sender {
       }
       return [];
     } catch (err: any) {
-      console.warn("Failed to fetch groups from WASender API:", err?.response?.data || err?.message);
+      console.warn("WASender groups fallback warning:", err?.response?.data || err?.message);
       return [];
     }
   };
