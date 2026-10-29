@@ -135,13 +135,20 @@ On arrival at the venue, show your 8-digit code on your phone to the desk office
 The admin keys in your code, verifies your pass instantly, and presents your delegate badge! ✨ Zero waiting, zero queues!
 
 ━━━━━━━━━━━━━━━━━━
+📍 *VENUE & SCHEDULE*
+━━━━━━━━━━━━━━━━━━
+🏨 *Venue:* Crispan Hotel & Suites, Jos
+🌅 *Convention:* Starts in the morning (09:00 AM)
+🌙 *Gala Dinner:* Evening celebration
+
+━━━━━━━━━━━━━━━━━━
 💡 *Haven't Secured Your Pass Yet?*
 ━━━━━━━━━━━━━━━━━━
 Get it now to enjoy fast-track desk entry:
 • Reply *1* to buy your *Convention Pass (₦1,000)*
 • Reply *2* to get the *Full Experience (Convention + Dinner)*
 
-We look forward to {welcoming|seeing} you in Gindiri!
+We look forward to {welcoming|seeing} you at Crispan Hotel & Suites!
 
 — GOSA 2026 Planning Committee`,
   },
