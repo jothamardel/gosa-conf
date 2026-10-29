@@ -493,7 +493,7 @@ export function BroadcastModal({ isOpen, onClose }: BroadcastModalProps) {
                 </Label>
                 <span className="text-[11px] text-gray-500">Includes Dual Call-to-Action (Web + WhatsApp Bot)</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-1.5">
                 {Object.entries(BROADCAST_TEMPLATES).map(([key, preset]) => (
                   <button
                     key={preset.id}

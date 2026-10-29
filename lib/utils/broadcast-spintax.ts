@@ -111,6 +111,41 @@ _Upon purchase, your 8-digit check-in code is generated instantly for seamless d
 — GOSA 2026 Planning Committee`,
   },
 
+  CHECKIN_GUIDE: {
+    id: 'checkin-guide',
+    title: '🎫 Official Check-In & Arrival Guide',
+    template: `{Dear|Hello|Greetings} {first_name}! 🎓
+
+{Get ready for|Welcome to} the *GOSA 2026 Convention*!
+
+Here is {a quick guide on how check-in will work|everything you need to know for seamless check-in} on arrival at the venue:
+
+━━━━━━━━━━━━━━━━━━
+📋 *HOW CHECK-IN WORKS (3 SIMPLE STEPS)*
+━━━━━━━━━━━━━━━━━━
+
+1️⃣ *Get Your 8-Digit Code:*
+Reply *CHECKIN* right here on WhatsApp to receive your official 8-digit check-in code and digital pass!
+_(Or access it online at: {portal_link})_
+
+2️⃣ *Present at the Registration Desk:*
+On arrival at the venue, show your 8-digit code on your phone to the desk officer.
+
+3️⃣ *1-Second Verification:*
+The admin keys in your code, verifies your pass instantly, and presents your delegate badge! ✨ Zero waiting, zero queues!
+
+━━━━━━━━━━━━━━━━━━
+💡 *Haven't Secured Your Pass Yet?*
+━━━━━━━━━━━━━━━━━━
+Get it now to enjoy fast-track desk entry:
+• Reply *1* to buy your *Convention Pass (₦1,000)*
+• Reply *2* to get the *Full Experience (Convention + Dinner)*
+
+We look forward to {welcoming|seeing} you in Gindiri!
+
+— GOSA 2026 Planning Committee`,
+  },
+
   DINNER_UPSELL: {
     id: 'dinner-upsell',
     title: '🍽️ Gala Dinner & Brochure Upgrade',
