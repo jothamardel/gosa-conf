@@ -134,6 +134,33 @@ export const AUTHORIZED_DESK_ADMINS: AuthorizedAdmin[] = [
     canBroadcast: false,
     pin: '11038',
   },
+  {
+    id: 'admin_kyennan_benle',
+    name: 'Kyennan Benle',
+    phone: '+2348108476244',
+    displayPhone: '+234 810 847 6244',
+    role: 'desk_admin',
+    canBroadcast: false,
+    pin: '76244',
+  },
+  {
+    id: 'admin_nanbal_philemon',
+    name: 'Nanbal Philemon',
+    phone: '+2347081049581',
+    displayPhone: '+234 708 104 9581',
+    role: 'desk_admin',
+    canBroadcast: false,
+    pin: '49581',
+  },
+  {
+    id: 'admin_nanbilip',
+    name: 'Nanbilip',
+    phone: '+2347025552611',
+    displayPhone: '+234 702 555 2611',
+    role: 'desk_admin',
+    canBroadcast: false,
+    pin: '52611',
+  },
 ];
 
 /**
