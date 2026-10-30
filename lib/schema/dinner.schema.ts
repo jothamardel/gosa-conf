@@ -42,6 +42,16 @@ export interface IDinnerReservation extends Document {
   transferredAt?: Date;
   transferReason?: 'gift' | 'on_behalf' | 'transfer';
   personalNote?: string;
+  upgradedFrom?: {
+    ticketType: string;
+    ticketId: Types.ObjectId;
+    originalReference: string;
+    upgradedAt: Date;
+    officialName: string;
+    differencePaid: number;
+    paymentMethod: string;
+    notes?: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -201,6 +211,16 @@ const DinnerReservationSchema = new Schema<IDinnerReservation>(
     },
     personalNote: {
       type: String,
+    },
+    upgradedFrom: {
+      ticketType: { type: String },
+      ticketId: { type: Schema.Types.ObjectId },
+      originalReference: { type: String },
+      upgradedAt: { type: Date },
+      officialName: { type: String },
+      differencePaid: { type: Number },
+      paymentMethod: { type: String },
+      notes: { type: String },
     },
   },
   {

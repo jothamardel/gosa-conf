@@ -20,6 +20,15 @@ export interface IConventionRegistration extends Document {
     checkInCode?: string;
   }>;
   status: string;
+  upgradedTo?: {
+    ticketType: string;
+    ticketId: Types.ObjectId;
+    upgradedAt: Date;
+    officialName: string;
+    differencePaid: number;
+    paymentMethod: string;
+    notes?: string;
+  };
   transferredFrom?: Types.ObjectId;
   transferredAt?: Date;
   transferReason?: 'gift' | 'on_behalf' | 'transfer';
@@ -104,8 +113,17 @@ const ConventionRegistrationSchema = new Schema<IConventionRegistration>(
     }],
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'cancelled'],
+      enum: ['pending', 'confirmed', 'cancelled', 'upgraded'],
       default: 'pending',
+    },
+    upgradedTo: {
+      ticketType: { type: String },
+      ticketId: { type: Schema.Types.ObjectId },
+      upgradedAt: { type: Date },
+      officialName: { type: String },
+      differencePaid: { type: Number },
+      paymentMethod: { type: String },
+      notes: { type: String },
     },
     transferredFrom: {
       type: Schema.Types.ObjectId,

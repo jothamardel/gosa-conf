@@ -173,15 +173,16 @@ export async function GET(request: NextRequest) {
       const dinners = dinnerByUser.get(uid) || [];
       const brochures = brochureByUser.get(uid) || [];
 
-      const totalItems = conventions.length + dinners.length + brochures.length;
+      const activeConventions = conventions.filter((c: any) => c.status !== 'upgraded' && c.status !== 'cancelled');
+      const totalItems = activeConventions.length + dinners.length + brochures.length;
       const allCheckedIn =
         totalItems > 0 &&
-        conventions.every((c: any) => c.checkedIn) &&
+        activeConventions.every((c: any) => c.checkedIn) &&
         dinners.every((d: any) => d.checkedIn) &&
         brochures.every((b: any) => b.collected);
 
       const hasUncheckedItems =
-        conventions.some((c: any) => !c.checkedIn) ||
+        activeConventions.some((c: any) => !c.checkedIn) ||
         dinners.some((d: any) => !d.checkedIn) ||
         brochures.some((b: any) => !b.collected);
 

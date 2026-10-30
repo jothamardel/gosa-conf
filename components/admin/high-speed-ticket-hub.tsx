@@ -37,10 +37,12 @@ import {
   Database,
   Power,
   Megaphone,
+  ArrowUpRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { WalkinRegistrationModal } from './walkin-registration-modal';
 import { BroadcastModal } from './broadcast-modal';
+import { UpgradeTicketModal, UpgradeCandidateTicket } from './upgrade-ticket-modal';
 import { playSuccessChime, playAlreadyCheckedAlert } from '@/lib/utils/audio-cue';
 import { useLocalTicketSync } from '@/lib/hooks/use-local-ticket-sync';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
@@ -155,10 +157,12 @@ export function HighSpeedTicketHub() {
   const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({});
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
-  // Walkin & Broadcast Modals
+  // Walkin, Broadcast & Upgrade Modals
   const [isWalkinOpen, setIsWalkinOpen] = useState(false);
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
-  const { canBroadcast } = useAdminAuth();
+  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const [selectedUpgradeTicket, setSelectedUpgradeTicket] = useState<UpgradeCandidateTicket | null>(null);
+  const { canBroadcast, adminName } = useAdminAuth();
 
   // Local Database Sync & Master Check-In Activation State
   const {
@@ -500,6 +504,47 @@ export function HighSpeedTicketHub() {
   const handleWalkinSuccess = () => {
     fetchAnalytics();
     fetchTabTickets();
+  };
+
+  const handleOpenUpgradeModal = (ticket: any, memberOrUser: any) => {
+    const user = {
+      _id: memberOrUser._id || memberOrUser.id || ticket.user?._id || null,
+      fullName: memberOrUser.fullName || ticket.user?.fullName || 'Attendee',
+      phoneNumber: memberOrUser.phoneNumber || ticket.user?.phoneNumber || '—',
+      email: memberOrUser.email || ticket.user?.email || '—',
+      checkInCode: memberOrUser.checkInCode || ticket.user?.checkInCode || ticket.checkInCode || null,
+      house: memberOrUser.house || ticket.user?.house,
+      year: memberOrUser.year || ticket.user?.year,
+    };
+
+    setSelectedUpgradeTicket({
+      _id: ticket._id,
+      type: 'convention',
+      paymentReference: ticket.paymentReference,
+      amount: ticket.amount,
+      quantity: ticket.quantity || 1,
+      status: ticket.status || 'confirmed',
+      checkedIn: ticket.checkedIn,
+      checkInCode: ticket.checkInCode || user.checkInCode,
+      user,
+    });
+    setIsUpgradeOpen(true);
+  };
+
+  const handleUpgradeSuccess = async () => {
+    fetchAnalytics();
+    fetchTabTickets();
+    if (debouncedQuery && debouncedQuery.length >= 2) {
+      try {
+        const res = await fetch(`/api/v1/admin/tickets/fast-search?q=${encodeURIComponent(debouncedQuery)}`);
+        const json = await res.json();
+        if (json.success && json.members) {
+          setSearchResults(json.members);
+        }
+      } catch (e) {
+        console.error('Failed to refresh search results:', e);
+      }
+    }
   };
 
   return (
@@ -969,34 +1014,51 @@ export function HighSpeedTicketHub() {
                       </div>
 
                       <div className="flex items-center justify-between sm:justify-end space-x-2 w-full sm:w-auto">
-                        {c.checkedIn ? (
+                        {c.status === 'upgraded' ? (
+                          <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-200 font-bold">
+                            Upgraded to Dinner
+                          </Badge>
+                        ) : (
                           <>
-                            <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200">
-                              Checked In
-                            </Badge>
                             <Button
                               size="sm"
-                              variant="ghost"
-                              onClick={() => handleSingleTicketAction(c._id, 'convention', 'check-out-single', member._id)}
-                              disabled={actionLoading[`check-out-single-${c._id}`]}
-                              className="text-xs text-gray-400 hover:text-red-600 h-8 px-2.5"
+                              variant="outline"
+                              onClick={() => handleOpenUpgradeModal(c, member)}
+                              className="text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/50 border-indigo-200 dark:border-indigo-800 h-9 px-3 flex items-center space-x-1"
                             >
-                              Undo
+                              <ArrowUpRight className="w-3.5 h-3.5" />
+                              <span>Upgrade to Dinner</span>
                             </Button>
-                          </>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => handleSingleTicketAction(c._id, 'convention', 'check-in-single', member._id)}
-                            disabled={actionLoading[`check-in-single-${c._id}`] || !checkinActive}
-                            className="w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white rounded-lg h-10 sm:h-9 px-4 font-bold flex items-center justify-center"
-                          >
-                            {actionLoading[`check-in-single-${c._id}`] ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
+                            {c.checkedIn ? (
+                              <>
+                                <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200">
+                                  Checked In
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleSingleTicketAction(c._id, 'convention', 'check-out-single', member._id)}
+                                  disabled={actionLoading[`check-out-single-${c._id}`]}
+                                  className="text-xs text-gray-400 hover:text-red-600 h-8 px-2.5"
+                                >
+                                  Undo
+                                </Button>
+                              </>
                             ) : (
-                              'Check In'
+                              <Button
+                                size="sm"
+                                onClick={() => handleSingleTicketAction(c._id, 'convention', 'check-in-single', member._id)}
+                                disabled={actionLoading[`check-in-single-${c._id}`] || !checkinActive}
+                                className="w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white rounded-lg h-10 sm:h-9 px-4 font-bold flex items-center justify-center"
+                              >
+                                {actionLoading[`check-in-single-${c._id}`] ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  'Check In'
+                                )}
+                              </Button>
                             )}
-                          </Button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -1288,7 +1350,11 @@ export function HighSpeedTicketHub() {
 
                               {/* Status */}
                               <td className="py-4">
-                                {isVerified ? (
+                                {t.status === 'upgraded' ? (
+                                  <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-200 font-semibold">
+                                    Upgraded
+                                  </Badge>
+                                ) : isVerified ? (
                                   <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 font-semibold">
                                     <Check className="w-3 h-3 mr-1" />
                                     {activeTab === 'brochure' ? 'Collected' : 'Checked In'}
@@ -1307,46 +1373,65 @@ export function HighSpeedTicketHub() {
 
                               {/* Action Button */}
                               <td className="py-4 text-right pr-2">
-                                {isVerified ? (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleSingleTicketAction(t._id, activeTab, 'check-out-single', t.user._id || undefined)}
-                                    disabled={actionLoading[`check-out-single-${t._id}`]}
-                                    className="h-9 px-3 text-xs text-gray-500 hover:text-red-600 hover:border-red-200 rounded-xl"
-                                  >
-                                    {actionLoading[`check-out-single-${t._id}`] ? (
-                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    ) : (
-                                      'Undo Check-In'
-                                    )}
-                                  </Button>
+                                {t.status === 'upgraded' ? (
+                                  <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-200 font-bold">
+                                    Upgraded to Dinner
+                                  </Badge>
                                 ) : (
-                                  <Button
-                                    size="sm"
-                                    onClick={() =>
-                                      handleSingleTicketAction(
-                                        t._id,
-                                        activeTab,
-                                        activeTab === 'brochure' ? 'collect-brochure' : 'check-in-single',
-                                        t.user._id || undefined
-                                      )
-                                    }
-                                    disabled={
-                                      actionLoading[`check-in-single-${t._id}`] ||
-                                      actionLoading[`collect-brochure-${t._id}`]
-                                    }
-                                    className="h-9 px-4 text-xs font-bold bg-primary-600 hover:bg-primary-700 text-white rounded-xl shadow-sm"
-                                  >
-                                    {actionLoading[`check-in-single-${t._id}`] ||
-                                    actionLoading[`collect-brochure-${t._id}`] ? (
-                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    ) : activeTab === 'brochure' ? (
-                                      'Collect'
-                                    ) : (
-                                      'Check In'
+                                  <div className="flex items-center justify-end space-x-2">
+                                    {activeTab === 'convention' && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleOpenUpgradeModal(t, t.user)}
+                                        className="h-9 px-3 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/50 border-indigo-200 dark:border-indigo-800 rounded-xl flex items-center space-x-1"
+                                      >
+                                        <ArrowUpRight className="w-3.5 h-3.5" />
+                                        <span>Upgrade</span>
+                                      </Button>
                                     )}
-                                  </Button>
+                                    {isVerified ? (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleSingleTicketAction(t._id, activeTab, 'check-out-single', t.user._id || undefined)}
+                                        disabled={actionLoading[`check-out-single-${t._id}`]}
+                                        className="h-9 px-3 text-xs text-gray-500 hover:text-red-600 hover:border-red-200 rounded-xl"
+                                      >
+                                        {actionLoading[`check-out-single-${t._id}`] ? (
+                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                          'Undo Check-In'
+                                        )}
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        onClick={() =>
+                                          handleSingleTicketAction(
+                                            t._id,
+                                            activeTab,
+                                            activeTab === 'brochure' ? 'collect-brochure' : 'check-in-single',
+                                            t.user._id || undefined
+                                          )
+                                        }
+                                        disabled={
+                                          actionLoading[`check-in-single-${t._id}`] ||
+                                          actionLoading[`collect-brochure-${t._id}`]
+                                        }
+                                        className="h-9 px-4 text-xs font-bold bg-primary-600 hover:bg-primary-700 text-white rounded-xl shadow-sm"
+                                      >
+                                        {actionLoading[`check-in-single-${t._id}`] ||
+                                        actionLoading[`collect-brochure-${t._id}`] ? (
+                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : activeTab === 'brochure' ? (
+                                          'Collect'
+                                        ) : (
+                                          'Check In'
+                                        )}
+                                      </Button>
+                                    )}
+                                  </div>
                                 )}
                               </td>
                             </tr>
@@ -1416,7 +1501,11 @@ export function HighSpeedTicketHub() {
                           {/* Row 3: Status & Full-Width 1-Thumb Action */}
                           <div className="flex items-center justify-between gap-2 pt-0.5">
                             <div>
-                              {isVerified ? (
+                              {t.status === 'upgraded' ? (
+                                <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-200 font-semibold text-[11px] px-2 py-0.5">
+                                  Upgraded
+                                </Badge>
+                              ) : isVerified ? (
                                 <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 font-semibold text-[11px] px-2 py-0.5">
                                   <Check className="w-3 h-3 mr-1" />
                                   {activeTab === 'brochure' ? 'Collected' : 'Checked In'}
@@ -1433,47 +1522,66 @@ export function HighSpeedTicketHub() {
                               )}
                             </div>
 
-                            <div>
-                              {isVerified ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleSingleTicketAction(t._id, activeTab, 'check-out-single', t.user._id || undefined)}
-                                  disabled={actionLoading[`check-out-single-${t._id}`]}
-                                  className="h-8 px-3 text-xs text-gray-500 hover:text-red-600 rounded-xl"
-                                >
-                                  {actionLoading[`check-out-single-${t._id}`] ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    'Undo'
-                                  )}
-                                </Button>
+                            <div className="flex items-center space-x-1.5">
+                              {t.status === 'upgraded' ? (
+                                <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-200 font-bold text-xs py-1 px-2.5">
+                                  Upgraded to Dinner
+                                </Badge>
                               ) : (
-                                <Button
-                                  size="sm"
-                                  onClick={() =>
-                                    handleSingleTicketAction(
-                                      t._id,
-                                      activeTab,
-                                      activeTab === 'brochure' ? 'collect-brochure' : 'check-in-single',
-                                      t.user._id || undefined
-                                    )
-                                  }
-                                  disabled={
-                                    actionLoading[`check-in-single-${t._id}`] ||
-                                    actionLoading[`collect-brochure-${t._id}`]
-                                  }
-                                  className="h-9 px-4 text-xs font-bold bg-primary-600 hover:bg-primary-700 text-white rounded-xl shadow-sm"
-                                >
-                                  {actionLoading[`check-in-single-${t._id}`] ||
-                                  actionLoading[`collect-brochure-${t._id}`] ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  ) : activeTab === 'brochure' ? (
-                                    'Collect'
-                                  ) : (
-                                    'Check In'
+                                <>
+                                  {activeTab === 'convention' && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleOpenUpgradeModal(t, t.user)}
+                                      className="h-8 px-2.5 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 rounded-xl flex items-center space-x-1"
+                                    >
+                                      <ArrowUpRight className="w-3.5 h-3.5" />
+                                      <span>Upgrade</span>
+                                    </Button>
                                   )}
-                                </Button>
+                                  {isVerified ? (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleSingleTicketAction(t._id, activeTab, 'check-out-single', t.user._id || undefined)}
+                                      disabled={actionLoading[`check-out-single-${t._id}`]}
+                                      className="h-8 px-3 text-xs text-gray-500 hover:text-red-600 rounded-xl"
+                                    >
+                                      {actionLoading[`check-out-single-${t._id}`] ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      ) : (
+                                        'Undo'
+                                      )}
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      onClick={() =>
+                                        handleSingleTicketAction(
+                                          t._id,
+                                          activeTab,
+                                          activeTab === 'brochure' ? 'collect-brochure' : 'check-in-single',
+                                          t.user._id || undefined
+                                        )
+                                      }
+                                      disabled={
+                                        actionLoading[`check-in-single-${t._id}`] ||
+                                        actionLoading[`collect-brochure-${t._id}`]
+                                      }
+                                      className="h-8 px-3 text-xs font-bold bg-primary-600 hover:bg-primary-700 text-white rounded-xl shadow-sm"
+                                    >
+                                      {actionLoading[`check-in-single-${t._id}`] ||
+                                      actionLoading[`collect-brochure-${t._id}`] ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      ) : activeTab === 'brochure' ? (
+                                        'Collect'
+                                      ) : (
+                                        'Check In'
+                                      )}
+                                    </Button>
+                                  )}
+                                </>
                               )}
                             </div>
                           </div>
@@ -1527,6 +1635,19 @@ export function HighSpeedTicketHub() {
         onSuccess={handleWalkinSuccess}
         initialQuery={debouncedQuery}
         checkinActive={checkinActive}
+      />
+
+      {/* Upgrade Ticket to Dinner Modal */}
+      <UpgradeTicketModal
+        isOpen={isUpgradeOpen}
+        onClose={() => {
+          setIsUpgradeOpen(false);
+          setSelectedUpgradeTicket(null);
+        }}
+        ticket={selectedUpgradeTicket}
+        onSuccess={handleUpgradeSuccess}
+        checkinActive={checkinActive}
+        adminName={adminName}
       />
 
       {/* Broadcast Campaign & Ticket Sales Drive Modal */}
