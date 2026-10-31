@@ -8,6 +8,7 @@ import { Donation } from '@/lib/schema/donation.schema';
 import { Transaction } from '@/lib/schema/transaction.schema';
 import { User } from '@/lib/schema/user.schema';
 import { Types } from 'mongoose';
+import { getOrCreateUserCheckInCode } from '@/lib/utils/checkin-code';
 
 // Register Mongoose models
 User;
@@ -351,6 +352,11 @@ export async function GET(
       primaryRecord.donorName ||
       'GOSA Valued Member';
 
+    let checkInCode = user?.checkInCode || primaryRecord.checkInCode || null;
+    if (!checkInCode && user?._id) {
+      checkInCode = await getOrCreateUserCheckInCode(user._id).catch(() => null);
+    }
+
     return NextResponse.json({
       success: true,
       ticket: {
@@ -361,6 +367,7 @@ export async function GET(
         status: (primaryRecord.status === 'pending' && (!matchingTx || matchingTx.status === 'pending')) ? 'Pending' : 'Confirmed',
         confirmed: true,
         checkedIn: isCheckedIn,
+        checkInCode,
         transferredFrom: transferredFromData,
         transferredAt,
         transferReason,

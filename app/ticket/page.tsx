@@ -41,12 +41,16 @@ import {
   Send,
   AlertCircle,
   Gift,
-  Lock
+  Lock,
+  Search
 } from "lucide-react";
 import Link from "next/link";
 import QRCode from "qrcode";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { toast } from "sonner";
+import { CheckinCodeModal, CheckInPassResult } from "@/components/ticket/checkin-code-modal";
+import { playSuccessChime } from "@/lib/utils/audio-cue";
 
 interface ServiceBeneficiary {
   name: string;
@@ -74,6 +78,7 @@ interface TicketData {
   status: string;
   confirmed: boolean;
   checkedIn?: boolean;
+  checkInCode?: string | null;
   transferredFrom?: {
     name: string;
     phone?: string;
@@ -132,12 +137,77 @@ export default function TicketPage() {
   } | null>(null);
   const [copiedNewLink, setCopiedNewLink] = useState(false);
 
+  // Check-In Pass Code Modal & Direct Lookup State
+  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  const [checkInInitialData, setCheckInInitialData] = useState<CheckInPassResult | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [directQuery, setDirectQuery] = useState("");
+  const [directLoading, setDirectLoading] = useState(false);
+  const [directError, setDirectError] = useState<string | null>(null);
+
   const ticketCardRef = useRef<HTMLDivElement>(null);
+
+  const openCheckInModal = (data?: CheckInPassResult) => {
+    if (data) {
+      setCheckInInitialData(data);
+    } else if (ticket) {
+      setCheckInInitialData({
+        checkInCode: ticket.checkInCode || "VERIFIED",
+        user: {
+          fullName: ticket.user.fullName,
+          phoneNumber: ticket.user.phone,
+          email: ticket.user.email,
+          house: ticket.user.house,
+          year: ticket.user.year,
+        },
+        isCheckedIn: Boolean(ticket.checkedIn),
+        itemsSummary: ticket.serviceItems.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          icon: item.category,
+        })),
+        primaryTicketId: ticket.paymentReference || ticket._id,
+        ticketUrl: `/ticket?id=${encodeURIComponent(ticket.paymentReference || ticket._id)}`,
+      });
+    } else {
+      setCheckInInitialData(null);
+    }
+    setIsCheckInModalOpen(true);
+  };
+
+  const handleDirectLookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = directQuery.trim();
+    if (!clean) return;
+
+    setDirectLoading(true);
+    setDirectError(null);
+
+    try {
+      const res = await fetch("/api/v1/ticket/checkin-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: clean }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "No confirmed 2026 ticket found.");
+      }
+
+      playSuccessChime();
+      openCheckInModal(data);
+    } catch (err: any) {
+      setDirectError(err.message || "Failed to retrieve check-in code.");
+    } finally {
+      setDirectLoading(false);
+    }
+  };
 
   const fetchTicket = useCallback(async (silent = false) => {
     if (!id) {
       setLoading(false);
-      setError("No ticket ID provided. Please check your link or reference.");
+      setError(null);
       return;
     }
 
@@ -425,18 +495,108 @@ export default function TicketPage() {
             <h2 className="text-xl font-bold text-white">Loading Paid Services & Ticket Credentials...</h2>
             <p className="text-slate-400 text-sm mt-1">Please wait while we resolve your event pass.</p>
           </div>
-        ) : error || !ticket ? (
-          <div className="min-h-[400px] flex flex-col items-center justify-center text-center p-8 bg-slate-900/60 border border-rose-950 rounded-3xl max-w-xl mx-auto">
-            <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-4">
-              <Ticket className="w-8 h-8" />
+        ) : error || (!ticket && id) ? (
+          <div className="max-w-xl mx-auto space-y-6">
+            <div className="p-8 bg-slate-900/60 border border-rose-950 rounded-3xl text-center">
+              <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-4 mx-auto">
+                <Ticket className="w-8 h-8" />
+              </div>
+              <h2 className="text-2xl font-black text-white">Ticket Record Not Found</h2>
+              <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">{error || "The ticket ID provided could not be matched."}</p>
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button
+                  onClick={() => setIsCheckInModalOpen(true)}
+                  className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold px-6 h-11 rounded-xl"
+                >
+                  <QrCode className="w-4 h-4 mr-2 text-slate-950" />
+                  Find Pass Code by Phone
+                </Button>
+                <Link href="/" className="w-full sm:w-auto">
+                  <Button variant="outline" className="w-full sm:w-auto border-slate-700 bg-slate-800 text-slate-300 font-bold px-6 h-11 rounded-xl">
+                    Return to Homepage
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <h2 className="text-2xl font-black text-white">Ticket Record Not Found</h2>
-            <p className="text-slate-400 text-sm mt-2 max-w-md">{error || "The ticket ID provided could not be matched."}</p>
-            <Link href="/" className="mt-6">
-              <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6">
-                Return to Homepage
-              </Button>
-            </Link>
+          </div>
+        ) : !ticket ? (
+          <div className="max-w-2xl mx-auto space-y-6">
+            {/* Big Venue Check-In Hero Card for Direct Visitors */}
+            <div className="bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border-2 border-emerald-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl text-center space-y-6 relative overflow-hidden">
+              <div
+                className="absolute inset-0 opacity-10 pointer-events-none"
+                style={{
+                  backgroundImage: "radial-gradient(#10B981 1px, transparent 1px)",
+                  backgroundSize: "20px 20px",
+                }}
+              />
+
+              <div className="relative z-10 space-y-2">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 mx-auto shadow-inner">
+                  <QrCode className="w-8 h-8" />
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  GOSA 2026 Venue Check-In
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+                  Fast venue admission code finder. Enter your details below to instantly retrieve your official 8-digit check-in code and scannable QR pass without messaging the WhatsApp bot.
+                </p>
+              </div>
+
+              {/* Direct Instant Search Form */}
+              <form onSubmit={handleDirectLookup} className="relative z-10 space-y-3 max-w-lg mx-auto">
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Enter Phone Number (e.g. 08012345678), Email, or Payment Ref..."
+                    value={directQuery}
+                    onChange={(e) => setDirectQuery(e.target.value)}
+                    disabled={directLoading}
+                    className="h-14 pl-4 pr-12 bg-slate-950 border-2 border-slate-800 text-white rounded-2xl placeholder:text-slate-500 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-inner"
+                  />
+                  <div className="absolute right-4 top-4 text-slate-500 pointer-events-none">
+                    <Search className="w-6 h-6" />
+                  </div>
+                </div>
+
+                {directError && (
+                  <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs text-left flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                    <span>{directError}</span>
+                  </div>
+                )}
+
+                {/* Big Check-In Button */}
+                <Button
+                  type="submit"
+                  disabled={directLoading || !directQuery.trim()}
+                  className="w-full h-14 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black rounded-2xl text-base shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.99] cursor-pointer"
+                >
+                  {directLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
+                      <span>Retrieving Check-In Pass...</span>
+                    </>
+                  ) : (
+                    <>
+                      <QrCode className="w-5 h-5 text-slate-950" />
+                      <span>Get My Venue Check-In Code</span>
+                    </>
+                  )}
+                </Button>
+              </form>
+
+              {/* Helpful Instructions Pill */}
+              <div className="relative z-10 pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Instant verification at all registration desks</span>
+                </div>
+                <Link href="/register" className="text-amber-400 hover:text-amber-300 font-bold underline">
+                  Need tickets? Register here &rarr;
+                </Link>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-6 sm:space-y-8">
@@ -455,17 +615,26 @@ export default function TicketPage() {
                   )}
                 </div>
                 <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
-                  Download your pass, copy your link, or assign/transfer passes to colleagues.
+                  Get your pass code, download your pass, copy your link, or assign/transfer passes to colleagues.
                 </p>
               </div>
 
-              {/* 2x2 Clean Grid on Mobile, Inline Horizontal Row on Desktop */}
-              <div className="grid grid-cols-2 gap-2 w-full md:w-auto md:flex md:flex-wrap md:items-center md:gap-2.5">
-                {/* Row 1 / Col 1: Download PNG Pass */}
+              {/* Actions Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center gap-2 w-full md:w-auto">
+                {/* Big Venue Check-In Pass Code Button */}
+                <Button
+                  onClick={() => openCheckInModal()}
+                  className="w-full sm:w-auto col-span-1 sm:col-span-2 lg:col-span-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black gap-2 shadow-lg shadow-emerald-500/25 text-xs sm:text-sm h-11 sm:h-10 px-4 justify-center rounded-xl transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  <QrCode className="w-4 h-4 text-slate-950 shrink-0" />
+                  <span>Check-In Pass Code {ticket.checkInCode ? `(${ticket.checkInCode})` : ""}</span>
+                </Button>
+
+                {/* Download PNG Pass */}
                 <Button
                   onClick={handleDownloadImage}
                   disabled={downloadingImage}
-                  className="w-full md:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold gap-1.5 sm:gap-2 shadow-lg shadow-amber-500/20 text-xs h-11 sm:h-10 px-3 sm:px-4 justify-center"
+                  className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold gap-1.5 sm:gap-2 shadow-lg shadow-amber-500/20 text-xs h-11 sm:h-10 px-3 sm:px-4 justify-center"
                 >
                   {downloadingImage ? (
                     <Loader2 className="w-4 h-4 animate-spin shrink-0" />
@@ -641,6 +810,44 @@ export default function TicketPage() {
                     <span className="text-[11px] sm:text-xs font-mono font-bold text-amber-300 block mt-1">
                       📱 {ticket.user.phone}
                     </span>
+                  )}
+
+                  {/* Official Venue Fast-Pass Check-In Code Badge */}
+                  {ticket.checkInCode && (
+                    <div className="mt-2.5 inline-flex items-center gap-2 bg-emerald-950/70 border border-emerald-500/40 rounded-xl px-3 py-1.5 shadow-inner">
+                      <div className="text-left">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-emerald-400 block leading-none">
+                          Fast Check-In Code
+                        </span>
+                        <span className="text-xs sm:text-sm font-mono font-black text-white tracking-widest leading-tight">
+                          {ticket.checkInCode}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 border-l border-emerald-500/30 pl-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (ticket.checkInCode) {
+                              navigator.clipboard.writeText(ticket.checkInCode);
+                              playSuccessChime();
+                              toast.success("Check-In Code copied!");
+                            }
+                          }}
+                          className="p-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 hover:text-white transition-colors"
+                          title="Copy Check-In Code"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openCheckInModal()}
+                          className="px-2 py-0.5 rounded-lg bg-emerald-500/30 hover:bg-emerald-500/40 text-white text-[10px] font-bold transition-colors"
+                          title="Open Check-In Pass Modal"
+                        >
+                          QR Pass
+                        </button>
+                      </div>
+                    </div>
                   )}
 
                   <div className="mt-2 sm:mt-2.5 inline-block px-2.5 sm:px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-[10px] sm:text-xs uppercase tracking-wider shadow-md max-w-full truncate">
@@ -1102,6 +1309,13 @@ export default function TicketPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <CheckinCodeModal
+        isOpen={isCheckInModalOpen}
+        onClose={() => setIsCheckInModalOpen(false)}
+        initialData={checkInInitialData}
+        initialQuery={directQuery}
+      />
 
       <Footer />
     </div>
