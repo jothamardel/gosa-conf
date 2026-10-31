@@ -39,6 +39,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // --- Action: Generate or retrieve check-in code ---
+    if (action === 'generate-code') {
+      if (!userId) {
+        return NextResponse.json({ success: false, error: 'userId is required for generate-code' }, { status: 400 });
+      }
+      const checkInCode = await getOrCreateUserCheckInCode(userId);
+      return NextResponse.json({
+        success: true,
+        checkInCode,
+        message: 'Check-in code ready',
+      });
+    }
+
     // --- Action: Check In All Tickets for a Member (Scoped to 2026) ---
     if (action === 'check-in-all') {
       if (!userId) {

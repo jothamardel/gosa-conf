@@ -7,6 +7,7 @@ import {
   User,
 } from '@/lib/schema';
 import { CONVENTION_2026_START_DATE } from '@/lib/constants/pricing';
+import { getOrCreateUserCheckInCode } from '@/lib/utils/checkin-code';
 
 export const dynamic = 'force-dynamic';
 
@@ -167,43 +168,50 @@ export async function GET(request: NextRequest) {
     });
 
     // Assemble unified member objects
-    const members = allUsers.map((user: any) => {
-      const uid = user._id.toString();
-      const conventions = conventionByUser.get(uid) || [];
-      const dinners = dinnerByUser.get(uid) || [];
-      const brochures = brochureByUser.get(uid) || [];
+    const members = await Promise.all(
+      allUsers.map(async (user: any) => {
+        const uid = user._id.toString();
+        const conventions = conventionByUser.get(uid) || [];
+        const dinners = dinnerByUser.get(uid) || [];
+        const brochures = brochureByUser.get(uid) || [];
 
-      const activeConventions = conventions.filter((c: any) => c.status !== 'upgraded' && c.status !== 'cancelled');
-      const totalItems = activeConventions.length + dinners.length + brochures.length;
-      const allCheckedIn =
-        totalItems > 0 &&
-        activeConventions.every((c: any) => c.checkedIn) &&
-        dinners.every((d: any) => d.checkedIn) &&
-        brochures.every((b: any) => b.collected);
+        const activeConventions = conventions.filter((c: any) => c.status !== 'upgraded' && c.status !== 'cancelled');
+        const totalItems = activeConventions.length + dinners.length + brochures.length;
+        const allCheckedIn =
+          totalItems > 0 &&
+          activeConventions.every((c: any) => c.checkedIn) &&
+          dinners.every((d: any) => d.checkedIn) &&
+          brochures.every((b: any) => b.collected);
 
-      const hasUncheckedItems =
-        activeConventions.some((c: any) => !c.checkedIn) ||
-        dinners.some((d: any) => !d.checkedIn) ||
-        brochures.some((b: any) => !b.collected);
+        const hasUncheckedItems =
+          activeConventions.some((c: any) => !c.checkedIn) ||
+          dinners.some((d: any) => !d.checkedIn) ||
+          brochures.some((b: any) => !b.collected);
 
-      return {
-        _id: uid,
-        fullName: user.fullName || 'Unknown Attendee',
-        email: user.email || '—',
-        phoneNumber: user.phoneNumber || '—',
-        house: user.house || '—',
-        year: user.year || '—',
-        checkInCode: user.checkInCode || null,
-        totalItems,
-        allCheckedIn,
-        hasUncheckedItems,
-        tickets: {
-          conventions,
-          dinners,
-          brochures,
-        },
-      };
-    });
+        let checkInCode = user.checkInCode || null;
+        if (!checkInCode && totalItems > 0) {
+          checkInCode = await getOrCreateUserCheckInCode(user._id).catch(() => null);
+        }
+
+        return {
+          _id: uid,
+          fullName: user.fullName || 'Unknown Attendee',
+          email: user.email || '—',
+          phoneNumber: user.phoneNumber || '—',
+          house: user.house || '—',
+          year: user.year || '—',
+          checkInCode,
+          totalItems,
+          allCheckedIn,
+          hasUncheckedItems,
+          tickets: {
+            conventions,
+            dinners,
+            brochures,
+          },
+        };
+      })
+    );
 
     return NextResponse.json({
       success: true,

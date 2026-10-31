@@ -501,6 +501,34 @@ export function HighSpeedTicketHub() {
     }
   };
 
+  const handleGenerateCode = async (member: MatchedMember) => {
+    const loadingKey = `code-${member._id}`;
+    setActionLoading((prev) => ({ ...prev, [loadingKey]: true }));
+    try {
+      const res = await fetch('/api/v1/admin/tickets/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generate-code',
+          userId: member._id,
+        }),
+      });
+      const json = await res.json();
+      if (json.success && json.checkInCode) {
+        toast.success(`Pass code generated: ${json.checkInCode}`);
+        setSearchResults((prev) =>
+          prev.map((m) => (m._id === member._id ? { ...m, checkInCode: json.checkInCode } : m))
+        );
+      } else {
+        toast.error(json.error || 'Failed to generate pass code');
+      }
+    } catch (err: any) {
+      toast.error('Failed to generate pass code: ' + err.message);
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [loadingKey]: false }));
+    }
+  };
+
   const handleWalkinSuccess = () => {
     fetchAnalytics();
     fetchTabTickets();
@@ -920,9 +948,25 @@ export function HighSpeedTicketHub() {
                           </button>
                         </div>
                       ) : (
-                        <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/40">
-                          Pass Code: Pending Check-In
-                        </Badge>
+                        <div className="flex items-center space-x-1.5">
+                          <Badge variant="outline" className="border-slate-300 text-slate-600 bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:bg-slate-900 text-[10px] font-semibold">
+                            Pass Code: Not Generated
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleGenerateCode(member)}
+                            disabled={actionLoading[`code-${member._id}`]}
+                            className="h-6 px-2 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 cursor-pointer"
+                          >
+                            {actionLoading[`code-${member._id}`] ? (
+                              <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                            ) : (
+                              <Sparkles className="w-3 h-3 mr-1" />
+                            )}
+                            Generate Code
+                          </Button>
+                        </div>
                       )}
 
                       {member.allCheckedIn && (
@@ -981,9 +1025,14 @@ export function HighSpeedTicketHub() {
                         )}
                       </Button>
                     ) : (
-                      <div className="flex items-center space-x-2 text-emerald-700 dark:text-emerald-400 font-bold text-sm bg-emerald-50 dark:bg-emerald-950/40 px-4 py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                        <CheckCircle2 className="w-5 h-5" />
-                        <span>Member Checked In & Verified</span>
+                      <div className="flex items-center space-x-2.5 text-emerald-700 dark:text-emerald-400 font-bold text-sm bg-emerald-50 dark:bg-emerald-950/40 px-4 py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                        <div>
+                          <span className="block leading-tight">Member Checked In &amp; Verified</span>
+                          <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 font-medium block mt-0.5">
+                            All ticket items for this delegate have been verified at desk
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
