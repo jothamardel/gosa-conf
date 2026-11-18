@@ -26,6 +26,8 @@ import {
   Users,
   Filter,
   Calendar,
+  ShieldCheck,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -99,6 +101,7 @@ export function TicketExportReportModal({
 
   // Export Loading
   const [downloadingFormat, setDownloadingFormat] = useState<'csv' | 'xlsx' | 'pdf' | null>(null);
+  const [verifyingPaystack, setVerifyingPaystack] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -211,6 +214,29 @@ export function TicketExportReportModal({
     }
   };
 
+  const handleVerifyWithPaystack = async () => {
+    try {
+      setVerifyingPaystack(true);
+      const res = await fetch('/api/v1/admin/tickets/verify-paystack', {
+        method: 'POST',
+      });
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.error || 'Paystack verification failed');
+      }
+      const d = json.data;
+      toast.success(
+        `Paystack check complete: ${d.confirmedWithPaystack} confirmed, ${d.revertedUnpaid} unpaid force-confirmed reverted, ${d.stillPending} still pending`
+      );
+      await fetchReport();
+    } catch (err: any) {
+      console.error('Paystack verify error:', err);
+      toast.error(err.message || 'Failed to verify with Paystack');
+    } finally {
+      setVerifyingPaystack(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl w-[95vw] max-h-[92vh] overflow-y-auto p-4 sm:p-6">
@@ -226,6 +252,20 @@ export function TicketExportReportModal({
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleVerifyWithPaystack}
+                disabled={verifyingPaystack || loadingReport}
+                className="h-9 text-xs font-semibold border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300"
+              >
+                {verifyingPaystack ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
+                )}
+                Verify with Paystack
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -452,6 +492,18 @@ export function TicketExportReportModal({
               </div>
             ) : summary ? (
               <>
+                {summary.totals.totalUnverifiedCount > 0 && (
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold">
+                        {summary.totals.totalUnverifiedCount.toLocaleString()} unverified / force-confirmed record(s) (₦{summary.totals.totalUnverifiedValue.toLocaleString()}) excluded from Sold Revenue.
+                      </span>{' '}
+                      These are online/cart records marked confirmed (e.g. via desk check-in) without a completed Paystack transaction. Click <strong>Verify with Paystack</strong> above to reconcile them.
+                    </div>
+                  </div>
+                )}
+
                 {/* KPI Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <Card className="rounded-xl">
@@ -608,6 +660,7 @@ export function TicketExportReportModal({
                           <th className="py-2 px-2 text-right">Created</th>
                           <th className="py-2 px-2 text-right">Sold</th>
                           <th className="py-2 px-2 text-right">Pending</th>
+                          <th className="py-2 px-2 text-right">Unverified</th>
                           <th className="py-2 px-2 text-right">Cancelled</th>
                           <th className="py-2 px-2 text-right">Checked In</th>
                           <th className="py-2 px-2 text-right">Walk-In</th>
@@ -626,6 +679,7 @@ export function TicketExportReportModal({
                               {c.soldCount.toLocaleString()}
                             </td>
                             <td className="py-2.5 px-2 text-right text-amber-600">{c.pendingCount.toLocaleString()}</td>
+                            <td className="py-2.5 px-2 text-right text-orange-600 font-semibold">{c.unverifiedCount.toLocaleString()}</td>
                             <td className="py-2.5 px-2 text-right text-gray-500">{c.cancelledCount.toLocaleString()}</td>
                             <td className="py-2.5 px-2 text-right">
                               {c.checkedInCount.toLocaleString()} ({c.checkInRate}%)
@@ -733,6 +787,8 @@ export function TicketExportReportModal({
                               className={`text-[10px] ${
                                 r.saleState === 'Sold (Confirmed)'
                                   ? 'border-emerald-300 text-emerald-700 bg-emerald-50'
+                                  : r.saleState === 'Unverified (Force-Confirmed)'
+                                  ? 'border-orange-300 text-orange-700 bg-orange-50'
                                   : r.saleState === 'Cancelled'
                                   ? 'border-red-300 text-red-700 bg-red-50'
                                   : 'border-amber-300 text-amber-700 bg-amber-50'

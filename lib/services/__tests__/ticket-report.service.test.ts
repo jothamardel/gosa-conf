@@ -1,6 +1,7 @@
 import {
   buildTicketReportSummary,
   parseReportFiltersFromSearchParams,
+  getBasePaymentReference,
   NormalizedTicketRecord,
   ALL_TICKET_CATEGORIES,
 } from '../ticket-report.service';
@@ -29,6 +30,7 @@ describe('ticket-report.service', () => {
         paymentReference: 'PAY_1',
         channel: 'Online',
         saleState: 'Sold (Confirmed)',
+        paymentVerification: 'Paystack Verified',
         status: 'confirmed',
         confirmed: true,
         amount: 1000,
@@ -52,6 +54,7 @@ describe('ticket-report.service', () => {
         paymentReference: 'WALKIN_2',
         channel: 'Walk-In',
         saleState: 'Sold (Confirmed)',
+        paymentVerification: 'Desk / Walk-In',
         status: 'confirmed',
         confirmed: true,
         amount: 2500,
@@ -75,6 +78,7 @@ describe('ticket-report.service', () => {
         paymentReference: 'PAY_3',
         channel: 'Online',
         saleState: 'Created (Pending)',
+        paymentVerification: 'Pending Tx',
         status: 'pending',
         confirmed: false,
         amount: 2000,
@@ -91,6 +95,30 @@ describe('ticket-report.service', () => {
         details: 'Type: digital | Qty: 1',
         createdAt: '2026-08-02T12:00:00.000Z',
       },
+      {
+        id: '4',
+        category: 'convention',
+        categoryLabel: 'Convention Ticket',
+        paymentReference: 'cart_1793361682906_08038306365_0',
+        channel: 'Online',
+        saleState: 'Unverified (Force-Confirmed)',
+        paymentVerification: 'Unverified (No Paystack Tx)',
+        status: 'confirmed',
+        confirmed: false,
+        amount: 2026000,
+        quantity: 2026,
+        checkInCode: 'AZYE-HB9F',
+        checkedIn: true,
+        checkedInAt: '2026-10-31T17:03:22.206Z',
+        collected: false,
+        attendeeName: 'Nanret Longkat',
+        attendeeEmail: 'dnanret98@gmail.com',
+        attendeePhone: '08038306365',
+        house: 'nightangle',
+        year: '2008',
+        details: 'Qty: 2026',
+        createdAt: '2026-10-30T12:01:23.875Z',
+      },
     ];
 
     const summary = buildTicketReportSummary(records, {
@@ -103,23 +131,38 @@ describe('ticket-report.service', () => {
       allTime: false,
     });
 
-    expect(summary.totals.totalCreatedCount).toBe(3);
+    expect(summary.totals.totalCreatedCount).toBe(4);
     expect(summary.totals.totalSoldCount).toBe(2);
     expect(summary.totals.totalPendingCount).toBe(1);
+    expect(summary.totals.totalUnverifiedCount).toBe(1);
+    expect(summary.totals.totalUnverifiedValue).toBe(2026000);
     expect(summary.totals.totalCancelledCount).toBe(0);
     expect(summary.totals.totalSoldRevenue).toBe(3500);
-    expect(summary.totals.totalCreatedValue).toBe(5500);
-    expect(summary.totals.totalCheckedInCount).toBe(1);
-    expect(summary.totals.checkInRate).toBe(50);
+    expect(summary.totals.totalCreatedValue).toBe(2031500);
+    expect(summary.totals.totalCheckedInCount).toBe(2);
+    expect(summary.totals.checkInRate).toBe(100);
     expect(summary.totals.walkinCount).toBe(1);
     expect(summary.totals.walkinRevenue).toBe(2500);
-    expect(summary.totals.onlineCount).toBe(2);
+    expect(summary.totals.onlineCount).toBe(3);
     expect(summary.totals.onlineRevenue).toBe(1000);
 
     expect(summary.dailyTrend).toEqual([
       { date: '2026-08-01', createdCount: 2, soldCount: 2, soldRevenue: 3500 },
       { date: '2026-08-02', createdCount: 1, soldCount: 0, soldRevenue: 0 },
+      { date: '2026-10-30', createdCount: 1, soldCount: 0, soldRevenue: 0 },
     ]);
+  });
+
+  it('extracts base payment references for cart, dinner, and split records', () => {
+    expect(getBasePaymentReference('cart_1793361682906_08038306365_0')).toBe(
+      'cart_1793361682906_08038306365'
+    );
+    expect(getBasePaymentReference('cart_1793464601928_08137064079_dinner_0')).toBe(
+      'cart_1793464601928_08137064079'
+    );
+    expect(
+      getBasePaymentReference('buy_tickets_1793351859061_2347033949014_0_split_1793352777719')
+    ).toBe('buy_tickets_1793351859061_2347033949014');
   });
 });
 

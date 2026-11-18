@@ -103,8 +103,6 @@ export async function POST(request: NextRequest) {
           checkedIn: true,
           checkedInAt: new Date(),
           checkedOutAt: null, // Clear any previous check-out
-          confirm: true,
-          status: "confirmed"
         },
         $push: {
           checkInHistory: checkInEntry,

@@ -5,6 +5,7 @@ import {
   Accommodation,
   GoodwillMessage,
   Donation,
+  Transaction,
 } from '@/lib/schema';
 import { CONVENTION_2026_START_DATE } from '@/lib/constants/pricing';
 
@@ -19,6 +20,13 @@ export type TicketCategory =
 export type SaleStatusFilter = 'all' | 'sold' | 'created';
 export type ChannelFilter = 'all' | 'online' | 'walkin';
 export type CheckInFilter = 'all' | 'checkedIn' | 'pending';
+
+export type PaymentVerificationState =
+  | 'Paystack Verified'
+  | 'Desk / Walk-In'
+  | 'Pending Tx'
+  | 'Unverified (No Paystack Tx)'
+  | 'Direct / Legacy';
 
 export interface TicketReportFilters {
   types?: TicketCategory[];
@@ -35,8 +43,13 @@ export interface NormalizedTicketRecord {
   category: TicketCategory;
   categoryLabel: string;
   paymentReference: string;
-  channel: 'Walk-In' | 'Online';
-  saleState: 'Sold (Confirmed)' | 'Created (Pending)' | 'Cancelled';
+  channel: 'Walk-In' | 'Desk Upgrade' | 'Online';
+  saleState:
+    | 'Sold (Confirmed)'
+    | 'Created (Pending)'
+    | 'Unverified (Force-Confirmed)'
+    | 'Cancelled';
+  paymentVerification: PaymentVerificationState;
   status: string;
   confirmed: boolean;
   amount: number;
@@ -60,6 +73,7 @@ export interface CategorySummary {
   createdCount: number;
   soldCount: number;
   pendingCount: number;
+  unverifiedCount: number;
   cancelledCount: number;
   soldRevenue: number;
   createdValue: number;
@@ -99,6 +113,8 @@ export interface TicketReportSummary {
     totalCreatedCount: number;
     totalSoldCount: number;
     totalPendingCount: number;
+    totalUnverifiedCount: number;
+    totalUnverifiedValue: number;
     totalCancelledCount: number;
     totalSoldRevenue: number;
     totalCreatedValue: number;
@@ -160,22 +176,108 @@ function buildDateQuery(filters: TicketReportFilters): Record<string, any> {
   return Object.keys(createdAt).length > 0 ? { createdAt } : {};
 }
 
-function getChannel(paymentReference?: string): 'Walk-In' | 'Online' {
-  return paymentReference && /^WALKIN_/i.test(paymentReference) ? 'Walk-In' : 'Online';
+function getChannel(paymentReference?: string): 'Walk-In' | 'Desk Upgrade' | 'Online' {
+  if (!paymentReference) return 'Online';
+  if (/^WALKIN_/i.test(paymentReference)) return 'Walk-In';
+  if (/^UPG_/i.test(paymentReference)) return 'Desk Upgrade';
+  return 'Online';
 }
 
-function getSaleState(
+export function getBasePaymentReference(ref?: string): string {
+  if (!ref) return '';
+  let base = ref.replace(/_split_\d+$/i, '');
+  if (/^(cart|buy_tickets|awaiting_email|convention)_/i.test(base)) {
+    base = base.replace(/_(convention|dinner|brochure|accommodation|goodwill|donation)_\d+$/i, '');
+    base = base.replace(/(_\d{1,2}){1,2}$/, '');
+  }
+  return base;
+}
+
+function evaluateSaleAndPayment(
+  paymentReference: string,
+  channel: 'Walk-In' | 'Desk Upgrade' | 'Online',
   confirmedFlag: boolean,
-  status?: string
-): 'Sold (Confirmed)' | 'Created (Pending)' | 'Cancelled' {
+  status: string | undefined,
+  txStatusMap: Map<string, string>
+): {
+  saleState:
+    | 'Sold (Confirmed)'
+    | 'Created (Pending)'
+    | 'Unverified (Force-Confirmed)'
+    | 'Cancelled';
+  paymentVerification: PaymentVerificationState;
+} {
   const normalizedStatus = (status || '').toLowerCase();
+
+  if (channel === 'Walk-In' || channel === 'Desk Upgrade') {
+    if (normalizedStatus === 'cancelled') {
+      return { saleState: 'Cancelled', paymentVerification: 'Desk / Walk-In' };
+    }
+    if (normalizedStatus === 'pending') {
+      return { saleState: 'Created (Pending)', paymentVerification: 'Desk / Walk-In' };
+    }
+    return {
+      saleState: confirmedFlag || normalizedStatus === 'confirmed' || normalizedStatus === 'upgraded'
+        ? 'Sold (Confirmed)'
+        : 'Created (Pending)',
+      paymentVerification: 'Desk / Walk-In',
+    };
+  }
+
+  const baseRef = getBasePaymentReference(paymentReference);
+  const txStatus = txStatusMap.get(paymentReference) || txStatusMap.get(baseRef);
+  const isCartOrWaRef = /^(cart|buy_tickets)_/i.test(paymentReference);
+
   if (normalizedStatus === 'cancelled') {
-    return 'Cancelled';
+    return {
+      saleState: 'Cancelled',
+      paymentVerification: txStatus === 'completed' ? 'Paystack Verified' : 'Pending Tx',
+    };
   }
-  if (confirmedFlag || normalizedStatus === 'confirmed' || normalizedStatus === 'upgraded') {
-    return 'Sold (Confirmed)';
+
+  // If ticket status is explicitly pending, never count it as Sold even if confirm boolean was set
+  if (normalizedStatus === 'pending') {
+    return {
+      saleState: 'Created (Pending)',
+      paymentVerification: txStatus === 'completed' ? 'Paystack Verified' : 'Pending Tx',
+    };
   }
-  return 'Created (Pending)';
+
+  const ticketClaimsConfirmed =
+    normalizedStatus === 'confirmed' ||
+    normalizedStatus === 'upgraded' ||
+    (confirmedFlag && !normalizedStatus);
+
+  if (!ticketClaimsConfirmed) {
+    return {
+      saleState: 'Created (Pending)',
+      paymentVerification: txStatus === 'completed' ? 'Paystack Verified' : 'Pending Tx',
+    };
+  }
+
+  // Ticket claims confirmed: verify against Transaction for cart_ / buy_tickets_ or any pending Tx
+  if (txStatus === 'completed') {
+    return { saleState: 'Sold (Confirmed)', paymentVerification: 'Paystack Verified' };
+  }
+
+  if (txStatus && txStatus !== 'completed') {
+    return {
+      saleState: 'Unverified (Force-Confirmed)',
+      paymentVerification: 'Unverified (No Paystack Tx)',
+    };
+  }
+
+  if (isCartOrWaRef) {
+    return {
+      saleState: 'Unverified (Force-Confirmed)',
+      paymentVerification: 'Unverified (No Paystack Tx)',
+    };
+  }
+
+  return {
+    saleState: 'Sold (Confirmed)',
+    paymentVerification: 'Direct / Legacy',
+  };
 }
 
 function extractUserFields(user: any) {
@@ -224,6 +326,7 @@ export async function fetchNormalizedTicketRecords(
     accommodations,
     goodwills,
     donations,
+    transactions,
   ] = await Promise.all([
     selectedTypes.includes('convention')
       ? ConventionRegistration.find(dateQuery)
@@ -261,20 +364,40 @@ export async function fetchNormalizedTicketRecords(
           .sort({ createdAt: -1 })
           .lean()
       : Promise.resolve([]),
+    Transaction.find({}).select('paymentReference status').lean(),
   ]);
+
+  const txStatusMap = new Map<string, string>();
+  for (const tx of transactions as any[]) {
+    if (tx.paymentReference) {
+      // Prefer 'completed' if duplicate refs ever exist
+      const existing = txStatusMap.get(tx.paymentReference);
+      if (existing !== 'completed') {
+        txStatusMap.set(tx.paymentReference, tx.status || 'pending');
+      }
+    }
+  }
 
   const normalized: NormalizedTicketRecord[] = [];
 
   for (const c of conventions as any[]) {
     const user = extractUserFields(c.userId);
-    const saleState = getSaleState(Boolean(c.confirm), c.status);
+    const channel = getChannel(c.paymentReference);
+    const { saleState, paymentVerification } = evaluateSaleAndPayment(
+      c.paymentReference || '',
+      channel,
+      Boolean(c.confirm),
+      c.status,
+      txStatusMap
+    );
     normalized.push({
       id: String(c._id),
       category: 'convention',
       categoryLabel: CATEGORY_LABELS.convention,
       paymentReference: c.paymentReference || '',
-      channel: getChannel(c.paymentReference),
+      channel,
       saleState,
+      paymentVerification,
       status: c.status || (c.confirm ? 'confirmed' : 'pending'),
       confirmed: saleState === 'Sold (Confirmed)',
       amount: Number(c.amount || 0),
@@ -297,15 +420,23 @@ export async function fetchNormalizedTicketRecords(
 
   for (const d of dinners as any[]) {
     const user = extractUserFields(d.userId);
-    const saleState = getSaleState(Boolean(d.confirmed), d.status);
+    const channel = getChannel(d.paymentReference);
+    const { saleState, paymentVerification } = evaluateSaleAndPayment(
+      d.paymentReference || '',
+      channel,
+      Boolean(d.confirmed),
+      d.status,
+      txStatusMap
+    );
     const primaryGuest = Array.isArray(d.guestDetails) && d.guestDetails.length > 0 ? d.guestDetails[0] : null;
     normalized.push({
       id: String(d._id),
       category: 'dinner',
       categoryLabel: CATEGORY_LABELS.dinner,
       paymentReference: d.paymentReference || '',
-      channel: getChannel(d.paymentReference),
+      channel,
       saleState,
+      paymentVerification,
       status: d.status || (d.confirmed ? 'confirmed' : 'pending'),
       confirmed: saleState === 'Sold (Confirmed)',
       amount: Number(d.totalAmount || 0),
@@ -326,15 +457,23 @@ export async function fetchNormalizedTicketRecords(
 
   for (const b of brochures as any[]) {
     const user = extractUserFields(b.userId);
-    const saleState = getSaleState(Boolean(b.confirmed), b.status);
+    const channel = getChannel(b.paymentReference);
+    const { saleState, paymentVerification } = evaluateSaleAndPayment(
+      b.paymentReference || '',
+      channel,
+      Boolean(b.confirmed),
+      b.status,
+      txStatusMap
+    );
     const isCollectedOrCheckedIn = Boolean(b.collected || b.checkedIn);
     normalized.push({
       id: String(b._id),
       category: 'brochure',
       categoryLabel: CATEGORY_LABELS.brochure,
       paymentReference: b.paymentReference || '',
-      channel: getChannel(b.paymentReference),
+      channel,
       saleState,
+      paymentVerification,
       status: b.status || (b.confirmed ? 'confirmed' : 'pending'),
       confirmed: saleState === 'Sold (Confirmed)',
       amount: Number(b.totalAmount || 0),
@@ -355,14 +494,22 @@ export async function fetchNormalizedTicketRecords(
 
   for (const a of accommodations as any[]) {
     const user = extractUserFields(a.userId);
-    const saleState = getSaleState(Boolean(a.confirmed), a.status);
+    const channel = getChannel(a.paymentReference);
+    const { saleState, paymentVerification } = evaluateSaleAndPayment(
+      a.paymentReference || '',
+      channel,
+      Boolean(a.confirmed),
+      a.status,
+      txStatusMap
+    );
     normalized.push({
       id: String(a._id),
       category: 'accommodation',
       categoryLabel: CATEGORY_LABELS.accommodation,
       paymentReference: a.paymentReference || '',
-      channel: getChannel(a.paymentReference),
+      channel,
       saleState,
+      paymentVerification,
       status: a.status || (a.confirmed ? 'confirmed' : 'pending'),
       confirmed: saleState === 'Sold (Confirmed)',
       amount: Number(a.totalAmount || 0),
@@ -383,14 +530,22 @@ export async function fetchNormalizedTicketRecords(
 
   for (const g of goodwills as any[]) {
     const user = extractUserFields(g.userId);
-    const saleState = getSaleState(Boolean(g.confirmed), g.confirmed ? 'confirmed' : 'pending');
+    const channel = getChannel(g.paymentReference);
+    const { saleState, paymentVerification } = evaluateSaleAndPayment(
+      g.paymentReference || '',
+      channel,
+      Boolean(g.confirmed),
+      g.confirmed ? 'confirmed' : 'pending',
+      txStatusMap
+    );
     normalized.push({
       id: String(g._id),
       category: 'goodwill',
       categoryLabel: CATEGORY_LABELS.goodwill,
       paymentReference: g.paymentReference || '',
-      channel: getChannel(g.paymentReference),
+      channel,
       saleState,
+      paymentVerification,
       status: g.confirmed ? 'confirmed' : 'pending',
       confirmed: saleState === 'Sold (Confirmed)',
       amount: Number(g.donationAmount || 0),
@@ -411,14 +566,22 @@ export async function fetchNormalizedTicketRecords(
 
   for (const dn of donations as any[]) {
     const user = extractUserFields(dn.userId);
-    const saleState = getSaleState(Boolean(dn.confirmed), dn.confirmed ? 'confirmed' : 'pending');
+    const channel = getChannel(dn.paymentReference);
+    const { saleState, paymentVerification } = evaluateSaleAndPayment(
+      dn.paymentReference || '',
+      channel,
+      Boolean(dn.confirmed),
+      dn.confirmed ? 'confirmed' : 'pending',
+      txStatusMap
+    );
     normalized.push({
       id: String(dn._id),
       category: 'donation',
       categoryLabel: CATEGORY_LABELS.donation,
       paymentReference: dn.paymentReference || '',
-      channel: getChannel(dn.paymentReference),
+      channel,
       saleState,
+      paymentVerification,
       status: dn.confirmed ? 'confirmed' : 'pending',
       confirmed: saleState === 'Sold (Confirmed)',
       amount: Number(dn.amount || 0),
@@ -445,7 +608,7 @@ export async function fetchNormalizedTicketRecords(
     if (saleStatus === 'created' && rec.saleState === 'Sold (Confirmed)') {
       return false;
     }
-    if (channelFilter === 'walkin' && rec.channel !== 'Walk-In') {
+    if (channelFilter === 'walkin' && rec.channel !== 'Walk-In' && rec.channel !== 'Desk Upgrade') {
       return false;
     }
     if (channelFilter === 'online' && rec.channel !== 'Online') {
@@ -489,6 +652,7 @@ export function buildTicketReportSummary(
       createdCount: 0,
       soldCount: 0,
       pendingCount: 0,
+      unverifiedCount: 0,
       cancelledCount: 0,
       soldRevenue: 0,
       createdValue: 0,
@@ -508,6 +672,8 @@ export function buildTicketReportSummary(
   let totalCreatedCount = 0;
   let totalSoldCount = 0;
   let totalPendingCount = 0;
+  let totalUnverifiedCount = 0;
+  let totalUnverifiedValue = 0;
   let totalCancelledCount = 0;
   let totalSoldRevenue = 0;
   let totalCreatedValue = 0;
@@ -524,10 +690,15 @@ export function buildTicketReportSummary(
     const isSold = r.saleState === 'Sold (Confirmed)';
     const isCancelled = r.saleState === 'Cancelled';
     const isPending = r.saleState === 'Created (Pending)';
+    const isUnverified = r.saleState === 'Unverified (Force-Confirmed)';
+    const isDesk = r.channel === 'Walk-In' || r.channel === 'Desk Upgrade';
 
     if (isSold) {
       totalSoldCount += 1;
       totalSoldRevenue += r.amount;
+    } else if (isUnverified) {
+      totalUnverifiedCount += 1;
+      totalUnverifiedValue += r.amount;
     } else if (isCancelled) {
       totalCancelledCount += 1;
     } else if (isPending) {
@@ -538,7 +709,7 @@ export function buildTicketReportSummary(
       totalCheckedInCount += 1;
     }
 
-    if (r.channel === 'Walk-In') {
+    if (isDesk) {
       walkinCount += 1;
       if (isSold) walkinRevenue += r.amount;
     } else {
@@ -553,6 +724,8 @@ export function buildTicketReportSummary(
       if (isSold) {
         catSummary.soldCount += 1;
         catSummary.soldRevenue += r.amount;
+      } else if (isUnverified) {
+        catSummary.unverifiedCount += 1;
       } else if (isCancelled) {
         catSummary.cancelledCount += 1;
       } else {
@@ -561,7 +734,7 @@ export function buildTicketReportSummary(
       if (r.checkedIn) {
         catSummary.checkedInCount += 1;
       }
-      if (r.channel === 'Walk-In') {
+      if (isDesk) {
         catSummary.walkinCount += 1;
         if (isSold) catSummary.walkinRevenue += r.amount;
       } else {
@@ -620,6 +793,8 @@ export function buildTicketReportSummary(
       totalCreatedCount,
       totalSoldCount,
       totalPendingCount,
+      totalUnverifiedCount,
+      totalUnverifiedValue,
       totalCancelledCount,
       totalSoldRevenue,
       totalCreatedValue,

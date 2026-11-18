@@ -84,8 +84,6 @@ export async function POST(request: NextRequest) {
               checkedIn: true,
               checkedInAt: now,
               checkInCode,
-              status: 'confirmed',
-              confirm: true,
             },
             $push: { checkInHistory: historyEntry }
           }
@@ -97,8 +95,6 @@ export async function POST(request: NextRequest) {
               checkedIn: true,
               checkedInAt: now,
               checkInCode,
-              status: 'confirmed',
-              confirmed: true,
             },
             $push: { checkInHistory: historyEntry }
           }
@@ -112,8 +108,6 @@ export async function POST(request: NextRequest) {
               checkedIn: true,
               checkedInAt: now,
               checkInCode,
-              status: 'confirmed',
-              confirmed: true,
             },
             $push: { checkInHistory: historyEntry }
           }
@@ -186,9 +180,6 @@ export async function POST(request: NextRequest) {
       ticket.checkedInAt = now;
       ticket.checkedOutAt = undefined;
       ticket.checkInCode = checkInCode;
-      ticket.status = 'confirmed';
-      if ('confirm' in ticket) ticket.confirm = true;
-      if ('confirmed' in ticket) ticket.confirmed = true;
       if (ticketType === 'brochure') {
         ticket.collected = true;
         ticket.collectedAt = now;
