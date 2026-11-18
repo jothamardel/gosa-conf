@@ -602,6 +602,10 @@ export async function fetchNormalizedTicketRecords(
 
   // Apply post-normalization filters
   const filtered = normalized.filter((rec) => {
+    // Exclude unverified / force-confirmed records from reports and exports
+    if (rec.saleState === 'Unverified (Force-Confirmed)') {
+      return false;
+    }
     if (saleStatus === 'sold' && rec.saleState !== 'Sold (Confirmed)') {
       return false;
     }

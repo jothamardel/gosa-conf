@@ -27,7 +27,6 @@ import {
   Filter,
   Calendar,
   ShieldCheck,
-  AlertTriangle,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -492,18 +491,6 @@ export function TicketExportReportModal({
               </div>
             ) : summary ? (
               <>
-                {summary.totals.totalUnverifiedCount > 0 && (
-                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold">
-                        {summary.totals.totalUnverifiedCount.toLocaleString()} unverified / force-confirmed record(s) (₦{summary.totals.totalUnverifiedValue.toLocaleString()}) excluded from Sold Revenue.
-                      </span>{' '}
-                      These are online/cart records marked confirmed (e.g. via desk check-in) without a completed Paystack transaction. Click <strong>Verify with Paystack</strong> above to reconcile them.
-                    </div>
-                  </div>
-                )}
-
                 {/* KPI Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <Card className="rounded-xl">
@@ -660,7 +647,6 @@ export function TicketExportReportModal({
                           <th className="py-2 px-2 text-right">Created</th>
                           <th className="py-2 px-2 text-right">Sold</th>
                           <th className="py-2 px-2 text-right">Pending</th>
-                          <th className="py-2 px-2 text-right">Unverified</th>
                           <th className="py-2 px-2 text-right">Cancelled</th>
                           <th className="py-2 px-2 text-right">Checked In</th>
                           <th className="py-2 px-2 text-right">Walk-In</th>
@@ -679,7 +665,6 @@ export function TicketExportReportModal({
                               {c.soldCount.toLocaleString()}
                             </td>
                             <td className="py-2.5 px-2 text-right text-amber-600">{c.pendingCount.toLocaleString()}</td>
-                            <td className="py-2.5 px-2 text-right text-orange-600 font-semibold">{c.unverifiedCount.toLocaleString()}</td>
                             <td className="py-2.5 px-2 text-right text-gray-500">{c.cancelledCount.toLocaleString()}</td>
                             <td className="py-2.5 px-2 text-right">
                               {c.checkedInCount.toLocaleString()} ({c.checkInRate}%)
