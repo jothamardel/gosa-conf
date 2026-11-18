@@ -38,11 +38,14 @@ import {
   Power,
   Megaphone,
   ArrowUpRight,
+  Download,
+  BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { WalkinRegistrationModal } from './walkin-registration-modal';
 import { BroadcastModal } from './broadcast-modal';
 import { UpgradeTicketModal, UpgradeCandidateTicket } from './upgrade-ticket-modal';
+import { TicketExportReportModal } from './ticket-export-report-modal';
 import { playSuccessChime, playAlreadyCheckedAlert } from '@/lib/utils/audio-cue';
 import { useLocalTicketSync } from '@/lib/hooks/use-local-ticket-sync';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
@@ -157,10 +160,12 @@ export function HighSpeedTicketHub() {
   const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({});
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
-  // Walkin, Broadcast & Upgrade Modals
+  // Walkin, Broadcast, Upgrade & Export/Report Modals
   const [isWalkinOpen, setIsWalkinOpen] = useState(false);
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const [isExportReportOpen, setIsExportReportOpen] = useState(false);
+  const [exportReportTab, setExportReportTab] = useState<'report' | 'download'>('report');
   const [selectedUpgradeTicket, setSelectedUpgradeTicket] = useState<UpgradeCandidateTicket | null>(null);
   const { canBroadcast, adminName } = useAdminAuth();
 
@@ -655,6 +660,32 @@ export function HighSpeedTicketHub() {
           >
             <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 ${analyticsLoading || tabLoading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setExportReportTab('download');
+              setIsExportReportOpen(true);
+            }}
+            className="rounded-xl h-10 sm:h-11 px-3 sm:px-4 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 justify-center"
+          >
+            <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 text-blue-600" />
+            <span>Download Records</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setExportReportTab('report');
+              setIsExportReportOpen(true);
+            }}
+            className="rounded-xl h-10 sm:h-11 px-3 sm:px-4 text-xs font-bold text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 justify-center"
+          >
+            <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 text-emerald-600" />
+            <span>Generate Report</span>
           </Button>
 
           {canBroadcast && (
@@ -1703,6 +1734,13 @@ export function HighSpeedTicketHub() {
       <BroadcastModal
         isOpen={isBroadcastOpen}
         onClose={() => setIsBroadcastOpen(false)}
+      />
+
+      {/* Ticket Records Export & Report Modal */}
+      <TicketExportReportModal
+        open={isExportReportOpen}
+        onOpenChange={setIsExportReportOpen}
+        initialTab={exportReportTab}
       />
 
       {/* Check-In Activation / Deactivation Confirmation Dialog */}
